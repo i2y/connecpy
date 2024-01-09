@@ -1,4 +1,4 @@
-module github.com/i2y/conpyy/protoc-gen-conpyy
+module github.com/i2y/conpy/protoc-gen-conpy
 
 go 1.21
 
