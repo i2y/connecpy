@@ -164,8 +164,27 @@ if __name__ == "__main__":
 
 ### Other clients
 
-Of course, you can use any HTTP client to make requests to a ConPy server. For example, commands like `curl` or `buf curl` can be used, as well as HTTP client libraries such as `requests`, `httpx`, `aiohttp`, and others.
+Of course, you can use any HTTP client to make requests to a ConPy server. For example, commands like `curl` or `buf curl` can be used, as well as HTTP client libraries such as `requests`, `httpx`, `aiohttp`, and others. The examples below use `curl` and `buf curl`.
 
+Content-Type: application/proto
+```sh
+buf curl --data '{"inches": 12}' -v http://localhost:3000/i2y.conpy.example.Haberdasher/MakeHat --schema ./haberdasher.proto
+```
+
+On Windows, Content-Type: application/proto
+```sh
+buf curl --data '{\"inches\": 12}' -v http://localhost:3000/i2y.conpy.example.Haberdasher/MakeHat --schema .\haberdasher.proto
+```
+
+Content-Type: application/json
+```sh
+curl -X POST -H "Content-Type: application/json" -d '{"inches": 12}' -v http://localhost:3000/i2y.conpy.example.Haberdasher/MakeHat
+```
+
+On Windows, Content-Type: application/json
+```sh
+curl -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.conpy.example.Haberdasher/MakeHat
+```
 
 ## Connect Protocol
 
