@@ -129,7 +129,7 @@ color: "black"
 name: "bowler"
 ```
 
-## Client Code (Synchronous)
+## Client code (Synchronous)
 
 ```python
 # client.py
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     main()
 ```
 
-### Other Client
+### Other clients
 
 Of course, you can use any HTTP client to make requests to a ConPy server. For example, commands like `curl` or `buf curl` can be used, as well as HTTP client libraries such as `requests`, `httpx`, `aiohttp`, and others.
 
