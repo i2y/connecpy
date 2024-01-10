@@ -1,10 +1,10 @@
 from typing import Any, Callable
 
-from conpy import context
-from conpy.asgi import ConPyASGIApp
-from conpy.interceptor import AsyncConpyServerInterceptor
+from connecpy import context
+from connecpy.asgi import ConnecpyASGIApp
+from connecpy.interceptor import AsyncConpyServerInterceptor
 
-import haberdasher_conpy
+import haberdasher_connecpy
 from service import HaberdasherService
 
 
@@ -26,8 +26,8 @@ class MyInterceptor(AsyncConpyServerInterceptor):
 my_interceptor_a = MyInterceptor("A")
 my_interceptor_b = MyInterceptor("B")
 
-service = haberdasher_conpy.HaberdasherServer(service=HaberdasherService())
-app = ConPyASGIApp(
+service = haberdasher_connecpy.HaberdasherServer(service=HaberdasherService())
+app = ConnecpyASGIApp(
     interceptors=(my_interceptor_a, my_interceptor_b),
 )
 app.add_service(service)

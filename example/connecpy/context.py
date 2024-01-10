@@ -218,9 +218,9 @@ class ConpyServiceContext:
 
         :param code: The HTTP status code to return.
         :param message: The error message to include in the response.
-        :raises: exceptions.ConPyServerException
+        :raises: exceptions.ConnecpyServerException
         """
-        raise exceptions.ConPyServerException(code=code, message=message)
+        raise exceptions.ConnecpyServerException(code=code, message=message)
 
     def code(self) -> int:
         """

@@ -24,20 +24,20 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 			return resp
 		}
 
-		conpyFile, err := GenerateConPyFile(fd)
+		connecpyFile, err := GenerateConnecpyFile(fd)
 		if err != nil {
 			resp.Error = proto.String("File[" + fileName + "][generate]: " + err.Error())
 			return resp
 		}
-		resp.File = append(resp.File, conpyFile)
+		resp.File = append(resp.File, connecpyFile)
 	}
 	return resp
 }
 
-func GenerateConPyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
+func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
 	name := fd.GetName()
 
-	vars := ConPyTemplateVariables{
+	vars := ConnecpyTemplateVariables{
 		FileName:              name,
 		FileNameWithoutSuffix: strings.TrimSuffix(name, path.Ext(name)),
 	}
@@ -45,33 +45,33 @@ func GenerateConPyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGenerato
 	svcs := fd.GetService()
 	for _, svc := range svcs {
 		svcURL := fmt.Sprintf("%s.%s", fd.GetPackage(), svc.GetName())
-		conpySvc := &ConPyService{
+		connecpySvc := &ConnecpyService{
 			Name:       svc.GetName(),
 			ServiceURL: svcURL,
 		}
 
 		for _, method := range svc.GetMethod() {
-			conpyMethod := &ConPyMethod{
+			connecpyMethod := &ConnecpyMethod{
 				ServiceURL:  svcURL,
-				ServiceName: conpySvc.Name,
+				ServiceName: connecpySvc.Name,
 				Name:        method.GetName(),
 				InputType:   getSymbolName(method.GetInputType()),
 				OutputType:  getSymbolName(method.GetOutputType()),
 			}
 
-			conpySvc.Methods = append(conpySvc.Methods, conpyMethod)
+			connecpySvc.Methods = append(connecpySvc.Methods, connecpyMethod)
 		}
-		vars.Services = append(vars.Services, conpySvc)
+		vars.Services = append(vars.Services, connecpySvc)
 	}
 
 	var buf = &bytes.Buffer{}
-	err := ConPyTemplate.Execute(buf, vars)
+	err := ConnecpyTemplate.Execute(buf, vars)
 	if err != nil {
 		return nil, err
 	}
 
 	resp := &plugin.CodeGeneratorResponse_File{
-		Name:    proto.String(strings.TrimSuffix(name, path.Ext(name)) + "_conpy.py"),
+		Name:    proto.String(strings.TrimSuffix(name, path.Ext(name)) + "_connecpy.py"),
 		Content: proto.String(buf.String()),
 	}
 

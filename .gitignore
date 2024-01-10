@@ -119,4 +119,4 @@ venv.bak/
 .vscode
 
 # generated Go binary
-protoc-gen-conpy/protoc-gen-conpy
+protoc-gen-connecpy/protoc-gen-connecpy

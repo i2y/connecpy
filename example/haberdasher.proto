@@ -1,7 +1,7 @@
-// Copied from https://github.com/twitchtv/conpy/blob/v5.10.2/example/service.proto
+// Copied from https://github.com/twitchtv/connecpy/blob/v5.10.2/example/service.proto
 syntax = "proto3";
 
-package i2y.conpy.example;
+package i2y.connecpy.example;
 option go_package = "example";
 
 // A Hat is a piece of headwear made by a Haberdasher.

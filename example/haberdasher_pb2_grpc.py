@@ -16,7 +16,7 @@ class HaberdasherStub(object):
             channel: A grpc.Channel.
         """
         self.MakeHat = channel.unary_unary(
-                '/i2y.conpy.example.Haberdasher/MakeHat',
+                '/i2y.connecpy.example.Haberdasher/MakeHat',
                 request_serializer=haberdasher__pb2.Size.SerializeToString,
                 response_deserializer=haberdasher__pb2.Hat.FromString,
                 )
@@ -43,7 +43,7 @@ def add_HaberdasherServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'i2y.conpy.example.Haberdasher', rpc_method_handlers)
+            'i2y.connecpy.example.Haberdasher', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -63,7 +63,7 @@ class Haberdasher(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/i2y.conpy.example.Haberdasher/MakeHat',
+        return grpc.experimental.unary_unary(request, target, '/i2y.connecpy.example.Haberdasher/MakeHat',
             haberdasher__pb2.Size.SerializeToString,
             haberdasher__pb2.Hat.FromString,
             options, channel_credentials,

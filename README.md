@@ -1,4 +1,4 @@
-# ConPy
+# Connecpy
 
 Python implementation of [Connect Protocol](https://connectrpc.com/docs/protocol).
 
@@ -9,21 +9,21 @@ This repo contains a protoc plugin that generates sever and client code and a py
 Grab the protoc plugin to generate files with
 
 ```sh
-go install github.com/i2y/conpy/protoc-gen-conpy
+go install github.com/i2y/connecpy/protoc-gen-connecpy
 ```
 
-Add the conpy package to your project
+Add the connecpy package to your project
 ```sh
-pip install conpy
+pip install connecpy
 ```
 
 You'll also need [uvicorn](https://www.uvicorn.org/) to run the server.
 
 ## Generate and run
-Use the protoc plugin to generate conpy server and client code.
+Use the protoc plugin to generate connecpy server and client code.
 
 ```sh
-protoc --python_out=./ --pyi_out=/. --conpy_out=./ ./haberdasher.proto
+protoc --python_out=./ --pyi_out=/. --connecpy_out=./ ./haberdasher.proto
 ```
 
 ### Server code
@@ -31,8 +31,8 @@ protoc --python_out=./ --pyi_out=/. --conpy_out=./ ./haberdasher.proto
 # service.py
 import random
 
-from conpy.exceptions import InvalidArgument
-from conpy.context import ServiceContext
+from connecpy.exceptions import InvalidArgument
+from connecpy.context import ServiceContext
 
 from haberdasher_pb2 import Hat, Size
 
@@ -58,22 +58,22 @@ class HaberdasherService(object):
 
 ```python
 # server.py
-from conpy import context
-from conpy.asgi import ConPyASGIApp
+from connecpy import context
+from connecpy.asgi import ConnecpyASGIApp
 
-import haberdasher_conpy
+import haberdasher_connecpy
 from service import HaberdasherService
 
-service = haberdasher_conpy.HaberdasherServer(
+service = haberdasher_connecpy.HaberdasherServer(
     service=HaberdasherService()
 )
-app = ConPyASGIApp()
+app = ConnecpyASGIApp()
 app.add_service(service)
 ```
 
 Run the server with
 ```sh
-uvicorn conpy_server:app --port=3000
+uvicorn connecpy_server:app --port=3000
 ```
 
 ### Client code (Asyncronous)
@@ -84,10 +84,10 @@ import asyncio
 
 import httpx
 
-from conpy.context import ClientContext
-from conpy.exceptions import ConPyServerException
+from connecpy.context import ClientContext
+from connecpy.exceptions import ConnecpyServerException
 
-import haberdasher_conpy, haberdasher_pb2
+import haberdasher_connecpy, haberdasher_pb2
 
 
 server_url = "http://localhost:3000"
@@ -99,7 +99,7 @@ async def main():
         base_url=server_url,
         timeout=timeout_s,
     )
-    client = haberdasher_conpy.AsyncHaberdasherClient(server_url, session=session)
+    client = haberdasher_connecpy.AsyncHaberdasherClient(server_url, session=session)
 
     try:
         response = await client.MakeHat(
@@ -111,7 +111,7 @@ async def main():
         if not response.HasField("name"):
             print("We didn't get a name!")
         print(response)
-    except ConPyServerException as e:
+    except ConnecpyServerException as e:
         print(e.code, e.message, e.to_dict())
     finally:
         # Close the session (could also use a context manager)
@@ -133,10 +133,10 @@ name: "bowler"
 
 ```python
 # client.py
-from conpy.context import ClientContext
-from conpy.exceptions import ConPyServerException
+from connecpy.context import ClientContext
+from connecpy.exceptions import ConnecpyServerException
 
-import haberdasher_conpy, haberdasher_pb2
+import haberdasher_connecpy, haberdasher_pb2
 
 
 server_url = "http://localhost:3000"
@@ -144,7 +144,7 @@ timeout_s = 5
 
 
 def main():
-    client = haberdasher_conpy.HaberdasherClient(server_url, timeout=timeout_s)
+    client = haberdasher_connecpy.HaberdasherClient(server_url, timeout=timeout_s)
 
     try:
         response = client.MakeHat(
@@ -154,7 +154,7 @@ def main():
         if not response.HasField("name"):
             print("We didn't get a name!")
         print(response)
-    except ConPyServerException as e:
+    except ConnecpyServerException as e:
         print(e.code, e.message, e.to_dict())
 
 
@@ -164,43 +164,43 @@ if __name__ == "__main__":
 
 ### Other clients
 
-Of course, you can use any HTTP client to make requests to a ConPy server. For example, commands like `curl` or `buf curl` can be used, as well as HTTP client libraries such as `requests`, `httpx`, `aiohttp`, and others. The examples below use `curl` and `buf curl`.
+Of course, you can use any HTTP client to make requests to a Connecpy server. For example, commands like `curl` or `buf curl` can be used, as well as HTTP client libraries such as `requests`, `httpx`, `aiohttp`, and others. The examples below use `curl` and `buf curl`.
 
 Content-Type: application/proto
 ```sh
-buf curl --data '{"inches": 12}' -v http://localhost:3000/i2y.conpy.example.Haberdasher/MakeHat --schema ./haberdasher.proto
+buf curl --data '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --schema ./haberdasher.proto
 ```
 
 On Windows, Content-Type: application/proto
 ```sh
-buf curl --data '{\"inches\": 12}' -v http://localhost:3000/i2y.conpy.example.Haberdasher/MakeHat --schema .\haberdasher.proto
+buf curl --data '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --schema .\haberdasher.proto
 ```
 
 Content-Type: application/json
 ```sh
-curl -X POST -H "Content-Type: application/json" -d '{"inches": 12}' -v http://localhost:3000/i2y.conpy.example.Haberdasher/MakeHat
+curl -X POST -H "Content-Type: application/json" -d '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
 
 On Windows, Content-Type: application/json
 ```sh
-curl -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.conpy.example.Haberdasher/MakeHat
+curl -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
 
 ## Connect Protocol
 
-ConPy protoc plugin generates the code based on [Connect Protocl](https://connectrpc.com/docs/protocol) from the `.proto` files.
-Currently, ConPy supports only Unary RPCs using the POST HTTP method. ConPy will support other types of RPCs as well, in the near future.
+Connecpy protoc plugin generates the code based on [Connect Protocl](https://connectrpc.com/docs/protocol) from the `.proto` files.
+Currently, Connecpy supports only Unary RPCs using the POST HTTP method. Connecpy will support other types of RPCs as well, in the near future.
 
 ## Misc
 
 ### Server Path Prefix
 
-You can set server path prefix by passing `server_path_prefix` to `ConPyASGIApp` constructor.
+You can set server path prefix by passing `server_path_prefix` to `ConnecpyASGIApp` constructor.
 
 This example sets server path prefix to `/foo/bar`.
 ```python
 # server.py
-service = haberdasher_conpy.HaberdasherServer(
+service = haberdasher_connecpy.HaberdasherServer(
     service=HaberdasherService(),
     server_path_prefix="/foo/bar",
 )
@@ -217,18 +217,18 @@ response = await client.MakeHat(
 
 ### Interceptor (Server Side)
 
-ConPyASGIApp supports interceptors. You can add interceptors by passing `interceptors` to `ConPyASGIApp` constructor.
+ConnecpyASGIApp supports interceptors. You can add interceptors by passing `interceptors` to `ConnecpyASGIApp` constructor.
 AsyncConpyServerInterceptor
 
 ```python
 # server.py
 from typing import Any, Callable
 
-from conpy import context
-from conpy.asgi import ConPyASGIApp
-from conpy.interceptor import AsyncConpyServerInterceptor
+from connecpy import context
+from connecpy.asgi import ConnecpyASGIApp
+from connecpy.interceptor import AsyncConpyServerInterceptor
 
-import haberdasher_conpy
+import haberdasher_connecpy
 from service import HaberdasherService
 
 
@@ -250,41 +250,41 @@ class MyInterceptor(AsyncConpyServerInterceptor):
 my_interceptor_a = MyInterceptor("A")
 my_interceptor_b = MyInterceptor("B")
 
-service = haberdasher_conpy.HaberdasherServer(service=HaberdasherService())
-app = ConPyASGIApp(
+service = haberdasher_connecpy.HaberdasherServer(service=HaberdasherService())
+app = ConnecpyASGIApp(
     interceptors=(my_interceptor_a, my_interceptor_b),
 )
 app.add_service(service)
 ```
 
-Btw, `ConpyServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert ConPy interceptors to gRPC interceptors by just changing the import statement and the parent class.
+Btw, `ConpyServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
 
 
 ### ASGI Middleware
 
-You can also use any ASGI middlewares with ConPyASGIApp.
+You can also use any ASGI middlewares with ConnecpyASGIApp.
 The example bleow uses [brotli-asgi](https://github.com/fullonic/brotli-asgi).
 
 ```python
 # server.py
 from brotli_asgi import BrotliMiddleware
-from conpy import context
-from conpy.asgi import ConPyASGIApp
+from connecpy import context
+from connecpy.asgi import ConnecpyASGIApp
 
-import haberdasher_conpy
+import haberdasher_connecpy
 from service import HaberdasherService
 
-service = haberdasher_conpy.HaberdasherServer(
+service = haberdasher_connecpy.HaberdasherServer(
     service=HaberdasherService()
 )
-app = ConPyASGIApp()
+app = ConnecpyASGIApp()
 app.add_service(service)
 
 app = BrotliMiddleware(app, minimum_size=1000)
 ```
 
 ### gRPC Compatibility
-In ConPy, unlike connect-go, it is not possible to simultaneously support both gRPC and Connect RPC on the same server and port. In addition to it, ConPy itself doesn't support gRPC. However, implementing a gRPC server using the same service code used for ConPy server is feasible, as shown below. This is possible because the type signature of the service class in ConPy is compatible with type signature gRPC farmework requires.
+In Connecpy, unlike connect-go, it is not possible to simultaneously support both gRPC and Connect RPC on the same server and port. In addition to it, Connecpy itself doesn't support gRPC. However, implementing a gRPC server using the same service code used for Connecpy server is feasible, as shown below. This is possible because the type signature of the service class in Connecpy is compatible with type signature gRPC farmework requires.
 The example below uses [grpc.aio](https://grpc.github.io/grpc/python/grpc_asyncio.html) and there are in [example dicrectory](example/README.md).
 
 
@@ -331,7 +331,7 @@ target = "localhost:50051"
 async def main():
     channel = insecure_channel(target)
     make_hat = channel.unary_unary(
-        "/i2y.conpy.example.Haberdasher/MakeHat",
+        "/i2y.connecpy.example.Haberdasher/MakeHat",
         request_serializer=haberdasher_pb2.Size.SerializeToString,
         response_deserializer=haberdasher_pb2.Hat.FromString,
     )
@@ -346,11 +346,11 @@ if __name__ == "__main__":
 
 ### Message Body Length
 
-Currently, message body length limit is set to 100kb, you can override this by passing `max_receive_message_length` to `ConPyASGIApp` constructor.
+Currently, message body length limit is set to 100kb, you can override this by passing `max_receive_message_length` to `ConnecpyASGIApp` constructor.
 
 ```python
 # this sets max message length to be 10 bytes
-app = ConPyASGIApp(max_receive_message_length=10)
+app = ConnecpyASGIApp(max_receive_message_length=10)
 
 ```
 

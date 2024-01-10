@@ -12,7 +12,7 @@ target = "localhost:50051"
 async def main():
     channel = insecure_channel(target)
     make_hat = channel.unary_unary(
-        "/i2y.conpy.example.Haberdasher/MakeHat",
+        "/i2y.connecpy.example.Haberdasher/MakeHat",
         request_serializer=haberdasher_pb2.Size.SerializeToString,
         response_deserializer=haberdasher_pb2.Hat.FromString,
     )

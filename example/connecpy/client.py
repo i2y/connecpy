@@ -4,7 +4,7 @@ from . import exceptions
 from . import errors
 
 
-class ConPyClient:
+class ConnecpyClient:
     def __init__(self, address, timeout=5):
         self._address = address
         self._timeout = timeout
@@ -25,7 +25,7 @@ class ConPyClient:
                 resp = client.post(
                     url=self._address + url,
                     content=request.SerializeToString(),
-                    **kwargs
+                    **kwargs,
                 )
                 resp.raise_for_status()
 
@@ -34,19 +34,19 @@ class ConPyClient:
                     response.ParseFromString(resp.content)
                     return response
                 else:
-                    raise exceptions.ConPyServerException.from_json(resp.json())
+                    raise exceptions.ConnecpyServerException.from_json(resp.json())
         except httpx.TimeoutException as e:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.DeadlineExceeded,
                 message=str(e) or "request timeout",
             )
         except httpx.HTTPStatusError as e:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Unavailable,
                 message=str(e),
             )
         except Exception as e:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Internal,
                 message=str(e),
             )

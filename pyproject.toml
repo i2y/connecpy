@@ -1,5 +1,5 @@
 [project]
-name = "conpy"
+name = "connecpy"
 version = "1.0.0"
 description = "Server and client lib for Connect Protocol"
 authors = [
@@ -27,4 +27,4 @@ dev-dependencies = [
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/conpy"]
+packages = ["src/connecpy"]

@@ -1,7 +1,7 @@
-from conpy.context import ClientContext
-from conpy.exceptions import ConPyServerException
+from connecpy.context import ClientContext
+from connecpy.exceptions import ConnecpyServerException
 
-import haberdasher_conpy, haberdasher_pb2
+import haberdasher_connecpy, haberdasher_pb2
 
 
 server_url = "http://localhost:3000"
@@ -9,7 +9,7 @@ timeout_s = 5
 
 
 def main():
-    client = haberdasher_conpy.HaberdasherClient(server_url, timeout=timeout_s)
+    client = haberdasher_connecpy.HaberdasherClient(server_url, timeout=timeout_s)
 
     try:
         response = client.MakeHat(
@@ -19,7 +19,7 @@ def main():
         if not response.HasField("name"):
             print("We didn't get a name!")
         print(response)
-    except ConPyServerException as e:
+    except ConnecpyServerException as e:
         print(e.code, e.message, e.to_dict())
 
 

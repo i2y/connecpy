@@ -104,9 +104,9 @@ def asynchronize(func) -> Callable:
         return thread_pool_runner(func)
 
 
-class ConPyBaseApp(object):
+class ConnecpyBaseApp(object):
     """
-    Represents the base application class for ConPy servers.
+    Represents the base application class for Connecpy servers.
 
     Args:
         interceptors (Tuple[interceptor.AsyncConpyServerInterceptor, ...]): A tuple of interceptors to be applied to the server.
@@ -140,12 +140,12 @@ class ConPyBaseApp(object):
         self._services = {}
         self._max_receive_message_length = max_receive_message_length
 
-    def add_service(self, svc: server.ConPyServer):
+    def add_service(self, svc: server.ConnecpyServer):
         """
         Adds a service to the server.
 
         Args:
-            svc (server.ConPyServer): The service to be added.
+            svc (server.ConnecpyServer): The service to be added.
         """
         self._services[self._prefix + svc.prefix] = svc
 
@@ -160,11 +160,11 @@ class ConPyBaseApp(object):
             The endpoint for the given path.
 
         Raises:
-            exceptions.ConPyServerException: If the endpoint is not found.
+            exceptions.ConnecpyServerException: If the endpoint is not found.
         """
         svc = self._services.get(path.rsplit("/", 1)[0], None)
         if svc is None:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.NotFound, message="not found"
             )
 
@@ -183,14 +183,14 @@ class ConPyBaseApp(object):
             The decoded data object.
 
         Raises:
-            exceptions.ConPyServerException: If the JSON request could not be decoded.
+            exceptions.ConnecpyServerException: If the JSON request could not be decoded.
         """
         data = data_obj()
         try:
             json_format.Parse(body, data)
         except json_format.ParseError as exc:
             print(exc)
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Malformed,
                 message="the json request could not be decoded",
             ) from exc
@@ -209,10 +209,10 @@ class ConPyBaseApp(object):
             The encoded JSON response and the content type.
 
         Raises:
-            exceptions.ConPyServerException: If the service response type is invalid.
+            exceptions.ConnecpyServerException: If the service response type is invalid.
         """
         if not isinstance(value, data_obj):
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Internal,
                 message=f"bad service response type {type(value)}, expecting: {data_obj.DESCRIPTOR.full_name}",
             )
@@ -234,13 +234,13 @@ class ConPyBaseApp(object):
             The decoded data object.
 
         Raises:
-            exceptions.ConPyServerException: If the protobuf request could not be decoded.
+            exceptions.ConnecpyServerException: If the protobuf request could not be decoded.
         """
         data = data_obj()
         try:
             data.ParseFromString(body)
         except message.DecodeError as exc:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Malformed,
                 message="the protobuf request could not be decoded",
             ) from exc
@@ -259,10 +259,10 @@ class ConPyBaseApp(object):
             The encoded protobuf response and the content type.
 
         Raises:
-            exceptions.ConPyServerException: If the service response type is invalid.
+            exceptions.ConnecpyServerException: If the service response type is invalid.
         """
         if not isinstance(value, data_obj):
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Internal,
                 message=f"bad service response type {type(value)}, expecting: {data_obj.DESCRIPTOR.full_name}",
             )
@@ -281,7 +281,7 @@ class ConPyBaseApp(object):
             The encoder and decoder functions.
 
         Raises:
-            exceptions.ConPyServerException: If the content type is unexpected.
+            exceptions.ConnecpyServerException: If the content type is unexpected.
         """
         if "application/json" == ctype:
             decoder = partial(self.json_decoder, data_obj=endpoint.input)
@@ -290,7 +290,7 @@ class ConPyBaseApp(object):
             decoder = partial(self.proto_decoder, data_obj=endpoint.input)
             encoder = partial(self.proto_encoder, data_obj=endpoint.output)
         else:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.BadRoute,
                 message=f"unexpected Content-Type: {ctype}",
             )

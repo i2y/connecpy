@@ -4,9 +4,9 @@ import json
 from . import errors
 
 
-class ConPyServerException(httplib.HTTPException):
+class ConnecpyServerException(httplib.HTTPException):
     """
-    Exception class for ConPy server errors.
+    Exception class for Connecpy server errors.
 
     Attributes:
         code (errors.Errors): The error code associated with the exception.
@@ -15,7 +15,7 @@ class ConPyServerException(httplib.HTTPException):
 
     def __init__(self, *, code, message):
         """
-        Initializes a new instance of the ConPyServerException class.
+        Initializes a new instance of the ConnecpyServerException class.
 
         Args:
             code (int): The error code.
@@ -26,7 +26,7 @@ class ConPyServerException(httplib.HTTPException):
         except ValueError:
             self._code = errors.Errors.Unknown
         self._message = message
-        super(ConPyServerException, self).__init__(message)
+        super(ConnecpyServerException, self).__init__(message)
 
     @property
     def code(self):
@@ -46,14 +46,14 @@ class ConPyServerException(httplib.HTTPException):
 
     @staticmethod
     def from_json(err_dict):
-        return ConPyServerException(
+        return ConnecpyServerException(
             code=err_dict.get("code", errors.Errors.Unknown),
             message=err_dict.get("msg", ""),
         )
 
 
 def InvalidArgument(*args, argument, error):
-    return ConPyServerException(
+    return ConnecpyServerException(
         code=errors.Errors.InvalidArgument,
         message="{} {}".format(argument, error),
     )
@@ -63,9 +63,9 @@ def RequiredArgument(*args, argument):
     return InvalidArgument(argument=argument, error="is required")
 
 
-def conpy_error_from_intermediary(status, reason, headers, body):
+def connecpy_error_from_intermediary(status, reason, headers, body):
     if 300 <= status < 400:
-        # conpy uses POST which should not redirect
+        # connecpy uses POST which should not redirect
         code = errors.Errors.Internal
         location = headers.get("location")
         message = f'unexpected HTTP status code {status} "{reason}" received, Location="{location}"'
@@ -84,4 +84,4 @@ def conpy_error_from_intermediary(status, reason, headers, body):
 
         message = f'Error from intermediary with HTTP status code {status} "{reason}"'
 
-    return ConPyServerException(code=code, message=message)
+    return ConnecpyServerException(code=code, message=message)

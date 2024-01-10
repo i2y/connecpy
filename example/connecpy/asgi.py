@@ -11,8 +11,8 @@ from . import errors
 from . import exceptions
 
 
-class ConPyASGIApp(base.ConPyBaseApp):
-    """ASGI application for ConPy."""
+class ConnecpyASGIApp(base.ConnecpyBaseApp):
+    """ASGI application for Connecpy."""
 
     async def __call__(self, scope, receive, send):
         """
@@ -30,7 +30,7 @@ class ConPyASGIApp(base.ConPyBaseApp):
         try:
             http_method = scope["method"]
             if http_method != "POST":
-                raise exceptions.ConPyServerException(
+                raise exceptions.ConnecpyServerException(
                     code=errors.Errors.BadRoute,
                     message=f"unsupported method {http_method} (only POST is allowed)",
                 )
@@ -68,17 +68,17 @@ class ConPyASGIApp(base.ConPyBaseApp):
         body_bytes = b"{}"
         error_data = {}
         try:
-            if not isinstance(exc, exceptions.ConPyServerException):
+            if not isinstance(exc, exceptions.ConnecpyServerException):
                 error_data["raw_error"] = str(exc)
                 error_data["raw_trace"] = traceback.format_exc()
-                exc = exceptions.ConPyServerException(
-                    code=errors.Errors.Internal, message="Internal non-ConPy Error"
+                exc = exceptions.ConnecpyServerException(
+                    code=errors.Errors.Internal, message="Internal non-Connecpy Error"
                 )
 
             body_bytes = exc.to_json_bytes()
             status = errors.Errors.get_status_code(exc.code)
         except Exception as e:
-            exc = exceptions.ConPyServerException(
+            exc = exceptions.ConnecpyServerException(
                 code=errors.Errors.Internal,
                 message="There was an error but it could not be serialized into JSON",
             )

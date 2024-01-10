@@ -1,7 +1,7 @@
 import random
 
-from conpy.exceptions import InvalidArgument
-from conpy.context import ServiceContext
+from connecpy.exceptions import InvalidArgument
+from connecpy.context import ServiceContext
 
 from haberdasher_pb2 import Hat, Size
 

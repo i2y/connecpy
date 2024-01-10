@@ -5,12 +5,12 @@ from . import exceptions
 from . import errors
 
 
-class AsyncConPyClient:
+class AsyncConnecpyClient:
     """
-    Represents an asynchronous client for ConPy using httpx.
+    Represents an asynchronous client for Connecpy using httpx.
 
     Args:
-        address (str): The address of the ConPy server.
+        address (str): The address of the Connecpy server.
         session (httpx.AsyncClient): The httpx client session to use for making requests.
     """
 
@@ -26,10 +26,10 @@ class AsyncConPyClient:
         ctx: context.ClientContext,
         response_obj,
         session: httpx.AsyncClient | None = None,
-        **kwargs
+        **kwargs,
     ):
         """
-        Makes a request to the ConPy server.
+        Makes a request to the Connecpy server.
 
         Args:
             url (str): The URL to send the request to.
@@ -44,7 +44,7 @@ class AsyncConPyClient:
             The deserialized response object.
 
         Raises:
-            exceptions.ConPyServerException: If an error occurs while making the request.
+            exceptions.ConnecpyServerException: If an error occurs while making the request.
         """
         headers = ctx.get_headers()
         if "headers" in kwargs:
@@ -72,16 +72,16 @@ class AsyncConPyClient:
                 response_obj_inst.ParseFromString(response.content)
                 return response_obj_inst
             else:
-                raise exceptions.ConPyServerException.from_json(response.json())
+                raise exceptions.ConnecpyServerException.from_json(response.json())
         except httpx.TimeoutException as e:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.DeadlineExceeded, message=str(e) or "request timeout"
             )
         except httpx.HTTPStatusError as e:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Unavailable, message=str(e)
             )
         except Exception as e:
-            raise exceptions.ConPyServerException(
+            raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Internal, message=str(e)
             )

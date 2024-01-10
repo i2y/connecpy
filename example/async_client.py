@@ -2,10 +2,10 @@ import asyncio
 
 import httpx
 
-from conpy.context import ClientContext
-from conpy.exceptions import ConPyServerException
+from connecpy.context import ClientContext
+from connecpy.exceptions import ConnecpyServerException
 
-import haberdasher_conpy, haberdasher_pb2
+import haberdasher_connecpy, haberdasher_pb2
 
 
 server_url = "http://localhost:3000"
@@ -17,7 +17,7 @@ async def main():
         base_url=server_url,
         timeout=timeout_s,
     )
-    client = haberdasher_conpy.AsyncHaberdasherClient(server_url, session=session)
+    client = haberdasher_connecpy.AsyncHaberdasherClient(server_url, session=session)
 
     try:
         response = await client.MakeHat(
@@ -29,7 +29,7 @@ async def main():
         if not response.HasField("name"):
             print("We didn't get a name!")
         print(response)
-    except ConPyServerException as e:
+    except ConnecpyServerException as e:
         print(e.code, e.message, e.to_dict())
     finally:
         # Close the session (could also use a context manager)
