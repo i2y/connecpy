@@ -12,6 +12,7 @@ black==23.12.1
 certifi==2023.11.17
 click==8.1.7
 colorama==0.4.6
+connecpy==1.0.0
 exceptiongroup==1.2.0
 grpcio==1.60.0
 grpcio-tools==1.60.0

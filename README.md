@@ -9,7 +9,7 @@ This repo contains a protoc plugin that generates sever and client code and a py
 Grab the protoc plugin to generate files with
 
 ```sh
-go install github.com/i2y/connecpy/protoc-gen-connecpy
+go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
 ```
 
 Add the connecpy package to your project
