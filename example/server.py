@@ -2,13 +2,13 @@ from typing import Any, Callable
 
 from connecpy import context
 from connecpy.asgi import ConnecpyASGIApp
-from connecpy.interceptor import AsyncConpyServerInterceptor
+from connecpy.interceptor import AsyncConnecpyServerInterceptor
 
 import haberdasher_connecpy
 from service import HaberdasherService
 
 
-class MyInterceptor(AsyncConpyServerInterceptor):
+class MyInterceptor(AsyncConnecpyServerInterceptor):
     def __init__(self, msg):
         self._msg = msg
 

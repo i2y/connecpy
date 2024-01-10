@@ -24,7 +24,7 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
             send (callable): The ASGI send function.
         """
         assert scope["type"] == "http"
-        ctx = context.ConpyServiceContext(
+        ctx = context.ConnecpyServiceContext(
             scope["client"], convert_to_mapping(scope["headers"])
         )
         try:

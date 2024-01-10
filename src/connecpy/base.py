@@ -52,13 +52,13 @@ class Endpoint(Generic[T, U]):
 
     def make_async_proc(
         self,
-        interceptors: Tuple[interceptor.AsyncConpyServerInterceptor, ...],
+        interceptors: Tuple[interceptor.AsyncConnecpyServerInterceptor, ...],
     ) -> Callable[[T, context.ServiceContext], U]:
         """
         Creates an asynchronous function that implements the endpoint.
 
         Args:
-            interceptors (Tuple[interceptor.AsyncConpyServerInterceptor, ...]): The interceptors to apply to the endpoint.
+            interceptors (Tuple[interceptor.AsyncConnecpyServerInterceptor, ...]): The interceptors to apply to the endpoint.
 
         Returns:
             Callable[[T, context.ServiceContext], U]: The asynchronous function that implements the endpoint.
@@ -78,7 +78,7 @@ class Endpoint(Generic[T, U]):
 
 
 def thread_pool_runner(func):
-    async def run(request, ctx: context.ConpyServiceContext):
+    async def run(request, ctx: context.ConnecpyServiceContext):
         return await concurrency.run_in_threadpool(func, request, ctx)
 
     return run
@@ -109,12 +109,12 @@ class ConnecpyBaseApp(object):
     Represents the base application class for Connecpy servers.
 
     Args:
-        interceptors (Tuple[interceptor.AsyncConpyServerInterceptor, ...]): A tuple of interceptors to be applied to the server.
+        interceptors (Tuple[interceptor.AsyncConnecpyServerInterceptor, ...]): A tuple of interceptors to be applied to the server.
         prefix (str): The prefix to be added to the service endpoints.
         max_receive_message_length (int): The maximum length of the received messages.
 
     Attributes:
-        _interceptors (Tuple[interceptor.AsyncConpyServerInterceptor, ...]): The interceptors applied to the server.
+        _interceptors (Tuple[interceptor.AsyncConnecpyServerInterceptor, ...]): The interceptors applied to the server.
         _prefix (str): The prefix added to the service endpoints.
         _services (dict): A dictionary of services registered with the server.
         _max_receive_message_length (int): The maximum length of the received messages.
@@ -131,7 +131,7 @@ class ConnecpyBaseApp(object):
 
     def __init__(
         self,
-        interceptors: Tuple[interceptor.AsyncConpyServerInterceptor, ...] = (),
+        interceptors: Tuple[interceptor.AsyncConnecpyServerInterceptor, ...] = (),
         prefix="",
         max_receive_message_length=1024 * 100 * 100,
     ):

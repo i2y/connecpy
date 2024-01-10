@@ -173,9 +173,9 @@ class ServiceContext(Protocol):
         ...
 
 
-class ConpyServiceContext:
+class ConnecpyServiceContext:
     """
-    Represents the context of a Conpy service.
+    Represents the context of a Connecpy service.
 
     Attributes:
         _peer: The peer information of the service.

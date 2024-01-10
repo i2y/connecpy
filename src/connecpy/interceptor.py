@@ -5,7 +5,7 @@ from . import context
 
 
 class AsyncServerInterceptor(Protocol):
-    """Interceptor for asynchronous Conpy server."""
+    """Interceptor for asynchronous Connecpy server."""
 
     async def intercept(
         self,
@@ -17,9 +17,9 @@ class AsyncServerInterceptor(Protocol):
         ...
 
 
-class AsyncConpyServerInterceptor(ABC):
+class AsyncConnecpyServerInterceptor(ABC):
     """
-    Base class for asynchronous Conpy server interceptors.
+    Base class for asynchronous Connecpy server interceptors.
     """
 
     def make_interceptor(self, method: Callable, method_name: str):

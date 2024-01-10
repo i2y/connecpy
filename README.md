@@ -218,7 +218,7 @@ response = await client.MakeHat(
 ### Interceptor (Server Side)
 
 ConnecpyASGIApp supports interceptors. You can add interceptors by passing `interceptors` to `ConnecpyASGIApp` constructor.
-AsyncConpyServerInterceptor
+AsyncConnecpyServerInterceptor
 
 ```python
 # server.py
@@ -226,13 +226,13 @@ from typing import Any, Callable
 
 from connecpy import context
 from connecpy.asgi import ConnecpyASGIApp
-from connecpy.interceptor import AsyncConpyServerInterceptor
+from connecpy.interceptor import AsyncConnecpyServerInterceptor
 
 import haberdasher_connecpy
 from service import HaberdasherService
 
 
-class MyInterceptor(AsyncConpyServerInterceptor):
+class MyInterceptor(AsyncConnecpyServerInterceptor):
     def __init__(self, msg):
         self._msg = msg
 
@@ -257,7 +257,7 @@ app = ConnecpyASGIApp(
 app.add_service(service)
 ```
 
-Btw, `ConpyServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
+Btw, `ConnecpyServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
 
 
 ### ASGI Middleware
