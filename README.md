@@ -12,7 +12,7 @@ You can install the protoc plugin to generate files by running the command:
 go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
 ```
 
-Additionally, please add the connecpy package to your project using your preferred package manager. For instance, with Rye, use the command:
+Additionally, please add the connecpy package to your project using your preferred package manager. For instance, with [Rye](https://rye-up.com/), use the command:
 
 ```sh
 rye add connecpy
