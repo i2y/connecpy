@@ -6,20 +6,19 @@ This repo contains a protoc plugin that generates sever and client code and a py
 
 ## Installation
 
-Grab the protoc plugin to generate files with
+You can install the protoc plugin to generate files by running the command:
 
 ```sh
 go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
 ```
 
-Add the connecpy package to your project
+Additionally, please add the connecpy package to your project using your preferred package manager. For instance, with Rye, use the command:
+
 ```sh
-pip install connecpy
+rye add connecpy
 ```
 
-You'll also need one of [Uvicorn](https://www.uvicorn.org/), [Daphne](https://github.com/django/daphne), or [Hypercorn](https://gitlab.com/pgjones/hypercorn) to run the server. If you'd like to support both HTTP/1.1 and HTTP/2, you'll need to use either Daphne or Hypercorn.
-
-And you might need http client command such as [buf](https://buf.build/docs/installation) to test the server.
+To run the server, you'll need one of the following: [Uvicorn](https://www.uvicorn.org/), [Daphne](https://github.com/django/daphne), or [Hypercorn](https://gitlab.com/pgjones/hypercorn). If your goal is to support both HTTP/1.1 and HTTP/2, you should opt for either Daphne or Hypercorn. Additionally, to test the server, you might need a client command, such as [buf](https://buf.build/docs/installation).
 
 
 ## Generate and run
