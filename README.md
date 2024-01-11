@@ -17,9 +17,13 @@ Add the connecpy package to your project
 pip install connecpy
 ```
 
-You'll also need [uvicorn](https://www.uvicorn.org/) to run the server.
+You'll also need one of [Uvicorn](https://www.uvicorn.org/), [Daphne](https://github.com/django/daphne), or [Hypercorn](https://gitlab.com/pgjones/hypercorn) to run the server. If you'd like to support both HTTP/1.1 and HTTP/2, you'll need to use either Daphne or Hypercorn.
+
+And you might need http client command such as [buf](https://buf.build/docs/installation) to test the server.
+
 
 ## Generate and run
+
 Use the protoc plugin to generate connecpy server and client code.
 
 ```sh
@@ -27,6 +31,7 @@ protoc --python_out=./ --pyi_out=/. --connecpy_out=./ ./haberdasher.proto
 ```
 
 ### Server code
+
 ```python
 # service.py
 import random
@@ -73,7 +78,18 @@ app.add_service(service)
 
 Run the server with
 ```sh
-uvicorn connecpy_server:app --port=3000
+uvicorn --port=3000 server:app
+```
+or
+
+```sh
+daphne --port=3000 server:app
+```
+
+or
+
+```sh
+hypercorn --bind :3000 server:app
 ```
 
 ### Client code (Asyncronous)
@@ -166,25 +182,47 @@ if __name__ == "__main__":
 
 Of course, you can use any HTTP client to make requests to a Connecpy server. For example, commands like `curl` or `buf curl` can be used, as well as HTTP client libraries such as `requests`, `httpx`, `aiohttp`, and others. The examples below use `curl` and `buf curl`.
 
-Content-Type: application/proto
+Content-Type: application/proto, HTTP/1.1
 ```sh
 buf curl --data '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --schema ./haberdasher.proto
 ```
 
-On Windows, Content-Type: application/proto
+On Windows, Content-Type: application/proto, HTTP/1.1
 ```sh
 buf curl --data '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --schema .\haberdasher.proto
 ```
 
-Content-Type: application/json
+Content-Type: application/proto, HTTP/2
+```sh
+buf curl --data '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --http2-prior-knowledge --schema ./haberdasher.proto
+```
+
+On Windows, Content-Type: application/proto, HTTP/2
+```sh
+buf curl --data '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --http2-prior-knowledge --schema .\haberdasher.proto
+```
+
+
+Content-Type: application/json, HTTP/1.1
 ```sh
 curl -X POST -H "Content-Type: application/json" -d '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
 
-On Windows, Content-Type: application/json
+On Windows, Content-Type: application/json, HTTP/1.1
 ```sh
 curl -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
+
+Content-Type: application/json, HTTP/2
+```sh
+curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
+```
+
+On Windows, Content-Type: application/json, HTTP/2
+```sh
+curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
+```
+
 
 ## Connect Protocol
 

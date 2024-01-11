@@ -28,6 +28,8 @@ dev-dependencies = [
     "protobuf",
     "connecpy",
     "brotli_asgi",
+    "hypercorn>=0.16.0",
+    "daphne>=4.0.0",
 ]
 
 [tool.hatch.metadata]
