@@ -21,6 +21,13 @@ build-backend = "hatchling.build"
 managed = true
 dev-dependencies = [
     "black>=23.12.1",
+    "grpcio-tools",
+    "uvicorn>",
+    "black>=23.12.1",
+    "grpcio",
+    "protobuf",
+    "connecpy",
+    "brotli_asgi",
 ]
 
 [tool.hatch.metadata]
