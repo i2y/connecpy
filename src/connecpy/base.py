@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import dataclass
-from functools import partial
+from functools import partial, reduce
 from typing import Callable, Generic, Tuple, TypeVar, Union
 
 from google.protobuf import json_format, message
