@@ -1,4 +1,4 @@
-from typing import Any, Protocol, Mapping, MutableMapping, List
+from typing import Any, Protocol, Mapping, MutableMapping, List, Union
 import time
 
 from . import exceptions
@@ -14,7 +14,7 @@ class ClientContext:
         _response_headers (MutableMapping[str, str]): Response headers.
     """
 
-    def __init__(self, *, headers: MutableMapping[str, str] | None = None):
+    def __init__(self, *, headers: Union[MutableMapping[str, str], None] = None):
         """Create a new Context object
 
         Keyword arguments:
@@ -156,7 +156,7 @@ class ServiceContext(Protocol):
         """
         ...
 
-    def time_remaining(self) -> float | None:
+    def time_remaining(self) -> Union[float, None]:
         """Get the remaining time.
 
         Returns:
@@ -203,9 +203,9 @@ class ConnecpyServiceContext:
         self._code = 200
         self._details = ""
         self._trailing_metadata = {}
-        timeout_ms: str | None = invocation_metadata.get("connect-timeout-ms", [None])[
-            0
-        ]
+        timeout_ms: Union[str, None] = invocation_metadata.get(
+            "connect-timeout-ms", [None]
+        )[0]
         if timeout_ms is None:
             self._timeout_sec = None
         else:
@@ -290,7 +290,7 @@ class ConnecpyServiceContext:
         """
         self._trailing_metadata = metadata
 
-    def time_remaining(self) -> float | None:
+    def time_remaining(self) -> Union[float, None]:
         """
         Calculate the remaining time until the timeout.
 

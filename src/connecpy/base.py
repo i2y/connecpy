@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
-from functools import partial, reduce
-from typing import Callable, Generic, Tuple, TypeVar
+from functools import partial
+from typing import Callable, Generic, Tuple, TypeVar, Union
 
 from google.protobuf import json_format, message
 from starlette import concurrency
@@ -42,13 +42,16 @@ class Endpoint(Generic[T, U]):
     ]
     input: type
     output: type
-    _async_proc: Callable[
-        [
-            T,
-            context.ServiceContext,
+    _async_proc: Union[
+        Callable[
+            [
+                T,
+                context.ServiceContext,
+            ],
+            U,
         ],
-        U,
-    ] | None = None
+        None,
+    ] = None
 
     def make_async_proc(
         self,

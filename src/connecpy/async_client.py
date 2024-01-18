@@ -1,3 +1,5 @@
+from typing import Union
+
 import httpx
 
 from . import context
@@ -25,7 +27,7 @@ class AsyncConnecpyClient:
         request,
         ctx: context.ClientContext,
         response_obj,
-        session: httpx.AsyncClient | None = None,
+        session: Union[httpx.AsyncClient, None] = None,
         **kwargs,
     ):
         """

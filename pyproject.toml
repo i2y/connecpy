@@ -1,6 +1,6 @@
 [project]
 name = "connecpy"
-version = "1.0.0"
+version = "1.0.1"
 description = "Server and client lib for Connect Protocol"
 authors = [
     { name = "Yasushi Itoh" }
@@ -11,7 +11,7 @@ dependencies = [
     "starlette",
 ]
 readme = "README.md"
-requires-python = ">= 3.10"
+requires-python = ">= 3.8"
 
 [build-system]
 requires = ["hatchling"]
@@ -20,16 +20,15 @@ build-backend = "hatchling.build"
 [tool.rye]
 managed = true
 dev-dependencies = [
-    "black>=23.12.1",
+    "black",
     "grpcio-tools",
-    "uvicorn>",
-    "black>=23.12.1",
+    "uvicorn",
     "grpcio",
     "protobuf",
     "connecpy",
     "brotli_asgi",
-    "hypercorn>=0.16.0",
-    "daphne>=4.0.0",
+    "hypercorn",
+    "daphne",
 ]
 
 [tool.hatch.metadata]
