@@ -1,9 +1,9 @@
 import asyncio
-from typing import cast
 
 from grpc.aio import insecure_channel
 
 import haberdasher_pb2
+import haberdasher_pb2_grpc
 
 
 target = "localhost:50051"
@@ -11,13 +11,9 @@ target = "localhost:50051"
 
 async def main():
     channel = insecure_channel(target)
-    make_hat = channel.unary_unary(
-        "/i2y.connecpy.example.Haberdasher/MakeHat",
-        request_serializer=haberdasher_pb2.Size.SerializeToString,
-        response_deserializer=haberdasher_pb2.Hat.FromString,
-    )
+    stub = haberdasher_pb2_grpc.HaberdasherStub(channel)
     request = haberdasher_pb2.Size(inches=12)
-    response = cast(haberdasher_pb2.Hat, await make_hat(request))
+    response = await stub.MakeHat(request)
     print(response)
 
 
