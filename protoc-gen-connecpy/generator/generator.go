@@ -37,9 +37,12 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
 	name := fd.GetName()
 
+	fileNameWithoutSuffix := strings.TrimSuffix(name, path.Ext(name))
+	moduleName := strings.Join(strings.Split(fileNameWithoutSuffix, "/"), ".")
+
 	vars := ConnecpyTemplateVariables{
 		FileName:              name,
-		FileNameWithoutSuffix: strings.TrimSuffix(name, path.Ext(name)),
+		ModuleName:            moduleName,
 	}
 
 	svcs := fd.GetService()
