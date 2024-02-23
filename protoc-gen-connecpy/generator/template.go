@@ -4,7 +4,7 @@ import "text/template"
 
 type ConnecpyTemplateVariables struct {
 	FileName              string
-	FileNameWithoutSuffix string
+	ModuleName            string
 	Services              []*ConnecpyService
 }
 
@@ -44,7 +44,7 @@ from connecpy.server import ConnecpyServer
 from connecpy.client import ConnecpyClient
 from connecpy.context import ServiceContext
 
-import {{.FileNameWithoutSuffix}}_pb2 as _pb2
+import {{.ModuleName}}_pb2 as _pb2
 
 {{range .Services}}
 class {{.Name}}Service(Protocol):{{- range .Methods }}
