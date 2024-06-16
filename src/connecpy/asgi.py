@@ -93,7 +93,7 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
 
 
 def convert_to_mapping(
-    iterable: Iterable[Tuple[bytes, bytes]]
+    iterable: Iterable[Tuple[bytes, bytes]],
 ) -> Mapping[str, List[str]]:
     result = defaultdict(list)
     for key, value in iterable:

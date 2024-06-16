@@ -13,8 +13,7 @@ class AsyncServerInterceptor(Protocol):
         request: Any,
         ctx: context.ServiceContext,
         method_name: str,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
 
 class AsyncConnecpyServerInterceptor(ABC):

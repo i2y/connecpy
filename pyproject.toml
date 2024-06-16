@@ -25,10 +25,10 @@ dev-dependencies = [
     "uvicorn",
     "grpcio",
     "protobuf",
-    "connecpy",
     "brotli_asgi",
     "hypercorn",
     "daphne",
+    "pip>=24.0",
 ]
 
 [tool.hatch.metadata]

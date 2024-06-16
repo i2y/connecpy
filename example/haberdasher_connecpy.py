@@ -16,8 +16,7 @@ import haberdasher_pb2 as _pb2
 
 
 class HaberdasherService(Protocol):
-    async def MakeHat(self, req: _pb2.Size, ctx: ServiceContext) -> _pb2.Hat:
-        ...
+    async def MakeHat(self, req: _pb2.Size, ctx: ServiceContext) -> _pb2.Hat: ...
 
 
 class HaberdasherServer(ConnecpyServer):
