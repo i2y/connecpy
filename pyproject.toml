@@ -1,7 +1,7 @@
 [project]
 name = "connecpy"
-version = "1.0.2"
-description = "Server and client lib for Connect Protocol"
+version = "1.0.3"
+description = "Code generator, server library and client library for the Connect Protocol"
 authors = [
     { name = "Yasushi Itoh" }
 ]
