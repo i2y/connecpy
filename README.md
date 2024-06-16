@@ -26,7 +26,7 @@ To run the server, you'll need one of the following: [Uvicorn](https://www.uvico
 Use the protoc plugin to generate connecpy server and client code.
 
 ```sh
-protoc --python_out=./ --pyi_out=/. --connecpy_out=./ ./haberdasher.proto
+protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 ```
 
 ### Server code
