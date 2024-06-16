@@ -34,7 +34,7 @@ or
 
 
 ## gRPC Examples
-CoPpy does not support gRPC. However, you can use the same service code to run a gRPC server and client.
+Connecpy does not support gRPC. However, you can use the same service code to run a gRPC server and client.
 `grpc_server.py` uses the same service code as `server.py`.
 
 ## Requirements
