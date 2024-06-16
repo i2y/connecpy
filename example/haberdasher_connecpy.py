@@ -15,12 +15,12 @@ from connecpy.context import ServiceContext
 import haberdasher_pb2 as _pb2
 
 
-class HaberdasherService(Protocol):
+class Haberdasher(Protocol):
     async def MakeHat(self, req: _pb2.Size, ctx: ServiceContext) -> _pb2.Hat: ...
 
 
 class HaberdasherServer(ConnecpyServer):
-    def __init__(self, *, service: HaberdasherService, server_path_prefix=""):
+    def __init__(self, *, service: Haberdasher, server_path_prefix=""):
         super().__init__(service=service)
         self._prefix = f"{server_path_prefix}/i2y.connecpy.example.Haberdasher"
         self._endpoints = {

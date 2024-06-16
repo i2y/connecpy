@@ -47,13 +47,13 @@ from connecpy.context import ServiceContext
 import {{.ModuleName}}_pb2 as _pb2
 
 {{range .Services}}
-class {{.Name}}Service(Protocol):{{- range .Methods }}
+class {{.Name}}(Protocol):{{- range .Methods }}
     async def {{.Name}}(self, req: _pb2.{{.InputType}}, ctx: ServiceContext) -> _pb2.{{.OutputType}}: ...
 {{- end }}
 
 
 class {{.Name}}Server(ConnecpyServer):
-    def __init__(self, *, service: {{.Name}}Service, server_path_prefix=""):
+    def __init__(self, *, service: {{.Name}}, server_path_prefix=""):
         super().__init__(service=service)
         self._prefix = f"{server_path_prefix}/{{.ServiceURL}}"
         self._endpoints = { {{- range .Methods }}
