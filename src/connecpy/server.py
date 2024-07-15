@@ -7,8 +7,7 @@ class ConnecpyServer:
     Represents a Connecpy server that handles incoming requests and dispatches them to the appropriate endpoints.
     """
 
-    def __init__(self, *, service):
-        self.service = service
+    def __init__(self):
         self._endpoints = {}
         self._prefix = ""
 
