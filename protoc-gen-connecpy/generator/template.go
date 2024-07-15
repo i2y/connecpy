@@ -3,20 +3,20 @@ package generator
 import "text/template"
 
 type ConnecpyTemplateVariables struct {
-	FileName              string
-	ModuleName            string
-	Services              []*ConnecpyService
+	FileName   string
+	ModuleName string
+	Services   []*ConnecpyService
 }
 
 type ConnecpyService struct {
-	ServiceURL string
-	Name       string
-	Comment    string
-	Methods    []*ConnecpyMethod
+	Package string
+	Name    string
+	Comment string
+	Methods []*ConnecpyMethod
 }
 
 type ConnecpyMethod struct {
-	ServiceURL  string
+	Package     string
 	ServiceName string
 	Name        string
 	Comment     string
@@ -54,8 +54,8 @@ class {{.Name}}(Protocol):{{- range .Methods }}
 
 class {{.Name}}Server(ConnecpyServer):
     def __init__(self, *, service: {{.Name}}, server_path_prefix=""):
-        super().__init__(service=service)
-        self._prefix = f"{server_path_prefix}/{{.ServiceURL}}"
+        super().__init__()
+        self._prefix = f"{server_path_prefix}/{{.Package}}.{{.Name}}"
         self._endpoints = { {{- range .Methods }}
             "{{.Name}}": Endpoint[_pb2.{{.InputType}}, _pb2.{{.OutputType}}](
                 service_name="{{.ServiceName}}",
@@ -65,6 +65,9 @@ class {{.Name}}Server(ConnecpyServer):
                 output=_pb2.{{.OutputType}},
             ),{{- end }}
         }
+
+    def serviceName(self):
+        return "{{.Package}}.{{.Name}}"
 
 
 class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
@@ -77,7 +80,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
         **kwargs,
     ):
         return self._make_request(
-            url=f"{server_path_prefix}/{{.ServiceURL}}/{{.Name}}",
+            url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
             ctx=ctx,
             request=request,
             response_obj=_pb2.{{.OutputType}},
@@ -96,7 +99,7 @@ class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
         **kwargs,
     ):
         return await self._make_request(
-            url=f"{server_path_prefix}/{{.ServiceURL}}/{{.Name}}",
+            url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
             ctx=ctx,
             request=request,
             response_obj=_pb2.{{.OutputType}},

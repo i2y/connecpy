@@ -3,7 +3,6 @@ package generator
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"path"
 	"strings"
 
@@ -41,21 +40,21 @@ func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGener
 	moduleName := strings.Join(strings.Split(fileNameWithoutSuffix, "/"), ".")
 
 	vars := ConnecpyTemplateVariables{
-		FileName:              name,
-		ModuleName:            moduleName,
+		FileName:   name,
+		ModuleName: moduleName,
 	}
 
 	svcs := fd.GetService()
+	packageName := fd.GetPackage()
 	for _, svc := range svcs {
-		svcURL := fmt.Sprintf("%s.%s", fd.GetPackage(), svc.GetName())
 		connecpySvc := &ConnecpyService{
-			Name:       svc.GetName(),
-			ServiceURL: svcURL,
+			Name:    svc.GetName(),
+			Package: packageName,
 		}
 
 		for _, method := range svc.GetMethod() {
 			connecpyMethod := &ConnecpyMethod{
-				ServiceURL:  svcURL,
+				Package:     packageName,
 				ServiceName: connecpySvc.Name,
 				Name:        method.GetName(),
 				InputType:   getSymbolName(method.GetInputType()),

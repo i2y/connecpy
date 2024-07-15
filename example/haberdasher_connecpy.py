@@ -21,7 +21,7 @@ class Haberdasher(Protocol):
 
 class HaberdasherServer(ConnecpyServer):
     def __init__(self, *, service: Haberdasher, server_path_prefix=""):
-        super().__init__(service=service)
+        super().__init__()
         self._prefix = f"{server_path_prefix}/i2y.connecpy.example.Haberdasher"
         self._endpoints = {
             "MakeHat": Endpoint[_pb2.Size, _pb2.Hat](
@@ -32,6 +32,9 @@ class HaberdasherServer(ConnecpyServer):
                 output=_pb2.Hat,
             ),
         }
+
+    def serviceName(self):
+        return "i2y.connecpy.example.Haberdasher"
 
 
 class HaberdasherClient(ConnecpyClient):
