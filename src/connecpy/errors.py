@@ -1,9 +1,6 @@
 from enum import Enum
 
 
-from enum import Enum
-
-
 class Errors(Enum):
     """
     Enum class representing different error codes and their corresponding status codes.

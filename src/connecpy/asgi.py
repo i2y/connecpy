@@ -77,7 +77,7 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
 
             body_bytes = exc.to_json_bytes()
             status = errors.Errors.get_status_code(exc.code)
-        except Exception as e:
+        except Exception as _:
             exc = exceptions.ConnecpyServerException(
                 code=errors.Errors.Internal,
                 message="There was an error but it could not be serialized into JSON",
