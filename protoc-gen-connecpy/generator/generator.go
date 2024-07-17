@@ -54,11 +54,13 @@ func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGener
 
 		for _, method := range svc.GetMethod() {
 			connecpyMethod := &ConnecpyMethod{
-				Package:     packageName,
-				ServiceName: connecpySvc.Name,
-				Name:        method.GetName(),
-				InputType:   getSymbolName(method.GetInputType()),
-				OutputType:  getSymbolName(method.GetOutputType()),
+				Package:               packageName,
+				ServiceName:           connecpySvc.Name,
+				Name:                  method.GetName(),
+				InputType:             getSymbolName(method.GetInputType(), packageName),
+				InputTypeForProtocol:  getSymbolNameForProtocol(method.GetInputType(), packageName),
+				OutputType:            getSymbolName(method.GetOutputType(), packageName),
+				OutputTypeForProtocol: getSymbolNameForProtocol(method.GetOutputType(), packageName),
 			}
 
 			connecpySvc.Methods = append(connecpySvc.Methods, connecpyMethod)
@@ -80,9 +82,25 @@ func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGener
 	return resp, nil
 }
 
-func getSymbolName(name string) string {
+func getLocalSymbolName(name string) string {
 	parts := strings.Split(name, ".")
-	return parts[len(parts)-1]
+	return "_pb2." + parts[len(parts)-1]
+}
+
+func getSymbolName(name, localPackageName string) string {
+	if strings.HasPrefix(name, "."+localPackageName) {
+		return getLocalSymbolName(name)
+	}
+
+	return "_sym_db.GetSymbol(\"" + name[1:] + "\")"
+}
+
+func getSymbolNameForProtocol(name, localPackageName string) string {
+	if strings.HasPrefix(name, "."+localPackageName) {
+		return getLocalSymbolName(name)
+	}
+
+	return "Any"
 }
 
 func getFileDescriptor(files []*descriptor.FileDescriptorProto, name string) (*descriptor.FileDescriptorProto, error) {
