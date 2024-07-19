@@ -44,7 +44,7 @@ from connecpy.async_client import AsyncConnecpyClient
 from connecpy.base import Endpoint
 from connecpy.server import ConnecpyServer
 from connecpy.client import ConnecpyClient
-from connecpy.context import ServiceContext
+from connecpy.context import ClientContext, ServiceContext
 
 import {{.ModuleName}}_pb2 as _pb2
 
@@ -80,11 +80,11 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
     def {{.Name}}(
         self,
         *,
-        request,
-        ctx,
-        server_path_prefix="",
+        request: {{.InputTypeForProtocol}},
+        ctx: ClientContext,
+        server_path_prefix: str = "",
         **kwargs,
-    ):
+    ) -> {{.OutputTypeForProtocol}}:
         return self._make_request(
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
             ctx=ctx,
@@ -98,12 +98,12 @@ class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
     async def {{.Name}}(
         self,
         *,
-        request,
-        ctx,
-        server_path_prefix="",
+        request: {{.InputTypeForProtocol}},
+        ctx: ClientContext,
+        server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         **kwargs,
-    ):
+    ) -> {{.OutputTypeForProtocol}}:
         return await self._make_request(
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
             ctx=ctx,
