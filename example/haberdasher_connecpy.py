@@ -10,7 +10,7 @@ from connecpy.async_client import AsyncConnecpyClient
 from connecpy.base import Endpoint
 from connecpy.server import ConnecpyServer
 from connecpy.client import ConnecpyClient
-from connecpy.context import ServiceContext
+from connecpy.context import ClientContext, ServiceContext
 
 import haberdasher_pb2 as _pb2
 
@@ -45,11 +45,11 @@ class HaberdasherClient(ConnecpyClient):
     def MakeHat(
         self,
         *,
-        request,
-        ctx,
-        server_path_prefix="",
+        request: _pb2.Size,
+        ctx: ClientContext,
+        server_path_prefix: str = "",
         **kwargs,
-    ):
+    ) -> _pb2.Hat:
         return self._make_request(
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/MakeHat",
             ctx=ctx,
@@ -63,12 +63,12 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
     async def MakeHat(
         self,
         *,
-        request,
-        ctx,
-        server_path_prefix="",
+        request: _pb2.Size,
+        ctx: ClientContext,
+        server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         **kwargs,
-    ):
+    ) -> _pb2.Hat:
         return await self._make_request(
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/MakeHat",
             ctx=ctx,
