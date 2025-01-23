@@ -320,6 +320,37 @@ app.add_service(service)
 app = BrotliMiddleware(app, minimum_size=1000)
 ```
 
+With Connecpy’s compression features, you can automatically compress data via gzip, brotli, zstd, and more. By combining them with CompressionMiddleware, you can return compressed responses with no additional configuration:
+
+```python
+from connecpy.asgi import ConnecpyASGIApp
+from connecpy.compression import CompressionMiddleware
+
+app = ConnecpyASGIApp()
+# ...your services and interceptors here...
+app = CompressionMiddleware(app)
+```
+
+Additionally, if you want to incorporate your own custom encodings, you can do so by using GenericEncodingMiddleware:
+
+```python
+from connecpy.compression import GenericEncodingMiddleware
+
+middleware_map = {
+    "gzip": SomeGzipLikeMiddleware,
+    "custom-enc": MyCustomEncoder,
+}
+app = GenericEncodingMiddleware(app, middleware_map)
+```
+
+If you want to configure CORS more easily, you can introduce CORSMiddleware and control origins/headers via CORSConfig. For example, here’s how you might allow all origins:
+
+```python
+from connecpy.cors import CORSMiddleware
+
+app = CORSMiddleware(app)
+```
+
 ### gRPC Compatibility
 In Connecpy, unlike connect-go, it is not possible to simultaneously support both gRPC and Connect RPC on the same server and port. In addition to it, Connecpy itself doesn't support gRPC. However, implementing a gRPC server using the same service code used for Connecpy server is feasible, as shown below. This is possible because the type signature of the service class in Connecpy is compatible with type signature gRPC farmework requires.
 The example below uses [grpc.aio](https://grpc.github.io/grpc/python/grpc_asyncio.html) and there are in [example dicrectory](example/README.md).
