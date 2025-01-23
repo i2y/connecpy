@@ -36,9 +36,7 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                 )
 
             endpoint = self._get_endpoint(scope["path"])
-            invocation_metadata = ctx.invocation_metadata()
-            ctype = invocation_metadata.get("content-type", ["application/proto"])[0]
-            encoder, decoder = self._get_encoder_decoder(endpoint, ctype)
+            encoder, decoder = self._get_encoder_decoder(endpoint, ctx.content_type())
 
             req_body = await Request(scope, receive).body()
             request = decoder(req_body)

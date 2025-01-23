@@ -2,6 +2,8 @@ from typing import Any, Callable
 
 from connecpy import context
 from connecpy.asgi import ConnecpyASGIApp
+from connecpy.cors import CORSMiddleware
+from connecpy.compression import CompressionMiddleware
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
 
 import haberdasher_connecpy
@@ -32,13 +34,4 @@ app = ConnecpyASGIApp(
 )
 app.add_service(service)
 
-
-# from starlette.middleware import Middleware
-
-# from starlette.middleware.gzip import GZipMiddleware
-
-# app = GZipMiddleware(app, minimum_size=1000)
-
-from brotli_asgi import BrotliMiddleware
-
-app = BrotliMiddleware(app, minimum_size=1)
+app = CORSMiddleware(CompressionMiddleware(app))

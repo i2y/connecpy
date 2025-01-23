@@ -1,6 +1,7 @@
 from typing import Any, Protocol, Mapping, MutableMapping, List, Union
 import time
 
+from . import errors
 from . import exceptions
 
 
@@ -203,6 +204,25 @@ class ConnecpyServiceContext:
         self._code = 200
         self._details = ""
         self._trailing_metadata = {}
+
+        connect_protocol_version = self._invocation_metadata.get(
+            "connect-protocol-version", ["1"]
+        )[0]
+        if connect_protocol_version != "1":
+            raise exceptions.ConnecpyServerException(
+                code=errors.Errors.BadRoute,
+                message="Invalid connect-protocol-version",
+            )
+        self._connect_protocol_version = connect_protocol_version
+
+        ctype = self._invocation_metadata.get("content-type", ["application/proto"])[0]
+        if ctype not in ("application/proto", "application/json"):
+            raise exceptions.ConnecpyServerException(
+                code=errors.Errors.BadRoute,
+                message=f"Unsupported content type: {ctype}",
+            )
+        self._content_type = ctype
+
         timeout_ms: Union[str, None] = invocation_metadata.get(
             "connect-timeout-ms", [None]
         )[0]
@@ -247,6 +267,15 @@ class ConnecpyServiceContext:
         :return: A mapping of metadata keys to lists of metadata values.
         """
         return self._invocation_metadata
+
+    def content_type(self) -> str:
+        """
+        Returns the content type associated with the context.
+
+        :return: The content type associated with the context.
+        :rtype: str
+        """
+        return self._content_type
 
     def peer(self):
         """

@@ -13,7 +13,11 @@ def main():
 
     try:
         response = client.MakeHat(
-            ctx=ClientContext(),
+            ctx=ClientContext(
+                headers={
+                    "Accept-Encoding": "br",
+                }
+            ),
             request=haberdasher_pb2.Size(inches=12),
         )
         if not response.HasField("name"):

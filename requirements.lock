@@ -7,11 +7,16 @@
 #   all-features: false
 #   with-sources: false
 #   generate-hashes: false
+#   universal: false
 
 -e file:.
 anyio==4.2.0
     # via httpx
     # via starlette
+brotli==1.1.0
+    # via brotli-asgi
+brotli-asgi==1.4.0
+    # via connecpy
 certifi==2023.11.17
     # via httpcore
     # via httpx
@@ -30,4 +35,10 @@ sniffio==1.3.0
     # via anyio
     # via httpx
 starlette==0.34.0
+    # via brotli-asgi
+    # via connecpy
+    # via zstd-asgi
+zstandard==0.23.0
+    # via zstd-asgi
+zstd-asgi==0.2
     # via connecpy
