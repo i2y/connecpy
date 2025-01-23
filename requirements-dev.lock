@@ -7,6 +7,7 @@
 #   all-features: false
 #   with-sources: false
 #   generate-hashes: false
+#   universal: false
 
 -e file:.
 anyio==4.2.0
@@ -26,6 +27,7 @@ black==23.12.1
 brotli==1.1.0
     # via brotli-asgi
 brotli-asgi==1.4.0
+    # via connecpy
 certifi==2023.11.17
     # via httpcore
     # via httpx
@@ -36,6 +38,7 @@ click==8.1.7
     # via uvicorn
 colorama==0.4.6
     # via click
+    # via pytest
 constantly==23.10.4
     # via twisted
 cryptography==41.0.7
@@ -72,15 +75,20 @@ idna==3.6
     # via twisted
 incremental==22.10.0
     # via twisted
+iniconfig==2.0.0
+    # via pytest
 mypy-extensions==1.0.0
     # via black
 packaging==23.2
     # via black
+    # via pytest
 pathspec==0.12.1
     # via black
 pip==24.0
 platformdirs==4.1.0
     # via black
+pluggy==1.5.0
+    # via pytest
 priority==2.0.0
     # via hypercorn
 protobuf==4.25.1
@@ -95,6 +103,9 @@ pycparser==2.21
     # via cffi
 pyopenssl==23.3.0
     # via twisted
+pytest==8.3.4
+    # via pytest-asyncio
+pytest-asyncio==0.25.2
 service-identity==23.1.0
     # via twisted
 setuptools==69.0.3
@@ -109,6 +120,7 @@ sniffio==1.3.0
 starlette==0.34.0
     # via brotli-asgi
     # via connecpy
+    # via zstd-asgi
 twisted==23.10.0
     # via daphne
 twisted-iocpsupport==1.0.4
@@ -122,3 +134,7 @@ wsproto==1.2.0
     # via hypercorn
 zope-interface==6.1
     # via twisted
+zstandard==0.23.0
+    # via zstd-asgi
+zstd-asgi==0.2
+    # via connecpy

@@ -25,6 +25,9 @@ async def main():
             request=haberdasher_pb2.Size(inches=12),
             # Optionally provide a session per request
             # session=session,
+            headers={
+                "Accept-Encoding": "gzip",
+            },
         )
         if not response.HasField("name"):
             print("We didn't get a name!")
