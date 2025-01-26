@@ -25,10 +25,8 @@ def middleware(app, middleware_map):
         # Pull Accept-Encoding from list-based headers via helper function
         raw_headers = scope.get("headers", [])
         accept_encoding = extract_header_value(raw_headers, b"accept-encoding")
-        print(raw_headers)
 
         encodings = parse_accept_encoding(accept_encoding)
-
         if not encodings:
             await app(scope, receive, send)
             return
