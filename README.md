@@ -29,7 +29,7 @@ Use the protoc plugin to generate connecpy server and client code.
 protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 ```
 
-### Server code
+### Server code (ASGI)
 
 ```python
 # service.py
@@ -221,6 +221,12 @@ On Windows, Content-Type: application/json, HTTP/2
 ```sh
 curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
+
+## WSGI Support
+
+Connecpy now provides WSGI support via the `ConnecpyWSGIApp`. This synchronous application adapts our service endpoints to the WSGI specification. It reads requests from the WSGI `environ`, processes POST requests, and returns responses using `start_response`. This enables integration with legacy WSGI servers and middleware.
+
+Please see the example in the [example directory](example/wsgi_server.py).
 
 
 ## Connect Protocol

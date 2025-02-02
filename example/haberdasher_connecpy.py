@@ -41,6 +41,28 @@ class HaberdasherServer(ConnecpyServer):
         return "i2y.connecpy.example.Haberdasher"
 
 
+class HaberdasherSync(Protocol):
+    def MakeHat(self, req: _pb2.Size, ctx: ServiceContext) -> _pb2.Hat: ...
+
+
+class HaberdasherServerSync(ConnecpyServer):
+    def __init__(self, *, service: HaberdasherSync, server_path_prefix=""):
+        super().__init__()
+        self._prefix = f"{server_path_prefix}/i2y.connecpy.example.Haberdasher"
+        self._endpoints = {
+            "MakeHat": Endpoint[_pb2.Size, _pb2.Hat](
+                service_name="Haberdasher",
+                name="MakeHat",
+                function=getattr(service, "MakeHat"),
+                input=_pb2.Size,
+                output=_pb2.Hat,
+            ),
+        }
+
+    def serviceName(self):
+        return "i2y.connecpy.example.Haberdasher"
+
+
 class HaberdasherClient(ConnecpyClient):
     def MakeHat(
         self,

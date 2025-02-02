@@ -52,6 +52,16 @@ class Endpoint(Generic[T, U]):
         ],
         None,
     ] = None
+    _proc: Union[
+        Callable[
+            [
+                T,
+                context.ServiceContext,
+            ],
+            U,
+        ],
+        None,
+    ] = None
 
     def make_async_proc(
         self,
@@ -78,6 +88,26 @@ class Endpoint(Generic[T, U]):
         )  # type: ignore
 
         return self._async_proc  # type: ignore
+
+    def make_proc(
+        self,
+    ) -> Callable[[T, context.ServiceContext], U]:
+        """
+        Creates an asynchronous function that implements the endpoint.
+
+        Args:
+            interceptors (Tuple[interceptor.AsyncConnecpyServerInterceptor, ...]): The interceptors to apply to the endpoint.
+
+        Returns:
+            Callable[[T, context.ServiceContext], U]: The asynchronous function that implements the endpoint.
+        """
+        if self._proc is not None:
+            return self._proc
+
+        method_name = self.name
+        self._proc = self.function
+
+        return self._proc  # type: ignore
 
 
 def thread_pool_runner(func):

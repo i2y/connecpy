@@ -1,4 +1,3 @@
-import traceback
 from collections import defaultdict
 from typing import Iterable, List, Mapping, Tuple
 
@@ -64,11 +63,8 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
         """
         status = 500
         body_bytes = b"{}"
-        error_data = {}
         try:
             if not isinstance(exc, exceptions.ConnecpyServerException):
-                error_data["raw_error"] = str(exc)
-                error_data["raw_trace"] = traceback.format_exc()
                 exc = exceptions.ConnecpyServerException(
                     code=errors.Errors.Internal, message="Internal non-Connecpy Error"
                 )
@@ -80,8 +76,6 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                 code=errors.Errors.Internal,
                 message="There was an error but it could not be serialized into JSON",
             )
-            error_data["raw_error"] = str(exc)
-            error_data["raw_trace"] = traceback.format_exc()
             body_bytes = exc.to_json_bytes()
 
         response = Response(
