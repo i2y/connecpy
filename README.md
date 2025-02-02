@@ -12,11 +12,19 @@ You can install the protoc plugin to generate files by running the command:
 go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
 ```
 
-Additionally, please add the connecpy package to your project using your preferred package manager. For instance, with [Rye](https://rye-up.com/), use the command:
+Additionally, please add the connecpy package to your project using your preferred package manager. For instance, with [uv](https://docs.astral.sh/uv/), use the command:
+
 
 ```sh
-rye add connecpy
+uv add connecpy
 ```
+
+or
+
+```sh
+pip install connecpy
+```
+
 
 To run the server, you'll need one of the following: [Uvicorn](https://www.uvicorn.org/), [Daphne](https://github.com/django/daphne), or [Hypercorn](https://gitlab.com/pgjones/hypercorn). If your goal is to support both HTTP/1.1 and HTTP/2, you should opt for either Daphne or Hypercorn. Additionally, to test the server, you might need a client command, such as [buf](https://buf.build/docs/installation).
 
