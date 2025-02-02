@@ -6,9 +6,13 @@ You can install requirements for running the examples with executing the followi
 rye sync
 ```
 
-## Running server
+## Running server (ASGI)
 You can run the Connecpy ASGI application using servers such as uvicorn.
 Example uvicorn command : `uvicorn --port 3000 server:app`
+
+## Running server (WSGI)
+You can run the Connecpy WSGI application using the following command :
+`python wsgi_server.py`
 
 ## Running client
 After server has started, you can make request using the example client with the following command :
