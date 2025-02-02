@@ -74,6 +74,30 @@ class {{.Name}}Server(ConnecpyServer):
 
     def serviceName(self):
         return "{{.Package}}.{{.Name}}"
+{{- end }}
+
+{{range .Services}}
+class {{.Name}}Sync(Protocol):{{- range .Methods }}
+    def {{.Name}}(self, req: {{.InputTypeForProtocol}}, ctx: ServiceContext) -> {{.OutputTypeForProtocol}}: ...
+{{- end }}
+
+
+class {{.Name}}ServerSync(ConnecpyServer):
+    def __init__(self, *, service: {{.Name}}Sync, server_path_prefix=""):
+        super().__init__()
+        self._prefix = f"{server_path_prefix}/{{.Package}}.{{.Name}}"
+        self._endpoints = { {{- range .Methods }}
+            "{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}](
+                service_name="{{.ServiceName}}",
+                name="{{.Name}}",
+                function=getattr(service, "{{.Name}}"),
+                input={{.InputType}},
+                output={{.OutputType}},
+            ),{{- end }}
+        }
+
+    def serviceName(self):
+        return "{{.Package}}.{{.Name}}"
 
 
 class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
