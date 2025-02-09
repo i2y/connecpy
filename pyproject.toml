@@ -1,6 +1,6 @@
 [project]
 name = "connecpy"
-version = "1.3.1"
+version = "1.3.2"
 description = "Code generator, server library and client library for the Connect Protocol"
 authors = [
     { name = "Yasushi Itoh" }
@@ -22,7 +22,7 @@ build-backend = "hatchling.build"
 [tool.uv]
 managed = true
 dev-dependencies = [
-    "black",
+    "ruff>=0.9.4",
     "grpcio-tools",
     "uvicorn",
     "grpcio",

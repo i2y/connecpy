@@ -86,9 +86,15 @@ def extract_headers(environ) -> Iterable[Tuple[bytes, bytes]]:
     # Extract HTTP headers from the WSGI environment.
     headers = []
     for key, value in environ.items():
+        if key.startswith("wsgi."):
+            continue
+
         if key.startswith("HTTP_"):
-            header = key[5:].replace("_", "-").lower().encode("utf-8")
-            headers.append((header, value.encode("utf-8")))
+            key = key[5:]
+
+        key = key.replace("_", "-")
+
+        headers.append((key.lower().encode("utf-8"), value.encode("utf-8")))
     return headers
 
 
