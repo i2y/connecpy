@@ -236,6 +236,109 @@ Connecpy now provides WSGI support via the `ConnecpyWSGIApp`. This synchronous a
 
 Please see the example in the [example directory](example/wsgi_server.py).
 
+### Compression Support
+
+Connecpy supports various compression methods for both GET and POST requests:
+
+- gzip
+- brotli (br)
+- zstandard (zstd)
+- identity (no compression)
+
+For GET requests, specify the compression method using the `compression` query parameter:
+```sh
+curl "http://localhost:3000/service/method?compression=gzip&message=..."
+```
+
+For POST requests, use the `Content-Encoding` header:
+```sh
+curl -H "Content-Encoding: br" -d '{"data": "..."}' http://localhost:3000/service/method
+```
+
+The compression is handled directly in the request handlers, ensuring consistent behavior across HTTP methods and frameworks (ASGI/WSGI).
+
+With Connecpy's compression features, you can automatically handle compressed requests and responses. Here are some examples:
+
+### Server-side
+
+The compression handling is built into both ASGI and WSGI applications. You don't need any additional middleware configuration - it works out of the box!
+
+### Client-side
+
+For synchronous clients:
+```python
+from connecpy.context import ClientContext
+
+client = HaberdasherClient(server_url)
+response = client.MakeHat(
+    ctx=ClientContext(
+        headers={
+            "Content-Encoding": "br",  # Use Brotli compression for request
+            "Accept-Encoding": "gzip",  # Accept gzip compressed response
+        }
+    ),
+    request=request_obj,
+)
+```
+
+For async clients:
+```python
+async with httpx.AsyncClient() as session:
+    client = AsyncHaberdasherClient(server_url, session=session)
+    response = await client.MakeHat(
+        ctx=ClientContext(),
+        request=request_obj,
+        headers={
+            "Content-Encoding": "zstd",  # Use Zstandard compression for request
+            "Accept-Encoding": "br",     # Accept Brotli compressed response
+        },
+    )
+```
+
+Using GET requests with compression:
+```python
+response = client.MakeHat(
+    ctx=ClientContext(),
+    request=request_obj,
+    use_get=True,  # Enable GET request (for methods marked with no_side_effects)
+    params={
+        "compression": "gzip",  # Use gzip compression for the message
+    }
+)
+```
+
+### CORS Support
+
+Connecpy provides built-in CORS support via the `CORSMiddleware`. By default, it allows all origins and includes necessary Connect Protocol headers:
+
+```python
+from connecpy.cors import CORSMiddleware
+
+app = ConnecpyASGIApp()
+app.add_service(service)
+app = CORSMiddleware(app)  # Use default configuration
+```
+
+You can customize the CORS behavior using `CORSConfig`:
+
+```python
+from connecpy.cors import CORSMiddleware, CORSConfig
+
+config = CORSConfig(
+    allow_origin="https://your-domain.com",           # Restrict allowed origins
+    allow_methods=("POST", "GET", "OPTIONS"),         # Customize allowed methods
+    allow_headers=(                                   # Customize allowed headers
+        "Content-Type",
+        "Connect-Protocol-Version",
+        "X-Custom-Header",
+    ),
+    access_control_max_age=3600,                     # Set preflight cache duration
+)
+
+app = CORSMiddleware(app, config=config)
+```
+
+The middleware handles both preflight requests (OPTIONS) and adds appropriate CORS headers to responses.
 
 ## Connect Protocol
 

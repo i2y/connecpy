@@ -36,6 +36,37 @@ or
   - pyi_out : The directory where generated Python stub code for Protobuf Messages needs to be saved.
   - connecpy_out : The directory where generated Connecpy Python server and client code needs to be saved.
 
+## Making Compressed Requests
+
+After starting the server, you can test compression in several ways:
+
+### Using the Example Client
+The example clients demonstrate how to use compression:
+
+```sh
+# Async client with Brotli compression
+uv run async_client.py
+
+# Sync client with gzip compression
+uv run client.py
+```
+
+### Using curl
+Test different compression methods:
+
+```sh
+# POST request with Brotli compression
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Content-Encoding: br" \
+  -d '{"inches": 12}' \
+  http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
+
+# GET request with gzip compression
+curl "http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat?compression=gzip&message=eyJpbmNoZXMiOjEyfQ==&base64=1"
+```
+
+Note: For GET requests, the message should be base64 encoded when using binary formats like protobuf or compressed data.
 
 # gRPC Examples
 Connecpy does not support gRPC. However, you can use the same service code to run a gRPC server and client.

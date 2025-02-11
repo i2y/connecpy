@@ -1,9 +1,8 @@
 import asyncio
 from dataclasses import dataclass
-from functools import partial, reduce
+from functools import reduce
 from typing import Callable, Generic, Tuple, TypeVar, Union
 
-from google.protobuf import json_format, message
 from starlette import concurrency
 
 from . import context
@@ -11,6 +10,7 @@ from . import exceptions
 from . import errors
 from . import interceptor
 from . import server
+from . import encoding
 
 
 T = TypeVar("T")
@@ -28,6 +28,7 @@ class Endpoint(Generic[T, U]):
         function (Callable[[T, context.ServiceContext], U]): The function that implements the endpoint.
         input (type): The type of the input parameter.
         output (type): The type of the output parameter.
+        allowed_methods (list[str]): The allowed HTTP methods for the endpoint.
         _async_proc (Callable[[T, context.ServiceContext], U] | None): The asynchronous function that implements the endpoint.
     """
 
@@ -42,6 +43,7 @@ class Endpoint(Generic[T, U]):
     ]
     input: type
     output: type
+    allowed_methods: tuple[str] = ("POST",)
     _async_proc: Union[
         Callable[
             [
@@ -104,7 +106,6 @@ class Endpoint(Generic[T, U]):
         if self._proc is not None:
             return self._proc
 
-        method_name = self.name
         self._proc = self.function
 
         return self._proc  # type: ignore
@@ -203,105 +204,6 @@ class ConnecpyBaseApp(object):
 
         return svc.get_endpoint(path[len(self._prefix) :])
 
-    @staticmethod
-    def json_decoder(body, data_obj):
-        """
-        Decodes a JSON request.
-
-        Args:
-            body (str): The JSON request body.
-            data_obj: The data object to decode the request into.
-
-        Returns:
-            The decoded data object.
-
-        Raises:
-            exceptions.ConnecpyServerException: If the JSON request could not be decoded.
-        """
-        data = data_obj()
-        try:
-            json_format.Parse(body, data)
-        except json_format.ParseError as exc:
-            print(exc)
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Malformed,
-                message="the json request could not be decoded",
-            ) from exc
-        return data
-
-    @staticmethod
-    def json_encoder(value, data_obj):
-        """
-        Encodes a service response to JSON.
-
-        Args:
-            value: The service response value.
-            data_obj: The data object to encode the response from.
-
-        Returns:
-            The encoded JSON response and the content type.
-
-        Raises:
-            exceptions.ConnecpyServerException: If the service response type is invalid.
-        """
-        if not isinstance(value, data_obj):
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Internal,
-                message=f"bad service response type {type(value)}, expecting: {data_obj.DESCRIPTOR.full_name}",
-            )
-
-        return json_format.MessageToJson(
-            value, preserving_proto_field_name=True
-        ).encode("utf-8"), {"Content-Type": ["application/json"]}
-
-    @staticmethod
-    def proto_decoder(body, data_obj):
-        """
-        Decodes a protobuf request.
-
-        Args:
-            body (bytes): The protobuf request body.
-            data_obj: The data object to decode the request into.
-
-        Returns:
-            The decoded data object.
-
-        Raises:
-            exceptions.ConnecpyServerException: If the protobuf request could not be decoded.
-        """
-        data = data_obj()
-        try:
-            data.ParseFromString(body)
-        except message.DecodeError as exc:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Malformed,
-                message="the protobuf request could not be decoded",
-            ) from exc
-        return data
-
-    @staticmethod
-    def proto_encoder(value, data_obj):
-        """
-        Encodes a service response to protobuf.
-
-        Args:
-            value: The service response value.
-            data_obj: The data object to encode the response from.
-
-        Returns:
-            The encoded protobuf response and the content type.
-
-        Raises:
-            exceptions.ConnecpyServerException: If the service response type is invalid.
-        """
-        if not isinstance(value, data_obj):
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Internal,
-                message=f"bad service response type {type(value)}, expecting: {data_obj.DESCRIPTOR.full_name}",
-            )
-
-        return value.SerializeToString(), {"Content-Type": ["application/proto"]}
-
     def _get_encoder_decoder(self, endpoint, ctype: str):
         """
         Retrieves the appropriate encoder and decoder for a given endpoint and content type.
@@ -312,19 +214,5 @@ class ConnecpyBaseApp(object):
 
         Returns:
             The encoder and decoder functions.
-
-        Raises:
-            exceptions.ConnecpyServerException: If the content type is unexpected.
         """
-        if "application/json" == ctype:
-            decoder = partial(self.json_decoder, data_obj=endpoint.input)
-            encoder = partial(self.json_encoder, data_obj=endpoint.output)
-        elif "application/proto" == ctype:
-            decoder = partial(self.proto_decoder, data_obj=endpoint.input)
-            encoder = partial(self.proto_encoder, data_obj=endpoint.output)
-        else:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.BadRoute,
-                message=f"unexpected Content-Type: {ctype}",
-            )
-        return encoder, decoder
+        return encoding.get_encoder_decoder_pair(endpoint, ctype)

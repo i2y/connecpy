@@ -16,6 +16,11 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 	resp.SupportedFeatures = proto.Uint64(uint64(plugin.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL))
 
 	files := r.GetFileToGenerate()
+	if len(files) == 0 {
+		resp.Error = proto.String("no files to generate")
+		return resp
+	}
+
 	for _, fileName := range files {
 		fd, err := getFileDescriptor(r.GetProtoFile(), fileName)
 		if err != nil {
@@ -53,6 +58,8 @@ func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGener
 		}
 
 		for _, method := range svc.GetMethod() {
+			idempotencyLevel := method.Options.GetIdempotencyLevel()
+			noSideEffects := idempotencyLevel == descriptor.MethodOptions_NO_SIDE_EFFECTS
 			connecpyMethod := &ConnecpyMethod{
 				Package:               packageName,
 				ServiceName:           connecpySvc.Name,
@@ -61,6 +68,7 @@ func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGener
 				InputTypeForProtocol:  getSymbolNameForProtocol(method.GetInputType(), packageName),
 				OutputType:            getSymbolName(method.GetOutputType(), packageName),
 				OutputTypeForProtocol: getSymbolNameForProtocol(method.GetOutputType(), packageName),
+				NoSideEffects:         noSideEffects,
 			}
 
 			connecpySvc.Methods = append(connecpySvc.Methods, connecpyMethod)

@@ -21,10 +21,14 @@ message Hat {
 // measured in inches.
 message Size {
   int32 inches = 1;
+  // Additional description or notes about the requested hat
+  string description = 2;
 }
 
 // A Haberdasher makes hats for clients.
 service Haberdasher {
   // MakeHat produces a hat of mysterious, randomly-selected color!
-  rpc MakeHat(Size) returns (Hat);
+  rpc MakeHat(Size) returns (Hat) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
 }

@@ -3,7 +3,6 @@ from typing import Any, Callable
 from connecpy import context
 from connecpy.asgi import ConnecpyASGIApp
 from connecpy.cors import CORSMiddleware
-from connecpy.compression import CompressionMiddleware
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
 
 import haberdasher_connecpy
@@ -34,4 +33,5 @@ app = ConnecpyASGIApp(
 )
 app.add_service(service)
 
-app = CORSMiddleware(CompressionMiddleware(app))
+# Add CORS support with default configuration
+app = CORSMiddleware(app)

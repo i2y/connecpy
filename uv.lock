@@ -267,10 +267,12 @@ name = "connecpy"
 version = "1.3.2"
 source = { editable = "." }
 dependencies = [
+    { name = "brotli" },
     { name = "brotli-asgi" },
     { name = "httpx" },
     { name = "protobuf" },
     { name = "starlette" },
+    { name = "zstandard" },
     { name = "zstd-asgi" },
 ]
 
@@ -292,10 +294,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "brotli", specifier = ">=1.1.0" },
     { name = "brotli-asgi", specifier = ">=1.4.0" },
     { name = "httpx" },
     { name = "protobuf" },
     { name = "starlette" },
+    { name = "zstandard", specifier = ">=0.22.0" },
     { name = "zstd-asgi", specifier = ">=0.2" },
 ]
 
