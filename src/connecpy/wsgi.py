@@ -426,6 +426,7 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
             accept_encoding = request_headers.get("accept-encoding", "identity")
             selected_encoding = compression.select_encoding(accept_encoding)
             compressed_bytes = None
+            compressor = None
             if selected_encoding != "identity":
                 compressor = compression.get_compressor(selected_encoding)
                 if compressor:
