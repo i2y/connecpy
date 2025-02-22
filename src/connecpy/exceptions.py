@@ -4,6 +4,12 @@ import json
 from . import errors
 
 
+class ConnecpyException(Exception):
+    """Base exception class for Connecpy."""
+
+    pass
+
+
 class ConnecpyServerException(httplib.HTTPException):
     """
     Exception class for Connecpy server errors.

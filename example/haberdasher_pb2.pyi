@@ -20,7 +20,11 @@ class Hat(_message.Message):
     ) -> None: ...
 
 class Size(_message.Message):
-    __slots__ = ("inches",)
+    __slots__ = ("inches", "description")
     INCHES_FIELD_NUMBER: _ClassVar[int]
+    DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
     inches: int
-    def __init__(self, inches: _Optional[int] = ...) -> None: ...
+    description: str
+    def __init__(
+        self, inches: _Optional[int] = ..., description: _Optional[str] = ...
+    ) -> None: ...

@@ -1,15 +1,29 @@
+from wsgiref.simple_server import make_server
 from connecpy.wsgi import ConnecpyWSGIApp
-
-import haberdasher_connecpy
 from wsgi_service import HaberdasherService
+from haberdasher_connecpy import HaberdasherServerSync
 
-service = haberdasher_connecpy.HaberdasherServerSync(service=HaberdasherService())
-app = ConnecpyWSGIApp()
-app.add_service(service)
+
+def main():
+    # Create synchronous service instance
+    service = HaberdasherService()
+
+    # Create server with service implementation
+    server = HaberdasherServerSync(service=service)
+    print(f"Created server with prefix: {server._prefix}")
+
+    # Create WSGI application and add service
+    app = ConnecpyWSGIApp()
+    app.add_service(server)
+
+    # Start WSGI server
+    with make_server("", 3000, app) as httpd:
+        print("Serving on port 3000...")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nShutting down server...")
+
 
 if __name__ == "__main__":
-    from wsgiref.simple_server import make_server
-
-    with make_server("", 3000, app) as server:
-        print("Serving on port 3000...")
-        server.serve_forever()
+    main()

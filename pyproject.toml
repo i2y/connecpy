@@ -11,6 +11,8 @@ dependencies = [
     "starlette",
     "zstd-asgi>=0.2",
     "brotli-asgi>=1.4.0",
+    "brotli>=1.1.0",
+    "zstandard>=0.22.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.9"
