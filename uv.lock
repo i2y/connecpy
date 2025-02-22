@@ -264,7 +264,7 @@ wheels = [
 
 [[package]]
 name = "connecpy"
-version = "1.4.1"
+version = "1.4.2"
 source = { editable = "." }
 dependencies = [
     { name = "brotli" },
