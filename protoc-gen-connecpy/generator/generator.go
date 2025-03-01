@@ -18,9 +18,9 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 	resp := &plugin.CodeGeneratorResponse{}
 
 	resp.SupportedFeatures = proto.Uint64(uint64(plugin.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL) | uint64(plugin.CodeGeneratorResponse_FEATURE_SUPPORTS_EDITIONS))
-	edition_2023 := int32(descriptorpb.Edition_EDITION_2023)
 	edition_proto3 := int32(descriptorpb.Edition_EDITION_PROTO3)
 	resp.MinimumEdition = &edition_proto3
+	edition_2023 := int32(descriptorpb.Edition_EDITION_2023)
 	resp.MaximumEdition = &edition_2023
 
 	files := r.GetFileToGenerate()
