@@ -16,7 +16,7 @@ import (
 
 func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 	resp := &plugin.CodeGeneratorResponse{}
-	resp.SupportedFeatures = proto.Uint64(uint64(plugin.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL))
+	resp.SupportedFeatures = proto.Uint64(uint64(plugin.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL) | uint64(plugin.CodeGeneratorResponse_FEATURE_SUPPORTS_EDITIONS))
 
 	files := r.GetFileToGenerate()
 	if len(files) == 0 {
@@ -50,6 +50,13 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 		resp.File = append(resp.File, connecpyFile)
 		return true
 	})
+
+	// Add Edition support
+	edition_proto3 := int32(descriptorpb.Edition_EDITION_PROTO3)
+	edition_2023 := int32(descriptorpb.Edition_EDITION_2023)
+	resp.MinimumEdition = &edition_proto3
+	resp.MaximumEdition = &edition_2023
+
 	return resp
 }
 
