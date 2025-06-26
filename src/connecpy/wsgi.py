@@ -248,7 +248,6 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
             start_response(status, headers)
             return [exc.to_json_bytes()]
         else:
-
             headers = [("Content-Type", "application/json")]
             error = exceptions.ConnecpyServerException(
                 code=errors.Errors.Internal,

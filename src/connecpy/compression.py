@@ -4,7 +4,6 @@ import brotli
 import zstandard
 
 
-
 def gzip_decompress(data: bytes) -> bytes:
     """Decompress data using gzip."""
     try:
