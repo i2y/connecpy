@@ -39,7 +39,7 @@ func TestConnecpyTemplate(t *testing.T) {
 				},
 			},
 			contains: []string{
-				"from typing import Any, Protocol, Union",
+				"from typing import Optional, Protocol, Union",
 				"class TestService(Protocol):",
 				"class TestServiceServer(ConnecpyServer):",
 				"def TestMethod",

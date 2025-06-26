@@ -33,12 +33,12 @@ def sync_server():
 
 def test_sync_client_basic(sync_server: WSGIServer):
     with HaberdasherClient(f"http://localhost:{sync_server.server_port}") as client:
-        response = client.MakeHat(request=Size(inches=10), ctx=ClientContext())
+        response = client.MakeHat(request=Size(inches=10))
         assert response.size == 10
     assert client._session.is_closed
 
 
-def test_sync_client_custom_session(sync_server: WSGIServer):
+def test_sync_client_custom_session_and_header(sync_server: WSGIServer):
     recorded_request = None
 
     def record_request(request):
@@ -49,10 +49,13 @@ def test_sync_client_custom_session(sync_server: WSGIServer):
     with HaberdasherClient(
         f"http://localhost:{sync_server.server_port}", session=session
     ) as client:
-        response = client.MakeHat(request=Size(inches=10), ctx=ClientContext())
+        response = client.MakeHat(
+            request=Size(inches=10), ctx=ClientContext(headers={"x-animal": "bear"})
+        )
         assert response.size == 10
     assert not session.is_closed
     assert recorded_request is not None
+    assert recorded_request.headers.get("x-animal") == "bear"
 
 
 @pytest.mark.asyncio
@@ -60,13 +63,13 @@ async def test_async_client_basic(sync_server: WSGIServer):
     async with AsyncHaberdasherClient(
         f"http://localhost:{sync_server.server_port}"
     ) as client:
-        response = await client.MakeHat(request=Size(inches=10), ctx=ClientContext())
+        response = await client.MakeHat(request=Size(inches=10))
         assert response.size == 10
     assert client._session.is_closed
 
 
 @pytest.mark.asyncio
-async def test_async_client_custom_session(sync_server: WSGIServer):
+async def test_async_client_custom_session_and_header(sync_server: WSGIServer):
     recorded_request = None
 
     async def record_request(request):
@@ -77,7 +80,10 @@ async def test_async_client_custom_session(sync_server: WSGIServer):
     async with AsyncHaberdasherClient(
         f"http://localhost:{sync_server.server_port}", session=session
     ) as client:
-        response = await client.MakeHat(request=Size(inches=10), ctx=ClientContext())
+        response = await client.MakeHat(
+            request=Size(inches=10), ctx=ClientContext(headers={"x-animal": "bear"})
+        )
         assert response.size == 10
     assert not session.is_closed
     assert recorded_request is not None
+    assert recorded_request.headers.get("x-animal") == "bear"
