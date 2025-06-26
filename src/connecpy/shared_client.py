@@ -1,11 +1,14 @@
 import base64
+from typing import Optional
+
+from . import context
 
 
-def prepare_headers(ctx, kwargs, timeout):
-    headers = {k.lower(): v for k, v in ctx.get_headers().items()}
+def prepare_headers(ctx: Optional[context.ClientContext], kwargs, timeout):
+    # Lowercase all keys to ensure consistent header casing
+    headers = {k.lower(): v for k, v in ctx.get_headers().items()} if ctx else {}
     if "headers" in kwargs:
         headers.update({k.lower(): v for k, v in kwargs.pop("headers").items()})
-    # Ensure consistent header casing
     if "content-type" in headers:
         headers["content-type"] = headers.pop("content-type")
     if "content-encoding" in headers:

@@ -3,6 +3,3 @@
 # source: google/protobuf/empty.proto
 
 
-from google.protobuf import symbol_database
-
-_sym_db = symbol_database.Default()

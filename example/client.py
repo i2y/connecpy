@@ -18,7 +18,9 @@ def create_large_request():
 
 
 def main():
-    with haberdasher_connecpy.HaberdasherClient(server_url, timeout=timeout_s) as client:
+    with haberdasher_connecpy.HaberdasherClient(
+        server_url, timeout=timeout_s
+    ) as client:
         # Example 1: POST request with gzip compression (large request)
         try:
             print("\nTesting POST request with gzip compression...")

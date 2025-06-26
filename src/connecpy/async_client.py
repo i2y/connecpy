@@ -1,5 +1,7 @@
 from typing import Optional
 import httpx
+
+from google.protobuf.message import Message
 from . import shared_client
 from . import compression
 from . import context
@@ -46,9 +48,9 @@ class AsyncConnecpyClient:
         self,
         *,
         url: str,
-        request,
-        ctx: context.ClientContext,
-        response_obj,
+        request: Message,
+        ctx: Optional[context.ClientContext],
+        response_class: type[Message],
         method="POST",
         session: Optional[httpx.AsyncClient] = None,
         **kwargs,
@@ -98,7 +100,7 @@ class AsyncConnecpyClient:
             resp.raise_for_status()
 
             if resp.status_code == 200:
-                response = response_obj()
+                response = response_class()
                 response.ParseFromString(resp.content)
                 return response
             else:

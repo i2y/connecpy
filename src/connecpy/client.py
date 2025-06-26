@@ -2,6 +2,9 @@ from typing import Optional
 
 import httpx
 
+from google.protobuf.message import Message
+
+from . import context
 from . import exceptions
 from . import errors
 from . import compression
@@ -42,7 +45,14 @@ class ConnecpyClient:
         self.close()
 
     def _make_request(
-        self, *, url, request, ctx, response_obj, method="POST", **kwargs
+        self,
+        *,
+        url,
+        request: Message,
+        ctx: Optional[context.ClientContext],
+        response_class: type[Message],
+        method="POST",
+        **kwargs,
     ):
         """Make an HTTP request to the server."""
         # Prepare headers and kwargs using shared logic
@@ -69,7 +79,7 @@ class ConnecpyClient:
             resp.raise_for_status()
 
             if resp.status_code == 200:
-                response = response_obj()
+                response = response_class()
                 try:
                     response.ParseFromString(resp.content)
                     return response
