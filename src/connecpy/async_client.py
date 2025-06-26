@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional
 import httpx
 from . import shared_client
 from . import compression
@@ -17,11 +17,30 @@ class AsyncConnecpyClient:
     """
 
     def __init__(
-        self, address: str, timeout=5, session: Union[httpx.AsyncClient, None] = None
+        self, address: str, timeout=5, session: Optional[httpx.AsyncClient] = None
     ) -> None:
         self._address = address
         self._timeout = timeout
-        self._session = session
+        if session:
+            self._session = session
+            self._close_client = False
+        else:
+            self._session = httpx.AsyncClient()
+            self._close_client = True
+        self._closed = False
+
+    async def close(self):
+        """Close the HTTP client. After closing, the client cannot be used to make requests."""
+        if not self._closed:
+            self._closed = True
+            if self._close_client:
+                await self._session.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, _exc_type, _exc_value, _traceback):
+        await self.close()
 
     async def _make_request(
         self,
@@ -31,7 +50,7 @@ class AsyncConnecpyClient:
         ctx: context.ClientContext,
         response_obj,
         method="POST",
-        session: Union[httpx.AsyncClient, None] = None,
+        session: Optional[httpx.AsyncClient] = None,
         **kwargs,
     ):
         """
@@ -57,44 +76,33 @@ class AsyncConnecpyClient:
         headers, kwargs = shared_client.prepare_headers(ctx, kwargs, self._timeout)
 
         try:
-            if session or self._session:
-                client = session or self._session
-                close_client = False
+            client = session or self._session
+
+            if "content-encoding" in headers:
+                request_data, headers = shared_client.compress_request(
+                    request, headers, compression
+                )
             else:
-                client = httpx.AsyncClient()
-                close_client = True
+                request_data = request.SerializeToString()
 
-            try:
-                if "content-encoding" in headers:
-                    request_data, headers = shared_client.compress_request(
-                        request, headers, compression
-                    )
-                else:
-                    request_data = request.SerializeToString()
+            if method == "GET":
+                params = shared_client.prepare_get_params(request_data, headers)
+                kwargs["params"] = params
+                kwargs["headers"].pop("content-type", None)
+                resp = await client.get(url=self._address + url, **kwargs)
+            else:
+                resp = await client.post(
+                    url=self._address + url, content=request_data, **kwargs
+                )
 
-                if method == "GET":
-                    params = shared_client.prepare_get_params(request_data, headers)
-                    kwargs["params"] = params
-                    kwargs["headers"].pop("content-type", None)
-                    resp = await client.get(url=self._address + url, **kwargs)
-                else:
-                    resp = await client.post(
-                        url=self._address + url, content=request_data, **kwargs
-                    )
+            resp.raise_for_status()
 
-                resp.raise_for_status()
-
-                if resp.status_code == 200:
-                    response = response_obj()
-                    response.ParseFromString(resp.content)
-                    return response
-                else:
-                    raise exceptions.ConnecpyServerException.from_json(
-                        await resp.json()
-                    )
-            finally:
-                if close_client:
-                    await client.aclose()
+            if resp.status_code == 200:
+                response = response_obj()
+                response.ParseFromString(resp.content)
+                return response
+            else:
+                raise exceptions.ConnecpyServerException.from_json(await resp.json())
         except httpx.TimeoutException as e:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.DeadlineExceeded,

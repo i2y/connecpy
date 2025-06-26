@@ -139,6 +139,7 @@ async def main():
     finally:
         # Close the session (could also use a context manager)
         await session.aclose()
+        await client.close()
 
 
 if __name__ == "__main__":
@@ -167,18 +168,17 @@ timeout_s = 5
 
 
 def main():
-    client = haberdasher_connecpy.HaberdasherClient(server_url, timeout=timeout_s)
-
-    try:
-        response = client.MakeHat(
-            ctx=ClientContext(),
-            request=haberdasher_pb2.Size(inches=12),
-        )
-        if not response.HasField("name"):
-            print("We didn't get a name!")
-        print(response)
-    except ConnecpyServerException as e:
-        print(e.code, e.message, e.to_dict())
+    with haberdasher_connecpy.HaberdasherClient(server_url, timeout=timeout_s) as client:
+        try:
+            response = client.MakeHat(
+                ctx=ClientContext(),
+                request=haberdasher_pb2.Size(inches=12),
+            )
+            if not response.HasField("name"):
+                print("We didn't get a name!")
+            print(response)
+        except ConnecpyServerException as e:
+            print(e.code, e.message, e.to_dict())
 
 
 if __name__ == "__main__":
@@ -269,22 +269,21 @@ For synchronous clients:
 ```python
 from connecpy.context import ClientContext
 
-client = HaberdasherClient(server_url)
-response = client.MakeHat(
-    ctx=ClientContext(
-        headers={
-            "Content-Encoding": "br",  # Use Brotli compression for request
-            "Accept-Encoding": "gzip",  # Accept gzip compressed response
-        }
-    ),
-    request=request_obj,
-)
+with HaberdasherClient(server_url) as client:
+    response = client.MakeHat(
+        ctx=ClientContext(
+            headers={
+                "Content-Encoding": "br",  # Use Brotli compression for request
+                "Accept-Encoding": "gzip",  # Accept gzip compressed response
+            }
+        ),
+        request=request_obj,
+    )
 ```
 
 For async clients:
 ```python
-async with httpx.AsyncClient() as session:
-    client = AsyncHaberdasherClient(server_url, session=session)
+async with AsyncHaberdasherClient(server_url) as client:
     response = await client.MakeHat(
         ctx=ClientContext(),
         request=request_obj,

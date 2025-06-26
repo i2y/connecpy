@@ -43,3 +43,14 @@ allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/connecpy"]
+
+[tool.pytest.ini_options]
+# Allow testing of example code.
+pythonpath = [".", "example"]
+addopts = [
+    "--import-mode=importlib",
+]
+
+[tool.ruff]
+# Don't run ruff on generated code from external plugins.
+extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py"]
