@@ -14,14 +14,15 @@ timeout_s = 5
 
 
 async def main():
-    async with httpx.AsyncClient(
-        base_url=server_url,
-        timeout=timeout_s,
-    ) as session:
-        client = haberdasher_connecpy.AsyncHaberdasherClient(
+    async with (
+        httpx.AsyncClient(
+            base_url=server_url,
+            timeout=timeout_s,
+        ) as session,
+        haberdasher_connecpy.AsyncHaberdasherClient(
             server_url, session=session
-        )
-
+        ) as client,
+    ):
         # Example 1: POST request with Zstandard compression
         try:
             response = await client.MakeHat(

@@ -109,10 +109,13 @@ def test_simple_request_custom_config():
 def test_non_http_scope(app):
     async def non_http_scope():
         scope = {"type": "websocket"}
+
         def receive():
             return None
+
         def send(message):
             return None
+
         await app(scope, receive, send)
 
     asyncio.run(non_http_scope())
