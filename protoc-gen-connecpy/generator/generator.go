@@ -44,7 +44,7 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 
 		connecpyFile, err := GenerateConnecpyFile(fd)
 		if err != nil {
-			resp.Error = proto.String("File[" + string(fd.FullName()) + "][generate]: " + err.Error())
+			resp.Error = proto.String("File[" + fd.Path() + "][generate]: " + err.Error())
 			return false
 		}
 		resp.File = append(resp.File, connecpyFile)
