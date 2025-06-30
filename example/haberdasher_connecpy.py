@@ -96,8 +96,8 @@ class HaberdasherServerSync(ConnecpyServer):
 class HaberdasherClient(ConnecpyClient):
     def MakeHat(
         self,
-        *,
         request: haberdasher__pb2.Size,
+        *,
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         use_get: bool = False,
@@ -115,8 +115,8 @@ class HaberdasherClient(ConnecpyClient):
 
     def DoNothing(
         self,
-        *,
         request: google_dot_protobuf_dot_empty__pb2.Empty,
+        *,
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         **kwargs,
@@ -135,8 +135,8 @@ class HaberdasherClient(ConnecpyClient):
 class AsyncHaberdasherClient(AsyncConnecpyClient):
     async def MakeHat(
         self,
-        *,
         request: haberdasher__pb2.Size,
+        *,
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -156,8 +156,8 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
 
     async def DoNothing(
         self,
-        *,
         request: google_dot_protobuf_dot_empty__pb2.Empty,
+        *,
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,

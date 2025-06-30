@@ -105,8 +105,8 @@ class {{.Name}}ServerSync(ConnecpyServer):
 class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
     def {{.Name}}(
         self,
-        *,
         request: {{.InputType}},
+        *,
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         {{if .NoSideEffects}}use_get: bool = False,
@@ -127,8 +127,8 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
 class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
     async def {{.Name}}(
         self,
-        *,
         request: {{.InputType}},
+        *,
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
