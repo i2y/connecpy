@@ -35,7 +35,5 @@ service Haberdasher {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
 
-  rpc DoNothing(google.protobuf.Empty) returns (google.protobuf.Empty) {
-    option idempotency_level = NO_SIDE_EFFECTS;
-  }
+  rpc DoNothing(google.protobuf.Empty) returns (google.protobuf.Empty);
 }

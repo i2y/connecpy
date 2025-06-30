@@ -46,7 +46,7 @@ class HaberdasherServer(ConnecpyServer):
                 function=getattr(service, "DoNothing"),
                 input=google_dot_protobuf_dot_empty__pb2.Empty,
                 output=google_dot_protobuf_dot_empty__pb2.Empty,
-                allowed_methods=("GET", "POST"),
+                allowed_methods=("POST",),
             ),
         }
 
@@ -85,7 +85,7 @@ class HaberdasherServerSync(ConnecpyServer):
                 function=getattr(service, "DoNothing"),
                 input=google_dot_protobuf_dot_empty__pb2.Empty,
                 output=google_dot_protobuf_dot_empty__pb2.Empty,
-                allowed_methods=("GET", "POST"),
+                allowed_methods=("POST",),
             ),
         }
 
@@ -119,10 +119,9 @@ class HaberdasherClient(ConnecpyClient):
         request: google_dot_protobuf_dot_empty__pb2.Empty,
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
-        use_get: bool = False,
         **kwargs,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        method = "GET" if use_get else "POST"
+        method = "POST"
         return self._make_request(
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/DoNothing",
             ctx=ctx,
@@ -162,10 +161,9 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
-        use_get: bool = False,
         **kwargs,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        method = "GET" if use_get else "POST"
+        method = "POST"
         return await self._make_request(
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/DoNothing",
             ctx=ctx,
