@@ -2,6 +2,9 @@
 syntax = "proto3";
 
 package i2y.connecpy.example;
+
+import "google/protobuf/empty.proto";
+
 option go_package = "example";
 
 // A Hat is a piece of headwear made by a Haberdasher.
@@ -31,4 +34,6 @@ service Haberdasher {
   rpc MakeHat(Size) returns (Hat) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
+
+  rpc DoNothing(google.protobuf.Empty) returns (google.protobuf.Empty);
 }

@@ -2,9 +2,15 @@ package generator
 
 import "text/template"
 
+type ImportStatement struct {
+	Name  string
+	Alias string
+}
+
 type ConnecpyTemplateVariables struct {
 	FileName   string
 	ModuleName string
+	Imports    []ImportStatement
 	Services   []*ConnecpyService
 }
 
@@ -16,15 +22,13 @@ type ConnecpyService struct {
 }
 
 type ConnecpyMethod struct {
-	Package               string
-	ServiceName           string
-	Name                  string
-	Comment               string
-	InputType             string
-	InputTypeForProtocol  string
-	OutputType            string
-	OutputTypeForProtocol string
-	NoSideEffects         bool
+	Package       string
+	ServiceName   string
+	Name          string
+	Comment       string
+	InputType     string
+	OutputType    string
+	NoSideEffects bool
 }
 
 // ConnecpyTemplate - Template for connecpy server and client
@@ -42,13 +46,15 @@ from connecpy.server import ConnecpyServer
 from connecpy.client import ConnecpyClient
 from connecpy.context import ClientContext, ServiceContext
 
-import {{.ModuleName}}_pb2 as _pb2
+{{- range .Imports }}
+import {{.Name}} as {{.Alias}}
+{{- end}}
 {{- end}}
 {{- range .Services}}
 
 
 class {{.Name}}(Protocol):{{- range .Methods }}
-    async def {{.Name}}(self, req: {{.InputTypeForProtocol}}, ctx: ServiceContext) -> {{.OutputTypeForProtocol}}: ...
+    async def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}: ...
 {{- end }}
 
 
@@ -73,7 +79,7 @@ class {{.Name}}Server(ConnecpyServer):
 
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
-    def {{.Name}}(self, req: {{.InputTypeForProtocol}}, ctx: ServiceContext) -> {{.OutputTypeForProtocol}}: ...
+    def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}: ...
 {{- end }}
 
 
@@ -99,14 +105,14 @@ class {{.Name}}ServerSync(ConnecpyServer):
 class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
     def {{.Name}}(
         self,
+        request: {{.InputType}},
         *,
-        request: {{.InputTypeForProtocol}},
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         {{if .NoSideEffects}}use_get: bool = False,
         **kwargs,
         {{- else}}**kwargs,{{end}}
-    ) -> {{.OutputTypeForProtocol}}:
+    ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
         return self._make_request(
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
@@ -121,15 +127,15 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
 class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
     async def {{.Name}}(
         self,
+        request: {{.InputType}},
         *,
-        request: {{.InputTypeForProtocol}},
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         {{if .NoSideEffects}}use_get: bool = False,
         **kwargs,
         {{- else}}**kwargs,{{end}}
-    ) -> {{.OutputTypeForProtocol}}:
+    ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
         return await self._make_request(
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",

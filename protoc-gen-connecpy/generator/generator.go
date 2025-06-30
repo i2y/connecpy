@@ -2,13 +2,16 @@ package generator
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"path"
+	"slices"
 	"strings"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
@@ -21,54 +24,70 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 		return resp
 	}
 
-	for _, fileName := range files {
-		fd, err := getFileDescriptor(r.GetProtoFile(), fileName)
-		if err != nil {
-			resp.Error = proto.String("File[" + fileName + "][descriptor]: " + err.Error())
-			return resp
+	fds := &descriptorpb.FileDescriptorSet{
+		File: r.GetProtoFile(),
+	}
+	reg, err := protodesc.NewFiles(fds)
+	if err != nil {
+		panic(err)
+	}
+
+	reg.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		if !slices.Contains(files, string(fd.Path())) {
+			return true
+		}
+
+		// We don't generate any code for non-services
+		if fd.Services().Len() == 0 {
+			return true
 		}
 
 		connecpyFile, err := GenerateConnecpyFile(fd)
 		if err != nil {
-			resp.Error = proto.String("File[" + fileName + "][generate]: " + err.Error())
-			return resp
+			resp.Error = proto.String("File[" + fd.Path() + "][generate]: " + err.Error())
+			return false
 		}
 		resp.File = append(resp.File, connecpyFile)
-	}
+		return true
+	})
 	return resp
 }
 
-func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGeneratorResponse_File, error) {
-	name := fd.GetName()
+func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGeneratorResponse_File, error) {
+	filename := fd.Path()
 
-	fileNameWithoutSuffix := strings.TrimSuffix(name, path.Ext(name))
+	fileNameWithoutSuffix := strings.TrimSuffix(filename, path.Ext(filename))
 	moduleName := strings.Join(strings.Split(fileNameWithoutSuffix, "/"), ".")
 
 	vars := ConnecpyTemplateVariables{
-		FileName:   name,
+		FileName:   filename,
 		ModuleName: moduleName,
+		Imports:    importStatements(fd),
 	}
 
-	svcs := fd.GetService()
-	packageName := fd.GetPackage()
-	for _, svc := range svcs {
+	svcs := fd.Services()
+	packageName := string(fd.Package())
+	for i := 0; i < svcs.Len(); i++ {
+		svc := svcs.Get(i)
 		connecpySvc := &ConnecpyService{
-			Name:    svc.GetName(),
+			Name:    string(svc.Name()),
 			Package: packageName,
 		}
 
-		for _, method := range svc.GetMethod() {
-			idempotencyLevel := method.Options.GetIdempotencyLevel()
-			noSideEffects := idempotencyLevel == descriptor.MethodOptions_NO_SIDE_EFFECTS
+		methods := svc.Methods()
+		for j := 0; j < methods.Len(); j++ {
+			method := methods.Get(j)
+			noSideEffects := false
+			if mo, ok := method.Options().(*descriptorpb.MethodOptions); ok {
+				noSideEffects = mo.GetIdempotencyLevel() == descriptorpb.MethodOptions_NO_SIDE_EFFECTS
+			}
 			connecpyMethod := &ConnecpyMethod{
-				Package:               packageName,
-				ServiceName:           connecpySvc.Name,
-				Name:                  method.GetName(),
-				InputType:             getSymbolName(method.GetInputType(), packageName),
-				InputTypeForProtocol:  getSymbolNameForProtocol(method.GetInputType(), packageName),
-				OutputType:            getSymbolName(method.GetOutputType(), packageName),
-				OutputTypeForProtocol: getSymbolNameForProtocol(method.GetOutputType(), packageName),
-				NoSideEffects:         noSideEffects,
+				Package:       packageName,
+				ServiceName:   connecpySvc.Name,
+				Name:          string(method.Name()),
+				InputType:     symbolName(method.Input()),
+				OutputType:    symbolName(method.Output()),
+				NoSideEffects: noSideEffects,
 			}
 
 			connecpySvc.Methods = append(connecpySvc.Methods, connecpyMethod)
@@ -83,40 +102,60 @@ func GenerateConnecpyFile(fd *descriptor.FileDescriptorProto) (*plugin.CodeGener
 	}
 
 	resp := &plugin.CodeGeneratorResponse_File{
-		Name:    proto.String(strings.TrimSuffix(name, path.Ext(name)) + "_connecpy.py"),
+		Name:    proto.String(strings.TrimSuffix(filename, path.Ext(filename)) + "_connecpy.py"),
 		Content: proto.String(buf.String()),
 	}
 
 	return resp, nil
 }
 
-func getLocalSymbolName(name string) string {
-	parts := strings.Split(name, ".")
-	return "_pb2." + parts[len(parts)-1]
-}
-
-func getSymbolName(name, localPackageName string) string {
-	if strings.HasPrefix(name, "."+localPackageName) {
-		return getLocalSymbolName(name)
+// https://github.com/grpc/grpc/blob/0dd1b2cad21d89984f9a1b3c6249d649381eeb65/src/compiler/python_generator_helpers.h#L67
+func moduleName(filename string) string {
+	fn, ok := strings.CutSuffix(filename, ".protodevel")
+	if !ok {
+		fn, _ = strings.CutSuffix(filename, ".proto")
 	}
-
-	return "_sym_db.GetSymbol(\"" + name[1:] + "\")"
+	fn = strings.ReplaceAll(fn, "-", "_")
+	fn = strings.ReplaceAll(fn, "/", ".")
+	return fn + "_pb2"
 }
 
-func getSymbolNameForProtocol(name, localPackageName string) string {
-	if strings.HasPrefix(name, "."+localPackageName) {
-		return getLocalSymbolName(name)
-	}
-
-	return "Any"
+// https://github.com/grpc/grpc/blob/0dd1b2cad21d89984f9a1b3c6249d649381eeb65/src/compiler/python_generator_helpers.h#L80
+func moduleAlias(filename string) string {
+	mn := moduleName(filename)
+	mn = strings.ReplaceAll(mn, "_", "__")
+	mn = strings.ReplaceAll(mn, ".", "_dot_")
+	return mn
 }
 
-func getFileDescriptor(files []*descriptor.FileDescriptorProto, name string) (*descriptor.FileDescriptorProto, error) {
-	//Assumption: Number of files will not be large enough to justify making a map
-	for _, f := range files {
-		if f.GetName() == name {
-			return f, nil
+func symbolName(msg protoreflect.MessageDescriptor) string {
+	filename := string(msg.ParentFile().Path())
+	name := string(msg.Name())
+	return fmt.Sprintf("%s.%s", moduleAlias(filename), name)
+}
+
+func importStatements(file protoreflect.FileDescriptor) []ImportStatement {
+	mods := map[string]string{}
+	for i := 0; i < file.Services().Len(); i++ {
+		svc := file.Services().Get(i)
+		for j := 0; j < svc.Methods().Len(); j++ {
+			method := svc.Methods().Get(j)
+			inPkg := string(method.Input().ParentFile().Path())
+			mods[moduleName(inPkg)] = moduleAlias(inPkg)
+			outPkg := string(method.Output().ParentFile().Path())
+			mods[moduleName(outPkg)] = moduleAlias(outPkg)
 		}
 	}
-	return nil, errors.New("could not find descriptor")
+
+	imports := make([]ImportStatement, 0, len(mods))
+	for mod, alias := range mods {
+		imports = append(imports, ImportStatement{
+			Name:  mod,
+			Alias: alias,
+		})
+	}
+	slices.SortFunc(imports, func(a, b ImportStatement) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return imports
 }
