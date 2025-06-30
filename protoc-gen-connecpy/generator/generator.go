@@ -28,6 +28,11 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 			return resp
 		}
 
+		// We don't generate any code for non-services
+		if len(fd.GetService()) == 0 {
+			continue
+		}
+
 		connecpyFile, err := GenerateConnecpyFile(fd)
 		if err != nil {
 			resp.Error = proto.String("File[" + fileName + "][generate]: " + err.Error())
