@@ -36,6 +36,12 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 		if !slices.Contains(files, string(fd.Path())) {
 			return true
 		}
+
+		// We don't generate any code for non-services
+		if fd.Services().Len() == 0 {
+			return true
+		}
+
 		connecpyFile, err := GenerateConnecpyFile(fd)
 		if err != nil {
 			resp.Error = proto.String("File[" + string(fd.FullName()) + "][generate]: " + err.Error())
