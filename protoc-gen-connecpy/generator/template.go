@@ -22,15 +22,13 @@ type ConnecpyService struct {
 }
 
 type ConnecpyMethod struct {
-	Package               string
-	ServiceName           string
-	Name                  string
-	Comment               string
-	InputType             string
-	InputTypeForProtocol  string
-	OutputType            string
-	OutputTypeForProtocol string
-	NoSideEffects         bool
+	Package       string
+	ServiceName   string
+	Name          string
+	Comment       string
+	InputType     string
+	OutputType    string
+	NoSideEffects bool
 }
 
 // ConnecpyTemplate - Template for connecpy server and client
@@ -56,7 +54,7 @@ import {{.Name}} as {{.Alias}}
 
 
 class {{.Name}}(Protocol):{{- range .Methods }}
-    async def {{.Name}}(self, req: {{.InputTypeForProtocol}}, ctx: ServiceContext) -> {{.OutputTypeForProtocol}}: ...
+    async def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}: ...
 {{- end }}
 
 
@@ -81,7 +79,7 @@ class {{.Name}}Server(ConnecpyServer):
 
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
-    def {{.Name}}(self, req: {{.InputTypeForProtocol}}, ctx: ServiceContext) -> {{.OutputTypeForProtocol}}: ...
+    def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}: ...
 {{- end }}
 
 
@@ -108,13 +106,13 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
     def {{.Name}}(
         self,
         *,
-        request: {{.InputTypeForProtocol}},
+        request: {{.InputType}},
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         {{if .NoSideEffects}}use_get: bool = False,
         **kwargs,
         {{- else}}**kwargs,{{end}}
-    ) -> {{.OutputTypeForProtocol}}:
+    ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
         return self._make_request(
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
@@ -130,14 +128,14 @@ class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
     async def {{.Name}}(
         self,
         *,
-        request: {{.InputTypeForProtocol}},
+        request: {{.InputType}},
         ctx: Optional[ClientContext] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         {{if .NoSideEffects}}use_get: bool = False,
         **kwargs,
         {{- else}}**kwargs,{{end}}
-    ) -> {{.OutputTypeForProtocol}}:
+    ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
         return await self._make_request(
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
