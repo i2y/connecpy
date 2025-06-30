@@ -2,9 +2,15 @@ package generator
 
 import "text/template"
 
+type ImportStatement struct {
+	Name  string
+	Alias string
+}
+
 type ConnecpyTemplateVariables struct {
 	FileName   string
 	ModuleName string
+	Imports    []ImportStatement
 	Services   []*ConnecpyService
 }
 
@@ -42,7 +48,9 @@ from connecpy.server import ConnecpyServer
 from connecpy.client import ConnecpyClient
 from connecpy.context import ClientContext, ServiceContext
 
-import {{.ModuleName}}_pb2 as _pb2
+{{- range .Imports }}
+import {{.Name}} as {{.Alias}}
+{{- end}}
 {{- end}}
 {{- range .Services}}
 

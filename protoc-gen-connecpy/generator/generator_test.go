@@ -7,6 +7,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
 )
 
 func TestGenerateConnecpyFile(t *testing.T) {
@@ -31,6 +32,14 @@ func TestGenerateConnecpyFile(t *testing.T) {
 								OutputType: proto.String(".test.TestResponse"),
 							},
 						},
+					},
+				},
+				MessageType: []*descriptor.DescriptorProto{
+					{
+						Name: proto.String("TestRequest"),
+					},
+					{
+						Name: proto.String("TestResponse"),
 					},
 				},
 			},
@@ -59,6 +68,20 @@ func TestGenerateConnecpyFile(t *testing.T) {
 						},
 					},
 				},
+				MessageType: []*descriptor.DescriptorProto{
+					{
+						Name: proto.String("Request1"),
+					},
+					{
+						Name: proto.String("Response1"),
+					},
+					{
+						Name: proto.String("Request2"),
+					},
+					{
+						Name: proto.String("Response2"),
+					},
+				},
 			},
 			wantFile: "multi_connecpy.py",
 			wantErr:  false,
@@ -67,7 +90,12 @@ func TestGenerateConnecpyFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GenerateConnecpyFile(tt.input)
+			fd, err := protodesc.NewFile(tt.input, nil)
+			if err != nil {
+				t.Fatalf("Failed to create FileDescriptorProto: %v", err)
+				return
+			}
+			got, err := GenerateConnecpyFile(fd)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateConnecpyFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -78,7 +106,7 @@ func TestGenerateConnecpyFile(t *testing.T) {
 				}
 
 				content := got.GetContent()
-				if !strings.Contains(content, "from typing import Any, Protocol, Union") {
+				if !strings.Contains(content, "from typing import Optional, Protocol, Union") {
 					t.Error("Generated code missing required imports")
 				}
 				if !strings.Contains(content, "class "+strings.Split(tt.input.GetService()[0].GetName(), ".")[0]) {
@@ -108,8 +136,9 @@ func TestGenerate(t *testing.T) {
 				FileToGenerate: []string{"test.proto"},
 				ProtoFile: []*descriptor.FileDescriptorProto{
 					{
-						Name:    proto.String("test.proto"),
-						Package: proto.String("test"),
+						Name:       proto.String("test.proto"),
+						Package:    proto.String("test"),
+						Dependency: []string{"other.proto"},
 						Service: []*descriptor.ServiceDescriptorProto{
 							{
 								Name: proto.String("TestService"),
@@ -119,7 +148,32 @@ func TestGenerate(t *testing.T) {
 										InputType:  proto.String(".test.TestRequest"),
 										OutputType: proto.String(".test.TestResponse"),
 									},
+									{
+										Name:       proto.String("TestMethod2"),
+										InputType:  proto.String(".otherpackage.OtherRequest"),
+										OutputType: proto.String(".otherpackage.OtherResponse"),
+									},
 								},
+							},
+						},
+						MessageType: []*descriptor.DescriptorProto{
+							{
+								Name: proto.String("TestRequest"),
+							},
+							{
+								Name: proto.String("TestResponse"),
+							},
+						},
+					},
+					{
+						Name:    proto.String("other.proto"),
+						Package: proto.String("otherpackage"),
+						MessageType: []*descriptor.DescriptorProto{
+							{
+								Name: proto.String("OtherRequest"),
+							},
+							{
+								Name: proto.String("OtherResponse"),
 							},
 						},
 					},
@@ -143,37 +197,6 @@ func TestGenerate(t *testing.T) {
 				if len(resp.GetFile()) == 0 {
 					t.Error("Generate() returned no files")
 				}
-			}
-		})
-	}
-}
-
-func TestGetSymbolName(t *testing.T) {
-	tests := []struct {
-		name         string
-		symbolName   string
-		localPackage string
-		want         string
-	}{
-		{
-			name:         "local package type",
-			symbolName:   ".test.TestMessage",
-			localPackage: "test",
-			want:         "_pb2.TestMessage",
-		},
-		{
-			name:         "external package type",
-			symbolName:   ".other.OtherMessage",
-			localPackage: "test",
-			want:         "_sym_db.GetSymbol(\"other.OtherMessage\")",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := getSymbolName(tt.symbolName, tt.localPackage)
-			if got != tt.want {
-				t.Errorf("getSymbolName() = %v, want %v", got, tt.want)
 			}
 		})
 	}
