@@ -1,4 +1,3 @@
-import http.client as httplib
 import json
 
 from . import errors
