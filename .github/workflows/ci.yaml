@@ -35,7 +35,10 @@ jobs:
 
       - name: run lints
         if: startsWith(matrix.os, 'ubuntu-')
-        run: uv run ruff check .
+        run: |
+          uv run ruff format --check .
+          uv run ruff check .
+          uv run pyright
 
       - name: run python tests
         run: uv run pytest

@@ -43,7 +43,7 @@ class Endpoint(Generic[T, U]):
     ]
     input: type
     output: type
-    allowed_methods: tuple[str] = ("POST",)
+    allowed_methods: tuple[str, ...] = ("POST",)
     _async_proc: Union[
         Callable[
             [
@@ -183,7 +183,7 @@ class ConnecpyBaseApp(object):
         """
         self._services[self._prefix + svc.prefix] = svc
 
-    def _get_endpoint(self, path):
+    def _get_endpoint(self, path: str):
         """
         Retrieves the endpoint for a given path.
 

@@ -3,7 +3,7 @@ import random
 from connecpy.exceptions import InvalidArgument
 from connecpy.context import ServiceContext
 
-from example.google.protobuf.empty_pb2 import Empty
+from google.protobuf.empty_pb2 import Empty
 from haberdasher_pb2 import Hat, Size
 
 
@@ -26,5 +26,5 @@ class HaberdasherService(object):
         return response
 
     # TODO: Service methods should default to Unimplemented if not implemented
-    def DoNothing(self, req, ctx: ServiceContext):
+    def DoNothing(self, req: Empty, ctx: ServiceContext):
         return Empty()

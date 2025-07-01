@@ -1,7 +1,7 @@
 version: v2
 plugins:
-  - local:
-      - go
-      - run
-      - ../protoc-gen-connecpy
-    out: .
+- local:
+  - go
+  - run
+  - ../protoc-gen-connecpy
+  out: .
