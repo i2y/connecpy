@@ -10,6 +10,7 @@ from . import errors
 from . import exceptions
 from . import encoding
 from . import compression
+from ._protocol import ConnectWireError
 
 
 def normalize_wsgi_headers(environ) -> dict:
@@ -235,26 +236,14 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
 
         return endpoint
 
-    def handle_error(self, exc, environ, start_response):
+    def handle_error(self, exc, _environ, start_response):
         """Handle and log errors with detailed information."""
-        if isinstance(exc, exceptions.ConnecpyServerException):
-            status = {
-                errors.Errors.InvalidArgument: "400 Bad Request",
-                errors.Errors.BadRoute: "404 Not Found",
-                errors.Errors.Unimplemented: "501 Not Implemented",
-            }.get(exc.code, "500 Internal Server Error")
-
-            headers = [("Content-Type", "application/json")]
-            start_response(status, headers)
-            return [exc.to_json_bytes()]
-        else:
-            headers = [("Content-Type", "application/json")]
-            error = exceptions.ConnecpyServerException(
-                code=errors.Errors.Internal,
-                message=str(exc),
-            )
-            start_response("500 Internal Server Error", headers)
-            return [error.to_json_bytes()]
+        wire_error = ConnectWireError.from_exception(exc)
+        http_status = wire_error.to_http_status()
+        status = f"{http_status.code} {http_status.reason}"
+        headers = [("Content-Type", "application/json")]
+        start_response(status, headers)
+        return [wire_error.to_json_bytes()]
 
     def _handle_post_request(self, environ, endpoint, ctx):
         """Handle POST request with body."""

@@ -12,6 +12,7 @@ from . import errors
 from . import exceptions
 from . import encoding
 from . import compression
+from ._protocol import ConnectWireError
 
 
 class ConnecpyASGIApp(base.ConnecpyBaseApp):
@@ -185,13 +186,9 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
 
     async def handle_error(self, exc, scope, receive, send):
         """Handle errors that occur during request processing."""
-        if not isinstance(exc, exceptions.ConnecpyServerException):
-            exc = exceptions.ConnecpyServerException(
-                code=errors.Errors.Internal,
-                message=str(exc),
-            )
+        wire_error = ConnectWireError.from_exception(exc)
+        http_status = wire_error.to_http_status()
 
-        status = errors.Errors.get_status_code(exc.code)
         headers = [
             (b"content-type", b"application/json"),
         ]
@@ -199,14 +196,14 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
         await send(
             {
                 "type": "http.response.start",
-                "status": status,
+                "status": http_status.code,
                 "headers": headers,
             }
         )
         await send(
             {
                 "type": "http.response.body",
-                "body": exc.to_json_bytes(),
+                "body": wire_error.to_json_bytes(),
             }
         )
 
