@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from http import HTTPStatus
 import json
 
+import httpx
+
 from .errors import Errors
 from .exceptions import ConnecpyServerException
 
@@ -51,7 +53,7 @@ _error_to_http_status = {
     Errors.Unauthenticated: ExtendedHTTPStatus.from_http_status(
         HTTPStatus.UNAUTHORIZED
     ),
-    # Custom error codes not defined by Connec
+    # Custom error codes not defined by Connect
     Errors.NoError: ExtendedHTTPStatus.from_http_status(HTTPStatus.OK),
     Errors.BadRoute: ExtendedHTTPStatus.from_http_status(HTTPStatus.NOT_FOUND),
     Errors.Malformed: _BAD_REQUEST,
@@ -82,16 +84,30 @@ class ConnectWireError:
         return ConnectWireError(code=Errors.Unknown, message=str(exc))
 
     @staticmethod
-    def from_dict(data: dict, http_status_code: int) -> "ConnectWireError":
-        code_str = data.get("code")
-        if code_str:
-            try:
-                code = Errors(code_str)
-            except ValueError:
-                code = _http_status_code_to_error.get(http_status_code, Errors.Unknown)
+    def from_response(response: httpx.Response) -> "ConnectWireError":
+        try:
+            data = response.json()
+        except Exception:
+            data = None
+        if isinstance(data, dict):
+            code_str = data.get("code")
+            if code_str:
+                code = Errors.from_string(code_str)
+            else:
+                code = _http_status_code_to_error.get(
+                    response.status_code, Errors.Unknown
+                )
+            message = data.get("message", "")
         else:
-            code = _http_status_code_to_error.get(http_status_code, Errors.Unknown)
-        message = data.get("message", "")
+            code = _http_status_code_to_error.get(response.status_code, Errors.Unknown)
+            try:
+                http_status = HTTPStatus(response.status_code)
+                message = http_status.phrase
+            except ValueError:
+                if response.status_code == 499:
+                    message = "Client Closed Request"
+                else:
+                    message = ""
         return ConnectWireError(code=code, message=message)
 
     def to_exception(self) -> ConnecpyServerException:

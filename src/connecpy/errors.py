@@ -29,6 +29,22 @@ class Errors(Enum):
     Malformed = "malformed"
 
     @staticmethod
+    def from_string(code: str) -> "Errors":
+        """
+        Converts a string code to an Errors enum member.
+
+        Args:
+            code (str): The error code as a string.
+
+        Returns:
+            Errors: The corresponding Errors enum member.
+        """
+        try:
+            return Errors(code)
+        except ValueError:
+            return Errors.Unknown
+
+    @staticmethod
     def get_status_code(code: "Errors") -> int:
         """
         Returns the corresponding HTTP status code for the given error code.

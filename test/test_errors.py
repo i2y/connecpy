@@ -3,9 +3,11 @@ from httpx import (
     AsyncClient,
     Client,
     Response,
+    MockTransport,
     WSGITransport,
 )
 import pytest
+from pytest import param as p
 from connecpy.asgi import ConnecpyASGIApp
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
@@ -139,3 +141,71 @@ async def test_async_errors(
     assert exc_info.value.code == error
     assert exc_info.value.message == message
     assert recorded_response.status_code == http_status
+
+
+_http_errors = [
+    p(400, {}, Errors.Internal, "Bad Request", id="400"),
+    p(401, {}, Errors.Unauthenticated, "Unauthorized", id="401"),
+    p(403, {}, Errors.PermissionDenied, "Forbidden", id="403"),
+    p(404, {}, Errors.Unimplemented, "Not Found", id="404"),
+    p(429, {}, Errors.Unavailable, "Too Many Requests", id="429"),
+    p(499, {}, Errors.Unknown, "Client Closed Request", id="499"),
+    p(502, {}, Errors.Unavailable, "Bad Gateway", id="502"),
+    p(503, {}, Errors.Unavailable, "Service Unavailable", id="503"),
+    p(504, {}, Errors.Unavailable, "Gateway Timeout", id="504"),
+    p(
+        400,
+        {"json": {"code": "invalid_argument", "message": "Bad parameter"}},
+        Errors.InvalidArgument,
+        "Bad parameter",
+        id="connect error",
+    ),
+    p(
+        400,
+        {"json": {"message": "Bad parameter"}},
+        Errors.Internal,
+        "Bad parameter",
+        id="connect error without code",
+    ),
+    p(
+        404,
+        {"json": {"code": "not_found"}},
+        Errors.NotFound,
+        "",
+        id="connect error without message",
+    ),
+    p(
+        502,
+        {"text": '"{bad_json'},
+        Errors.Unavailable,
+        "Bad Gateway",
+        id="bad json",
+    ),
+]
+
+
+@pytest.mark.parametrize("response_status,response_kwargs,error,message", _http_errors)
+def test_sync_http_errors(response_status, response_kwargs, error, message):
+    transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
+    with (
+        HaberdasherClient(
+            "http://localhost", session=Client(transport=transport)
+        ) as client,
+        pytest.raises(ConnecpyServerException) as exc_info,
+    ):
+        client.MakeHat(request=Size(inches=10))
+    assert exc_info.value.code == error
+    assert exc_info.value.message == message
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("response_status,response_kwargs,error,message", _http_errors)
+async def test_async_http_errors(response_status, response_kwargs, error, message):
+    transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
+    async with AsyncHaberdasherClient(
+        "http://localhost", session=AsyncClient(transport=transport)
+    ) as client:
+        with pytest.raises(ConnecpyServerException) as exc_info:
+            await client.MakeHat(request=Size(inches=10))
+    assert exc_info.value.code == error
+    assert exc_info.value.message == message

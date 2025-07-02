@@ -108,9 +108,7 @@ class AsyncConnecpyClient:
                     )
                 return response
             else:
-                raise ConnectWireError.from_dict(
-                    resp.json(), resp.status_code
-                ).to_exception()
+                raise ConnectWireError.from_response(resp).to_exception()
         except httpx.TimeoutException as e:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.DeadlineExceeded,
