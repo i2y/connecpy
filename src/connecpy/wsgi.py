@@ -1,4 +1,5 @@
 from collections import defaultdict
+from http import HTTPStatus
 from typing import List, Mapping, Optional, Union
 import base64
 from urllib.parse import parse_qs
@@ -10,7 +11,7 @@ from . import errors
 from . import exceptions
 from . import encoding
 from . import compression
-from ._protocol import ConnectWireError
+from ._protocol import ConnectWireError, HTTPException
 
 
 def normalize_wsgi_headers(environ) -> dict:
@@ -188,56 +189,14 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
         # Store the service with its full path prefix
         self._services[svc._prefix] = svc
 
-    def _get_endpoint(self, path: str):
-        """Find endpoint for given path.
-
-        Args:
-            path_info: The request path
-
-        Returns:
-            Endpoint instance matching the path
-
-        Raises:
-            ConnecpyServerException: If endpoint not found or path invalid
-        """
-        if not path:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.BadRoute,
-                message="Empty path",
-            )
-
-        if path.startswith("/"):
-            path = path[1:]
-
-        # Split path into service path and method
-        try:
-            service_path, method_name = path.rsplit("/", 1)
-        except ValueError:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.BadRoute,
-                message=f"Invalid path format: {path}",
-            )
-
-        # Look for service
-        service = self._services.get(f"/{service_path}")
-        if service is None:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.BadRoute,
-                message=f"No service found for path: {service_path}",
-            )
-
-        # Get endpoint from service
-        endpoint = service._endpoints.get(method_name)
-        if endpoint is None:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.BadRoute,
-                message=f"Method not found: {method_name}",
-            )
-
-        return endpoint
-
     def handle_error(self, exc, _environ, start_response):
         """Handle and log errors with detailed information."""
+        if isinstance(exc, HTTPException):
+            start_response(
+                f"{exc.status.value} {exc.status.phrase}",
+                exc.headers,
+            )
+            return []
         wire_error = ConnectWireError.from_exception(exc)
         http_status = wire_error.to_http_status()
         status = f"{http_status.code} {http_status.reason}"
@@ -290,10 +249,12 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
             decoder = encoding.get_decoder_by_name(
                 "proto" if content_type == "application/proto" else "json"
             )
+            assert decoder is not None
+            decoder = encoding.get_decoder_by_content_type(ctx.content_type())
             if not decoder:
-                raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.Unimplemented,
-                    message=f"Unsupported encoding: {content_type}",
+                raise HTTPException(
+                    HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                    [("Accept-Post", "application/json, application/proto")],
                 )
 
             decoder = partial(decoder, data_obj=endpoint.input)
@@ -390,9 +351,9 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
             endpoint = self._get_endpoint(environ.get("PATH_INFO"))
             request_method = environ.get("REQUEST_METHOD")
             if request_method not in endpoint.allowed_methods:
-                raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.BadRoute,
-                    message=f"unsupported method {request_method}",
+                raise HTTPException(
+                    HTTPStatus.METHOD_NOT_ALLOWED,
+                    [("Allow", ", ".join(endpoint.allowed_methods))],
                 )
             # Handle request based on method
             if request_method == "GET":

@@ -82,6 +82,15 @@ def get_decoder_by_name(encoding_name: str) -> Optional[Decoder]:
     return decoders.get(encoding_name)
 
 
+def get_decoder_by_content_type(ctype: str) -> Optional[Decoder]:
+    """Get decoder function by content type."""
+    decoders = {
+        "application/json": json_decoder,
+        "application/proto": proto_decoder,
+    }
+    return decoders.get(ctype)
+
+
 def get_encoder(
     endpoint: Any, ctype: str
 ) -> Callable[[Any], Tuple[bytes, Dict[str, List[str]]]]:
@@ -91,8 +100,10 @@ def get_encoder(
     elif ctype == "application/proto":
         return partial(proto_encoder, data_obj=endpoint.output)
     else:
+        # Currently not possible because we validate content type before
+        # getting encoder.
         raise exceptions.ConnecpyServerException(
-            code=errors.Errors.BadRoute,
+            code=errors.Errors.Internal,
             message=f"unexpected Content-Type: {ctype}",
         )
 

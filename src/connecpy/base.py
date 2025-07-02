@@ -1,16 +1,16 @@
 import asyncio
 from dataclasses import dataclass
+from http import HTTPStatus
 from functools import reduce
 from typing import Callable, Generic, Tuple, TypeVar, Union
 
 from starlette import concurrency
 
 from . import context
-from . import exceptions
-from . import errors
 from . import interceptor
 from . import server
 from . import encoding
+from ._protocol import HTTPException
 
 
 T = TypeVar("T")
@@ -196,13 +196,26 @@ class ConnecpyBaseApp(object):
         Raises:
             exceptions.ConnecpyServerException: If the endpoint is not found.
         """
-        svc = self._services.get(path.rsplit("/", 1)[0], None)
-        if svc is None:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.NotFound, message="not found"
-            )
+        if path.startswith("/"):
+            path = path[1:]
 
-        return svc.get_endpoint(path[len(self._prefix) :])
+        # Split path into service path and method
+        try:
+            service_path, method_name = path.rsplit("/", 1)
+        except ValueError:
+            raise HTTPException(HTTPStatus.NOT_FOUND, [])
+
+        # Look for service
+        service = self._services.get(f"/{service_path}")
+        if service is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, [])
+
+        # Get endpoint from service
+        endpoint = service._endpoints.get(method_name)
+        if endpoint is None:
+            raise HTTPException(HTTPStatus.NOT_FOUND, [])
+
+        return endpoint
 
     def _get_encoder_decoder(self, endpoint, ctype: str):
         """

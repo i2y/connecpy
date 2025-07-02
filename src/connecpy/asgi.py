@@ -1,4 +1,5 @@
 from collections import defaultdict
+from http import HTTPStatus
 from typing import Iterable, List, Mapping, Tuple
 from urllib.parse import parse_qs
 import base64
@@ -12,7 +13,7 @@ from . import errors
 from . import exceptions
 from . import encoding
 from . import compression
-from ._protocol import ConnectWireError
+from ._protocol import ConnectWireError, HTTPException
 
 
 class ConnecpyASGIApp(base.ConnecpyBaseApp):
@@ -32,9 +33,9 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
             http_method = scope["method"]
             endpoint = self._get_endpoint(scope["path"])
             if http_method not in endpoint.allowed_methods:
-                raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.BadRoute,
-                    message=f"unsupported method {http_method}",
+                raise HTTPException(
+                    HTTPStatus.METHOD_NOT_ALLOWED,
+                    [("Allow", ", ".join(endpoint.allowed_methods))],
                 )
 
             headers = scope.get("headers", [])
@@ -186,6 +187,23 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
 
     async def handle_error(self, exc, scope, receive, send):
         """Handle errors that occur during request processing."""
+        if isinstance(exc, HTTPException):
+            http_status = exc.status.value
+            headers = [(k.encode("utf-8"), v.encode("utf-8")) for k, v in exc.headers]
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": http_status,
+                    "headers": headers,
+                }
+            )
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": b"",
+                }
+            )
+            return
         wire_error = ConnectWireError.from_exception(exc)
         http_status = wire_error.to_http_status()
 

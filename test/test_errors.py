@@ -1,3 +1,5 @@
+from http import HTTPMethod, HTTPStatus
+
 from httpx import (
     ASGITransport,
     AsyncClient,
@@ -20,7 +22,7 @@ from example.haberdasher_connecpy import (
     HaberdasherServerSync,
     HaberdasherClient,
 )
-from example.haberdasher_pb2 import Size
+from example.haberdasher_pb2 import Hat, Size
 from google.protobuf.empty_pb2 import Empty
 
 
@@ -41,9 +43,6 @@ _errors = [
     (Errors.Unavailable, "Service unavailable", 503),
     (Errors.DataLoss, "Data loss occurred", 500),
     (Errors.Unauthenticated, "Unauthenticated access", 401),
-    # Custom error codes not defined by Connect
-    (Errors.BadRoute, "Bad route", 404),
-    (Errors.Malformed, "Malformed request", 400),
 ]
 
 
@@ -209,3 +208,126 @@ async def test_async_http_errors(response_status, response_kwargs, error, messag
             await client.MakeHat(request=Size(inches=10))
     assert exc_info.value.code == error
     assert exc_info.value.message == message
+
+
+_client_errors = [
+    p(
+        HTTPMethod.PUT,
+        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        {"Content-Type": "application/proto"},
+        Size(inches=10).SerializeToString(),
+        HTTPStatus.METHOD_NOT_ALLOWED,
+        {"Allow": "GET, POST"},
+        id="bad method",
+    ),
+    p(
+        HTTPMethod.POST,
+        "/notservicemethod",
+        {"Content-Type": "application/proto"},
+        Size(inches=10).SerializeToString(),
+        HTTPStatus.NOT_FOUND,
+        {},
+        id="not found",
+    ),
+    p(
+        HTTPMethod.POST,
+        "/notservice/method",
+        {"Content-Type": "application/proto"},
+        Size(inches=10).SerializeToString(),
+        HTTPStatus.NOT_FOUND,
+        {},
+        id="not present service",
+    ),
+    p(
+        HTTPMethod.POST,
+        "/i2y.connecpy.example.Haberdasher/notmethod",
+        {"Content-Type": "application/proto"},
+        Size(inches=10).SerializeToString(),
+        HTTPStatus.NOT_FOUND,
+        {},
+        id="not present method",
+    ),
+    p(
+        HTTPMethod.POST,
+        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        {"Content-Type": "text/html"},
+        Size(inches=10).SerializeToString(),
+        HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+        {"Accept-Post": "application/json, application/proto"},
+        id="bad content type",
+    ),
+    p(
+        HTTPMethod.POST,
+        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        {"Content-Type": "application/proto", "connect-protocol-version": "2"},
+        Size(inches=10).SerializeToString(),
+        HTTPStatus.BAD_REQUEST,
+        {"content-type": "application/json"},
+        id="bad connect protocol version",
+    ),
+]
+
+
+class ValidHaberdasherSync(HaberdasherSync):
+    def MakeHat(self, req, ctx):
+        return Hat()
+
+    def DoNothing(self, req, ctx):
+        return Empty()
+
+
+@pytest.mark.parametrize(
+    "method,path,headers,body,response_status,response_headers", _client_errors
+)
+def test_sync_client_errors(
+    method, path, headers, body, response_status, response_headers
+):
+    haberdasher = ValidHaberdasherSync()
+    server = HaberdasherServerSync(service=haberdasher)
+    app = ConnecpyWSGIApp()
+    app.add_service(server)
+    transport = WSGITransport(app)
+
+    client = Client(transport=transport)
+    response = client.request(
+        method=method,
+        url=f"http://localhost{path}",
+        content=body,
+        headers=headers,
+    )
+
+    assert response.status_code == response_status
+    assert response.headers == response_headers
+
+
+class ValidHaberdasher(Haberdasher):
+    async def MakeHat(self, req, ctx):
+        return Hat()
+
+    async def DoNothing(self, req, ctx):
+        return Empty()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "method,path,headers,body,response_status,response_headers", _client_errors
+)
+async def test_async_client_errors(
+    method, path, headers, body, response_status, response_headers
+):
+    haberdasher = ValidHaberdasher()
+    server = HaberdasherServer(service=haberdasher)
+    app = ConnecpyASGIApp()
+    app.add_service(server)
+    transport = ASGITransport(app)
+
+    client = AsyncClient(transport=transport)
+    response = await client.request(
+        method=method,
+        url=f"http://localhost{path}",
+        content=body,
+        headers=headers,
+    )
+
+    assert response.status_code == response_status
+    assert response.headers == response_headers
