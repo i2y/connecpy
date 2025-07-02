@@ -11,10 +11,8 @@ class Errors(Enum):
     InvalidArgument = "invalid_argument"
     DeadlineExceeded = "deadline_exceeded"
     NotFound = "not_found"
-    BadRoute = "bad_route"
     AlreadyExists = "already_exists"
     PermissionDenied = "permission_denied"
-    Unauthenticated = "unauthenticated"
     ResourceExhausted = "resource_exhausted"
     FailedPrecondition = "failed_precondition"
     Aborted = "aborted"
@@ -23,8 +21,28 @@ class Errors(Enum):
     Internal = "internal"
     Unavailable = "unavailable"
     DataLoss = "data_loss"
-    Malformed = "malformed"
+    Unauthenticated = "unauthenticated"
+
+    # Custom error codes not defined by Connect
     NoError = ""
+    BadRoute = "bad_route"
+    Malformed = "malformed"
+
+    @staticmethod
+    def from_string(code: str) -> "Errors":
+        """
+        Converts a string code to an Errors enum member.
+
+        Args:
+            code (str): The error code as a string.
+
+        Returns:
+            Errors: The corresponding Errors enum member.
+        """
+        try:
+            return Errors(code)
+        except ValueError:
+            return Errors.Unknown
 
     @staticmethod
     def get_status_code(code: "Errors") -> int:

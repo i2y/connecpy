@@ -7,6 +7,7 @@ from . import compression
 from . import context
 from . import exceptions
 from . import errors
+from ._protocol import ConnectWireError
 
 
 class AsyncConnecpyClient:
@@ -97,26 +98,26 @@ class AsyncConnecpyClient:
                     url=self._address + url, content=request_data, **kwargs
                 )
 
-            resp.raise_for_status()
-
             if resp.status_code == 200:
                 response = response_class()
-                response.ParseFromString(resp.content)
+                try:
+                    response.ParseFromString(resp.content)
+                except Exception as e:
+                    raise exceptions.ConnecpyException(
+                        f"Failed to parse response message: {str(e)}"
+                    )
                 return response
             else:
-                raise exceptions.ConnecpyServerException.from_json(await resp.json())
+                raise ConnectWireError.from_response(resp).to_exception()
         except httpx.TimeoutException as e:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.DeadlineExceeded,
                 message=str(e) or "request timeout",
             )
-        except httpx.HTTPStatusError as e:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Unavailable,
-                message=str(e),
-            )
+        except exceptions.ConnecpyException:
+            raise
         except Exception as e:
             raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Internal,
+                code=errors.Errors.Unavailable,
                 message=str(e),
             )

@@ -1,4 +1,3 @@
-import http.client as httplib
 import json
 
 from . import errors
@@ -10,7 +9,7 @@ class ConnecpyException(Exception):
     pass
 
 
-class ConnecpyServerException(httplib.HTTPException):
+class ConnecpyServerException(ConnecpyException):
     """
     Exception class for Connecpy server errors.
 
