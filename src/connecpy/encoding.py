@@ -1,11 +1,15 @@
 from functools import partial
 import json
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
 
 from google.protobuf import json_format, message
 
 from . import errors
 from . import exceptions
+
+
+class Decoder(Protocol):
+    def __call__(self, body: bytes, data_obj: Any) -> Any: ...
 
 
 def json_decoder(body: bytes, data_obj: Any) -> Any:
@@ -69,7 +73,7 @@ def proto_encoder(
         )
 
 
-def get_decoder_by_name(encoding_name: str) -> Union[Callable[[bytes, Any], Any], None]:
+def get_decoder_by_name(encoding_name: str) -> Optional[Decoder]:
     """Get decoder function by encoding name."""
     decoders = {
         "json": json_decoder,

@@ -33,6 +33,7 @@ dev-dependencies = [
     "hypercorn",
     "daphne",
     "pip>=24.0",
+    "pyright[nodejs]",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.2",
     "zstd-asgi>=0.2",
@@ -54,3 +55,15 @@ addopts = [
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.
 extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py"]
+
+[tool.pyright]
+exclude = [
+    # Defaults.
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+
+    # GRPC python files don't typecheck on their own.
+    # See https://github.com/grpc/grpc/issues/39555
+    "**/*_pb2_grpc.py",
+]

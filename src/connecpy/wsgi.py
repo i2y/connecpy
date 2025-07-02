@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Mapping, Union
+from typing import List, Mapping, Optional, Union
 import base64
 from urllib.parse import parse_qs
 from functools import partial
@@ -128,7 +128,7 @@ def validate_request_headers(headers: dict) -> tuple[str, str]:
 def prepare_response_headers(
     base_headers: dict,
     selected_encoding: str,
-    compressed_size: int = None,
+    compressed_size: Optional[int] = None,
 ) -> tuple[dict, bool]:
     """Prepare response headers and determine if compression should be used.
 
@@ -188,7 +188,7 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
         # Store the service with its full path prefix
         self._services[svc._prefix] = svc
 
-    def _get_endpoint(self, path_info):
+    def _get_endpoint(self, path: str):
         """Find endpoint for given path.
 
         Args:
@@ -200,22 +200,22 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
         Raises:
             ConnecpyServerException: If endpoint not found or path invalid
         """
-        if not path_info:
+        if not path:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.BadRoute,
                 message="Empty path",
             )
 
-        if path_info.startswith("/"):
-            path_info = path_info[1:]
+        if path.startswith("/"):
+            path = path[1:]
 
         # Split path into service path and method
         try:
-            service_path, method_name = path_info.rsplit("/", 1)
+            service_path, method_name = path.rsplit("/", 1)
         except ValueError:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.BadRoute,
-                message=f"Invalid path format: {path_info}",
+                message=f"Invalid path format: {path}",
             )
 
         # Look for service
@@ -354,9 +354,7 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
             # Handle GET request with proto decoder
             try:
                 # TODO - Use content type from queryparam
-                request = encoding.get_decoder_by_name("proto")(
-                    message, data_obj=endpoint.input
-                )
+                request = encoding.proto_decoder(message, data_obj=endpoint.input)
                 return request
             except Exception as e:
                 raise exceptions.ConnecpyServerException(
@@ -422,7 +420,7 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
             response_headers, use_compression = prepare_response_headers(
                 base_headers,
                 selected_encoding,
-                len(compressed_bytes) if compressor is not None else None,
+                len(compressed_bytes) if compressed_bytes is not None else None,
             )
 
             # Convert headers to WSGI format

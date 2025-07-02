@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Optional
 import gzip
 import brotli
 import zstandard
@@ -84,7 +85,7 @@ def get_decompressor(compression_name: str) -> Callable[[bytes], bytes] | None:
     return None
 
 
-def get_compressor(compression_name: str) -> Callable[[bytes], bytes]:
+def get_compressor(compression_name: str) -> Optional[Callable[[bytes], bytes]]:
     """Get compressor function by compression name.
 
     Args:
@@ -184,7 +185,7 @@ def parse_accept_encoding(accept_encoding: str | bytes) -> list[tuple[str, float
 # TODO: wrong sorting order, use preference order instead of available order
 def select_encoding(
     accept_encoding: str | bytes,
-    available_encodings: tuple[str] = ("br", "gzip", "zstd", "identity"),
+    available_encodings: tuple[str, ...] = ("br", "gzip", "zstd", "identity"),
 ) -> str:
     """Select the best compression encoding based on Accept-Encoding header.
 

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TypeVar
 import httpx
 
 from google.protobuf.message import Message
@@ -8,6 +8,9 @@ from . import context
 from . import exceptions
 from . import errors
 from ._protocol import ConnectWireError
+
+
+_RES = TypeVar("_RES", bound=Message)
 
 
 class AsyncConnecpyClient:
@@ -51,11 +54,11 @@ class AsyncConnecpyClient:
         url: str,
         request: Message,
         ctx: Optional[context.ClientContext],
-        response_class: type[Message],
+        response_class: type[_RES],
         method="POST",
         session: Optional[httpx.AsyncClient] = None,
         **kwargs,
-    ):
+    ) -> _RES:
         """
         Makes a request to the Connecpy server.
 

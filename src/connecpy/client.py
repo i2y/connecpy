@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TypeVar
 
 import httpx
 
@@ -10,6 +10,9 @@ from . import errors
 from . import compression
 from . import shared_client
 from ._protocol import ConnectWireError
+
+
+_RES = TypeVar("_RES", bound=Message)
 
 
 class ConnecpyClient:
@@ -51,10 +54,10 @@ class ConnecpyClient:
         url,
         request: Message,
         ctx: Optional[context.ClientContext],
-        response_class: type[Message],
+        response_class: type[_RES],
         method="POST",
         **kwargs,
-    ):
+    ) -> _RES:
         """Make an HTTP request to the server."""
         # Prepare headers and kwargs using shared logic
         headers, kwargs = shared_client.prepare_headers(ctx, kwargs, self._timeout)
