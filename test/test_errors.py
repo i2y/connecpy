@@ -1,3 +1,5 @@
+from typing import Optional
+
 from httpx import (
     ASGITransport,
     AsyncClient,
@@ -51,10 +53,10 @@ class ErrorHaberdasherSync(HaberdasherSync):
     def __init__(self, exception: ConnecpyServerException):
         self._exception = exception
 
-    def MakeHat(self, _req, _ctx):
+    def MakeHat(self, req, ctx):
         raise self._exception
 
-    def DoNothing(self, _req, _ctx):
+    def DoNothing(self, req, ctx):
         return Empty()
 
 
@@ -75,7 +77,7 @@ def test_sync_errors(
     app.add_service(server)
     transport = WSGITransport(app)
 
-    recorded_response: Response = None
+    recorded_response: Optional[Response] = None
 
     def record_response(response):
         nonlocal recorded_response
@@ -91,6 +93,7 @@ def test_sync_errors(
 
     assert exc_info.value.code == error
     assert exc_info.value.message == message
+    assert recorded_response is not None
     assert recorded_response.status_code == http_status
 
 
@@ -98,10 +101,10 @@ class ErrorHaberdasher(Haberdasher):
     def __init__(self, exception: ConnecpyServerException):
         self._exception = exception
 
-    async def MakeHat(self, _req, _ctx):
+    async def MakeHat(self, req, ctx):
         raise self._exception
 
-    async def DoNothing(self, _req, _ctx):
+    async def DoNothing(self, req, ctx):
         return Empty()
 
 
@@ -123,7 +126,7 @@ async def test_async_errors(
     app.add_service(server)
     transport = ASGITransport(app)
 
-    recorded_response: Response = None
+    recorded_response: Optional[Response] = None
 
     async def record_response(response):
         nonlocal recorded_response
@@ -140,6 +143,7 @@ async def test_async_errors(
 
     assert exc_info.value.code == error
     assert exc_info.value.message == message
+    assert recorded_response is not None
     assert recorded_response.status_code == http_status
 
 
