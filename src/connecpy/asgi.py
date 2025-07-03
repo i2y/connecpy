@@ -183,11 +183,11 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
 
     async def _read_body(self, receive):
         """Read the body of the request."""
-        body = b""
+        chunks = []
         while True:
             message = await receive()
             if message["type"] == "http.request":
-                body += message.get("body", b"")
+                chunks.append(message.get("body", b""))
                 if not message.get("more_body", False):
                     break
             elif message["type"] == "http.disconnect":
@@ -200,7 +200,7 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                     code=errors.Errors.Unknown,
                     message="Unexpected message type",
                 )
-        return body
+        return b"".join(chunks)
 
     async def handle_error(self, exc, scope, receive, send):
         """Handle errors that occur during request processing."""
