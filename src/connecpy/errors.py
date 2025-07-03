@@ -23,11 +23,6 @@ class Errors(Enum):
     DataLoss = "data_loss"
     Unauthenticated = "unauthenticated"
 
-    # Custom error codes not defined by Connect
-    NoError = ""
-    BadRoute = "bad_route"
-    Malformed = "malformed"
-
     @staticmethod
     def from_string(code: str) -> "Errors":
         """
@@ -59,10 +54,8 @@ class Errors(Enum):
             Errors.Canceled: 408,
             Errors.Unknown: 500,
             Errors.InvalidArgument: 400,
-            Errors.Malformed: 400,
             Errors.DeadlineExceeded: 408,
             Errors.NotFound: 404,
-            Errors.BadRoute: 404,
             Errors.AlreadyExists: 409,
             Errors.PermissionDenied: 403,
             Errors.Unauthenticated: 401,
@@ -74,5 +67,4 @@ class Errors(Enum):
             Errors.Internal: 500,
             Errors.Unavailable: 503,
             Errors.DataLoss: 500,
-            Errors.NoError: 200,
         }.get(code, 500)

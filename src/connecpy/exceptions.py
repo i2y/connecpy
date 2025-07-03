@@ -80,7 +80,6 @@ def connecpy_error_from_intermediary(status, reason, headers, body):
             400: errors.Errors.Internal,  # JSON response should have been returned
             401: errors.Errors.Unauthenticated,
             403: errors.Errors.PermissionDenied,
-            404: errors.Errors.BadRoute,
             429: errors.Errors.ResourceExhausted,
             502: errors.Errors.Unavailable,
             503: errors.Errors.Unavailable,

@@ -53,10 +53,6 @@ _error_to_http_status = {
     Errors.Unauthenticated: ExtendedHTTPStatus.from_http_status(
         HTTPStatus.UNAUTHORIZED
     ),
-    # Custom error codes not defined by Connect
-    Errors.NoError: ExtendedHTTPStatus.from_http_status(HTTPStatus.OK),
-    Errors.BadRoute: ExtendedHTTPStatus.from_http_status(HTTPStatus.NOT_FOUND),
-    Errors.Malformed: _BAD_REQUEST,
 }
 
 
@@ -120,3 +116,11 @@ class ConnectWireError:
         return json.dumps({"code": self.code.value, "message": self.message}).encode(
             "utf-8"
         )
+
+
+class HTTPException(Exception):
+    """An HTTP exception returned directly before starting the connect protocol."""
+
+    def __init__(self, status: HTTPStatus, headers: list[tuple[str, str]]):
+        self.status = status
+        self.headers = headers

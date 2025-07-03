@@ -1,8 +1,10 @@
+from http import HTTPStatus
 from typing import Any, Protocol, Mapping, MutableMapping, List, Union
 import time
 
 from . import errors
 from . import exceptions
+from ._protocol import HTTPException
 
 
 class ClientContext:
@@ -205,21 +207,23 @@ class ConnecpyServiceContext:
         self._details = ""
         self._trailing_metadata = {}
 
+        # We don't require connect-protocol-version header. connect-go provides an option
+        # to require it but it's almost never used in practice.
         connect_protocol_version = self._invocation_metadata.get(
             "connect-protocol-version", ["1"]
         )[0]
         if connect_protocol_version != "1":
             raise exceptions.ConnecpyServerException(
-                code=errors.Errors.BadRoute,
-                message="Invalid connect-protocol-version",
+                code=errors.Errors.InvalidArgument,
+                message=f"connect-protocol-version must be '1': got '{connect_protocol_version}'",
             )
         self._connect_protocol_version = connect_protocol_version
 
         ctype = self._invocation_metadata.get("content-type", ["application/proto"])[0]
         if ctype not in ("application/proto", "application/json"):
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.BadRoute,
-                message=f"Unsupported content type: {ctype}",
+            raise HTTPException(
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                [("Accept-Post", "application/json, application/proto")],
             )
         self._content_type = ctype
 
