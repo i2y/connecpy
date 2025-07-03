@@ -8,7 +8,6 @@ authors = [
 dependencies = [
     "httpx",
     "protobuf",
-    "starlette",
     "zstd-asgi>=0.2",
     "brotli-asgi>=1.4.0",
     "brotli>=1.1.0",
@@ -24,18 +23,14 @@ build-backend = "hatchling.build"
 [tool.uv]
 managed = true
 dev-dependencies = [
-    "ruff>=0.9.4",
-    "grpcio-tools",
-    "uvicorn",
     "grpcio",
-    "protobuf",
-    "brotli_asgi",
-    "hypercorn",
-    "daphne",
+    "grpcio-tools",
     "pip>=24.0",
     "pyright[nodejs]",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.2",
+    "ruff>=0.9.4",
+    "starlette",
     "zstd-asgi>=0.2",
 ]
 

@@ -4,8 +4,6 @@ from http import HTTPStatus
 from functools import reduce
 from typing import Callable, Generic, Tuple, TypeVar, Union
 
-from starlette import concurrency
-
 from . import context
 from . import interceptor
 from . import server
@@ -113,7 +111,7 @@ class Endpoint(Generic[T, U]):
 
 def thread_pool_runner(func):
     async def run(request, ctx: context.ConnecpyServiceContext):
-        return await concurrency.run_in_threadpool(func, request, ctx)
+        return await asyncio.to_thread(func, request, ctx)
 
     return run
 
