@@ -4,8 +4,6 @@ from urllib.parse import parse_qs
 import base64
 from functools import partial
 
-from starlette.requests import Request
-
 from . import base
 from . import context
 from . import errors
@@ -147,9 +145,8 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
     async def _handle_post_request(self, scope, receive, ctx):
         """Handle POST request with body."""
         # Get request body and endpoint
-        request = Request(scope, receive)
         endpoint = self._get_endpoint(scope["path"])
-        req_body = await request.body()
+        req_body = await self._read_body(receive)
 
         if len(req_body) > self._max_receive_message_length:
             raise exceptions.ConnecpyServerException(
@@ -183,6 +180,27 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
 
         decoder = partial(base_decoder, data_obj=endpoint.input)
         return decoder(req_body)
+
+    async def _read_body(self, receive):
+        """Read the body of the request."""
+        body = b""
+        while True:
+            message = await receive()
+            if message["type"] == "http.request":
+                body += message.get("body", b"")
+                if not message.get("more_body", False):
+                    break
+            elif message["type"] == "http.disconnect":
+                raise exceptions.ConnecpyServerException(
+                    code=errors.Errors.Canceled,
+                    message="Client disconnected before request completion",
+                )
+            else:
+                raise exceptions.ConnecpyServerException(
+                    code=errors.Errors.Unknown,
+                    message="Unexpected message type",
+                )
+        return body
 
     async def handle_error(self, exc, scope, receive, send):
         """Handle errors that occur during request processing."""
