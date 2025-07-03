@@ -1,0 +1,13 @@
+features:
+  versions:
+  - HTTP_VERSION_1
+  supports_tls: false
+  supports_trailers: false
+  protocols:
+  - PROTOCOL_CONNECT
+  codecs:
+  - CODEC_PROTO
+  compressions:
+  - COMPRESSION_IDENTITY
+  stream_types:
+  - STREAM_TYPE_UNARY
