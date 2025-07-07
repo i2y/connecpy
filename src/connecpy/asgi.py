@@ -1,6 +1,6 @@
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Iterable, List, Mapping, Tuple, TYPE_CHECKING
+from typing import Iterable, Mapping, Tuple, TYPE_CHECKING
 from urllib.parse import parse_qs
 import base64
 from functools import partial

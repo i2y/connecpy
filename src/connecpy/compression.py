@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Iterable, Optional
+from typing import Optional
 import gzip
 import brotli
 import zstandard
