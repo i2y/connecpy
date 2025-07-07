@@ -18,10 +18,10 @@ if TYPE_CHECKING:
     # We don't use asgiref code so only import from it for type checking
     from asgiref.typing import ASGIReceiveCallable, ASGISendCallable, HTTPScope, Scope
 else:
-    ASGIReceiveCallable = "ASGIReceiveCallable"
-    ASGISendCallable = "ASGISendCallable"
-    HTTPScope = "HTTPScope"
-    Scope = "Scope"
+    ASGIReceiveCallable = "asgiref.typing.ASGIReceiveCallable"
+    ASGISendCallable = "asgiref.typing.ASGISendCallable"
+    HTTPScope = "asgiref.typing.HTTPScope"
+    Scope = "asgiref.typing.Scope"
 
 
 class ConnecpyASGIApp(base.ConnecpyBaseApp):
