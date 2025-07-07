@@ -1,6 +1,6 @@
+import asyncio
 import sys
 import time
-from typing import BinaryIO
 
 import httpx
 from connecpy.context import ClientContext
@@ -14,15 +14,6 @@ from connectrpc.conformance.v1.client_compat_pb2 import (
 from connectrpc.conformance.v1.service_pb2 import UnaryRequest
 from connectrpc.conformance.v1.service_connecpy import ConformanceServiceClient
 
-
-def _readexactly(stream: BinaryIO, n: int) -> bytes:
-    buf = b""
-    while len(buf) < n:
-        chunk = stream.read(n - len(buf))
-        if not chunk:
-            raise EOFError("Unexpected end of file")
-        buf += chunk
-    return buf
 
 
 def _convert_code(error: Errors) -> Code:
@@ -111,26 +102,37 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
     return test_response
 
 
-def main():
+async def _create_standard_streams():
+    loop = asyncio.get_event_loop()
+    stdin = asyncio.StreamReader()
+    protocol = asyncio.StreamReaderProtocol(stdin)
+    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+    w_transport, w_protocol = await loop.connect_write_pipe(asyncio.streams.FlowControlMixin, sys.stdout)
+    stdout = asyncio.StreamWriter(w_transport, w_protocol, stdin, loop)
+    return stdin, stdout
+
+
+async def main():
+    stdin, stdout = await _create_standard_streams()
     while True:
         try:
-            size_buf = _readexactly(sys.stdin.buffer, 4)
-        except EOFError:
+            size_buf = await stdin.readexactly(4)
+        except asyncio.IncompleteReadError:
             return
         size = int.from_bytes(size_buf)
-        # Allow to raise since we always should have a message
-        request_buf = _readexactly(sys.stdin.buffer, size)
+        # Allow to raise even on EOF since we always should have a message
+        request_buf = await stdin.readexactly(size)
         request = ClientCompatRequest()
         request.ParseFromString(request_buf)
 
-        response = _run_test_sync(request)
+        response = await asyncio.to_thread(_run_test_sync, request)
 
         response_buf = response.SerializeToString()
         size_buf = len(response_buf).to_bytes(4)
-        sys.stdout.buffer.write(size_buf)
-        sys.stdout.buffer.write(response_buf)
-        sys.stdout.buffer.flush()
+        stdout.write(size_buf)
+        stdout.write(response_buf)
+        await stdout.drain()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
