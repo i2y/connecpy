@@ -23,6 +23,7 @@ build-backend = "hatchling.build"
 [tool.uv]
 managed = true
 dev-dependencies = [
+    "asgiref",
     "grpcio",
     "grpcio-tools",
     "pip>=24.0",

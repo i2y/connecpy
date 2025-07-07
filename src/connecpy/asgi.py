@@ -1,6 +1,6 @@
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Iterable, List, Mapping, Tuple
+from typing import Iterable, List, Mapping, Tuple, TYPE_CHECKING
 from urllib.parse import parse_qs
 import base64
 from functools import partial
@@ -14,10 +14,22 @@ from . import compression
 from ._protocol import ConnectWireError, HTTPException
 
 
+if TYPE_CHECKING:
+    # We don't use asgiref code so only import from it for type checking
+    from asgiref.typing import ASGIReceiveCallable, ASGISendCallable, HTTPScope, Scope
+else:
+    ASGIReceiveCallable = "ASGIReceiveCallable"
+    ASGISendCallable = "ASGISendCallable"
+    HTTPScope = "HTTPScope"
+    Scope = "Scope"
+
+
 class ConnecpyASGIApp(base.ConnecpyBaseApp):
     """ASGI application for Connecpy."""
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(
+        self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
+    ) -> None:
         """
         Handle incoming ASGI requests.
 
@@ -33,18 +45,16 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
             if http_method not in endpoint.allowed_methods:
                 raise HTTPException(
                     HTTPStatus.METHOD_NOT_ALLOWED,
-                    [("Allow", ", ".join(endpoint.allowed_methods))],
+                    [("allow", ", ".join(endpoint.allowed_methods))],
                 )
 
-            headers = scope.get("headers", [])
-            accept_encoding = compression.extract_header_value(
-                headers, b"accept-encoding"
-            )
+            headers = _process_headers(scope.get("headers", ()))
+            accept_encoding = _get_header_value(headers, "accept-encoding")
             selected_encoding = compression.select_encoding(accept_encoding)
 
-            ctx = context.ConnecpyServiceContext(
-                scope["client"], convert_to_mapping(headers)
-            )
+            client = scope["client"]
+            peer = f"{client[0]}:{client[1]}" if client else ""
+            ctx = context.ConnecpyServiceContext(peer, headers)
 
             if http_method == "GET":
                 request = await self._handle_get_request(scope, ctx)
@@ -62,12 +72,9 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                 compressor = compression.get_compressor(selected_encoding)
                 if compressor:
                     res_bytes = compressor(res_bytes)
-                    headers["Content-Encoding"] = [selected_encoding]
+                    headers["content-encoding"] = [selected_encoding]
 
-            combined_headers = dict(
-                add_trailer_prefix(ctx.trailing_metadata()), **headers
-            )
-            final_headers = convert_to_single_string(combined_headers)
+            final_headers = {key: ", ".join(values) for key, values in headers.items()}
 
             await send(
                 {
@@ -77,19 +84,25 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                         (k.lower().encode(), v.encode())
                         for k, v in final_headers.items()
                     ],
+                    # TODO: Map trailers correctly if possible. Will be hard to do with unit tests
+                    # due to poor support in Python ecosystem.
+                    "trailers": False,
                 }
             )
             await send(
                 {
                     "type": "http.response.body",
                     "body": res_bytes,
+                    "more_body": False,
                 }
             )
 
         except Exception as e:
-            await self.handle_error(e, scope, receive, send)
+            await self._handle_error(e, scope, receive, send)
 
-    async def _handle_get_request(self, scope, ctx):
+    async def _handle_get_request(
+        self, scope: HTTPScope, ctx: context.ConnecpyServiceContext
+    ):
         """Handle GET request with query parameters."""
         query_string = scope.get("query_string", b"").decode("utf-8")
         params = parse_qs(query_string)
@@ -143,7 +156,9 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
         decoder = partial(decoder, data_obj=endpoint.input)
         return decoder(message)
 
-    async def _handle_post_request(self, scope, receive, ctx):
+    async def _handle_post_request(
+        self, scope: HTTPScope, receive, ctx: context.ConnecpyServiceContext
+    ):
         """Handle POST request with body."""
         # Get request body and endpoint
         endpoint = self._get_endpoint(scope["path"])
@@ -182,7 +197,7 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
         decoder = partial(base_decoder, data_obj=endpoint.input)
         return decoder(req_body)
 
-    async def _read_body(self, receive):
+    async def _read_body(self, receive: ASGIReceiveCallable) -> bytes:
         """Read the body of the request."""
         chunks = []
         while True:
@@ -203,7 +218,13 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                 )
         return b"".join(chunks)
 
-    async def handle_error(self, exc, scope, receive, send):
+    async def _handle_error(
+        self,
+        exc,
+        scope: HTTPScope,
+        receive: ASGIReceiveCallable,
+        send: ASGISendCallable,
+    ) -> None:
         """Handle errors that occur during request processing."""
         if isinstance(exc, HTTPException):
             http_status = exc.status.value
@@ -213,12 +234,14 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                     "type": "http.response.start",
                     "status": http_status,
                     "headers": headers,
+                    "trailers": False,
                 }
             )
             await send(
                 {
                     "type": "http.response.body",
                     "body": b"",
+                    "more_body": False,
                 }
             )
             return
@@ -234,28 +257,29 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                 "type": "http.response.start",
                 "status": http_status.code,
                 "headers": headers,
+                "trailers": False,
             }
         )
         await send(
             {
                 "type": "http.response.body",
                 "body": wire_error.to_json_bytes(),
+                "more_body": False,
             }
         )
 
 
-def convert_to_mapping(
+def _process_headers(
     iterable: Iterable[Tuple[bytes, bytes]],
-) -> Mapping[str, List[str]]:
+) -> Mapping[str, list[str]]:
     result = defaultdict(list)
     for key, value in iterable:
-        result[key.decode("utf-8")].append(value.decode("utf-8"))
-    return dict(result)
+        result[key.decode("utf-8").lower()].append(value.decode("utf-8"))
+    return result
 
 
-def convert_to_single_string(mapping: Mapping[str, List[str]]) -> Mapping[str, str]:
-    return {key: ", ".join(values) for key, values in mapping.items()}
-
-
-def add_trailer_prefix(trailers: Mapping[str, List[str]]) -> Mapping[str, List[str]]:
-    return {f"trailer-{key}": values for key, values in trailers.items()}
+def _get_header_value(headers: Mapping[str, list[str]], name: str) -> str:
+    values = headers.get(name, ())
+    if not values:
+        return ""
+    return values[0]

@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Optional
+from typing import Iterable, Optional
 import gzip
 import brotli
 import zstandard
@@ -101,33 +101,6 @@ def get_compressor(compression_name: str) -> Optional[Callable[[bytes], bytes]]:
         "zstd": zstd_compress,
     }
     return compressors.get(compression_name)
-
-
-def extract_header_value(
-    headers: list[tuple[bytes, bytes]] | dict[str, str], name: bytes | str
-) -> bytes | str:
-    """Get a header value from a list of headers or a headers dictionary.
-
-    Args:
-        headers: Either a list of (name, value) tuples with bytes, or a dictionary with string keys/values
-        name: Header name to look for (either bytes or str)
-
-    Returns:
-        The header value if found, empty bytes or string depending on input type
-    """
-    if isinstance(headers, dict):
-        # Dictionary case - string keys
-        name = name.decode("ascii") if isinstance(name, bytes) else name
-        name = name.lower()
-        return headers.get(name, "")
-    else:
-        # List of tuples case - bytes
-        name = name.encode("ascii") if isinstance(name, str) else name
-        name_lower = name.lower()
-        for key, value in headers:
-            if key.lower() == name_lower:
-                return value
-        return b""
 
 
 def parse_accept_encoding(accept_encoding: str | bytes) -> list[tuple[str, float]]:
