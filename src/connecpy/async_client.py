@@ -137,7 +137,7 @@ class AsyncConnecpyClient:
                 return response
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError) as e:
+        except (httpx.TimeoutException, TimeoutError):
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.DeadlineExceeded,
                 message="Request timed out",
