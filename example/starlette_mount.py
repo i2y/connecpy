@@ -20,7 +20,7 @@ app = Starlette(
     middleware=[
         Middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=["http://localhost:9000"],
             allow_methods=["GET", "POST"],
             allow_headers=[
                 "Content-Type",

@@ -308,36 +308,9 @@ response = client.MakeHat(
 
 ### CORS Support
 
-Connecpy provides built-in CORS support via the `CORSMiddleware`. By default, it allows all origins and includes necessary Connect Protocol headers:
-
-```python
-from connecpy.cors import CORSMiddleware
-
-app = ConnecpyASGIApp()
-app.add_service(service)
-app = CORSMiddleware(app)  # Use default configuration
-```
-
-You can customize the CORS behavior using `CORSConfig`:
-
-```python
-from connecpy.cors import CORSMiddleware, CORSConfig
-
-config = CORSConfig(
-    allow_origin="https://your-domain.com",           # Restrict allowed origins
-    allow_methods=("POST", "GET", "OPTIONS"),         # Customize allowed methods
-    allow_headers=(                                   # Customize allowed headers
-        "Content-Type",
-        "Connect-Protocol-Version",
-        "X-Custom-Header",
-    ),
-    access_control_max_age=3600,                     # Set preflight cache duration
-)
-
-app = CORSMiddleware(app, config=config)
-```
-
-The middleware handles both preflight requests (OPTIONS) and adds appropriate CORS headers to responses.
+`ConnecpyASGIApp` is a standard ASGI application meaning any CORS ASGI middleware will work well with it, for example
+`starlette.middleware.cors.CORSMiddleware`. Refer to [Connect Docs](https://connectrpc.com/docs/cors/) for standard
+headers commonly used by Connect clients for CORS negotiation and a full [example using Starlette](./example/starlette_mount.py).
 
 ## Connect Protocol
 
