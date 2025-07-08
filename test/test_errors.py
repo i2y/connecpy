@@ -403,6 +403,8 @@ def test_sync_client_timeout(
 
     assert exc_info.value.code == Errors.DeadlineExceeded
     assert exc_info.value.message == "Request timed out"
+    assert recorded_timeout_header is not None
+    assert recorded_timeout_header == "1"
 
 
 @pytest.mark.asyncio
@@ -439,3 +441,5 @@ async def test_async_client_timeout(
 
     assert exc_info.value.code == Errors.DeadlineExceeded
     assert exc_info.value.message == "Request timed out"
+    assert recorded_timeout_header is not None
+    assert recorded_timeout_header == "1"
