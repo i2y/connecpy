@@ -22,7 +22,9 @@ class AsyncConnecpyClient:
 
     Args:
         address (str): The address of the Connecpy server.
-        session (httpx.AsyncClient): The httpx client session to use for making requests.
+        timeout_ms (int): The timeout in ms for the overall request.
+        session (httpx.AsyncClient): The httpx client session to use for making requests. If setting timeout_ms,
+            the session should have timeout disabled or set higher than timeout_ms.
     """
 
     def __init__(
