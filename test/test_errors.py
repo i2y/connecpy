@@ -374,7 +374,7 @@ def sync_timeout_server():
 def test_sync_client_timeout(
     client_timeout_ms, call_timeout_ms, sync_timeout_server: WSGIServer
 ):
-    recorded_timeout_header: Optional[str] = None
+    recorded_timeout_header = ""
 
     def modify_timeout_header(request: Request):
         nonlocal recorded_timeout_header
@@ -403,7 +403,6 @@ def test_sync_client_timeout(
 
     assert exc_info.value.code == Errors.DeadlineExceeded
     assert exc_info.value.message == "Request timed out"
-    assert recorded_timeout_header is not None
     assert recorded_timeout_header == "1"
 
 
@@ -418,7 +417,7 @@ def test_sync_client_timeout(
 async def test_async_client_timeout(
     client_timeout_ms, call_timeout_ms, sync_timeout_server: WSGIServer
 ):
-    recorded_timeout_header: Optional[str] = None
+    recorded_timeout_header = ""
 
     async def modify_timeout_header(request: Request):
         nonlocal recorded_timeout_header
@@ -441,5 +440,4 @@ async def test_async_client_timeout(
 
     assert exc_info.value.code == Errors.DeadlineExceeded
     assert exc_info.value.message == "Request timed out"
-    assert recorded_timeout_header is not None
     assert recorded_timeout_header == "1"
