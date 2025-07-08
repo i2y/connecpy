@@ -1,5 +1,6 @@
 from collections import defaultdict
 from http import HTTPStatus
+import itertools
 from typing import Iterable, Mapping, Tuple, TYPE_CHECKING
 from urllib.parse import parse_qs
 import base64
@@ -74,7 +75,14 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                     res_bytes = compressor(res_bytes)
                     headers["content-encoding"] = [selected_encoding]
 
-            final_headers = {key: ", ".join(values) for key, values in headers.items()}
+            encoded_trailers = {
+                f"trailer-{key}": values
+                for key, values in ctx.trailing_metadata().items()
+            }
+            final_headers = {
+                key: ", ".join(values)
+                for key, values in {**headers, **encoded_trailers}.items()
+            }
 
             await send(
                 {
@@ -84,8 +92,6 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
                         (k.lower().encode(), v.encode())
                         for k, v in final_headers.items()
                     ],
-                    # TODO: Map trailers correctly if possible. Will be hard to do with unit tests
-                    # due to poor support in Python ecosystem.
                     "trailers": False,
                 }
             )
