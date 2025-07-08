@@ -1,6 +1,5 @@
 from collections import defaultdict
 from http import HTTPStatus
-import itertools
 from typing import Iterable, Mapping, Tuple, TYPE_CHECKING
 from urllib.parse import parse_qs
 import base64
