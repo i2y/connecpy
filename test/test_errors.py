@@ -54,9 +54,6 @@ class ErrorHaberdasherSync(HaberdasherSync):
     def MakeHat(self, req, ctx):
         raise self._exception
 
-    def DoNothing(self, req, ctx):
-        return Empty()
-
 
 @pytest.mark.parametrize("error,message,http_status", _errors)
 def test_sync_errors(
@@ -101,9 +98,6 @@ class ErrorHaberdasher(Haberdasher):
 
     async def MakeHat(self, req, ctx):
         raise self._exception
-
-    async def DoNothing(self, req, ctx):
-        return Empty()
 
 
 @pytest.mark.asyncio
