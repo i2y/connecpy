@@ -102,7 +102,6 @@ class HaberdasherClient(ConnecpyClient):
         headers: Optional[Headers] = None,
         server_path_prefix: str = "",
         use_get: bool = False,
-        **kwargs,
     ) -> haberdasher__pb2.Hat:
         method = "GET" if use_get else "POST"
         return self._make_request(
@@ -111,7 +110,6 @@ class HaberdasherClient(ConnecpyClient):
             headers=headers,
             request=request,
             response_class=haberdasher__pb2.Hat,
-            **kwargs,
         )
 
     def DoNothing(
@@ -120,7 +118,6 @@ class HaberdasherClient(ConnecpyClient):
         *,
         headers: Optional[Headers] = None,
         server_path_prefix: str = "",
-        **kwargs,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         method = "POST"
         return self._make_request(
@@ -129,7 +126,6 @@ class HaberdasherClient(ConnecpyClient):
             headers=headers,
             request=request,
             response_class=google_dot_protobuf_dot_empty__pb2.Empty,
-            **kwargs,
         )
 
 
@@ -142,7 +138,6 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         use_get: bool = False,
-        **kwargs,
     ) -> haberdasher__pb2.Hat:
         method = "GET" if use_get else "POST"
         return await self._make_request(
@@ -152,7 +147,6 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
             request=request,
             response_class=haberdasher__pb2.Hat,
             session=session,
-            **kwargs,
         )
 
     async def DoNothing(
@@ -162,7 +156,6 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         headers: Optional[Headers] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
-        **kwargs,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         method = "POST"
         return await self._make_request(
@@ -172,5 +165,4 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
             request=request,
             response_class=google_dot_protobuf_dot_empty__pb2.Empty,
             session=session,
-            **kwargs,
         )
