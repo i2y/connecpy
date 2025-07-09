@@ -122,7 +122,7 @@ async def test_async_errors(
     server = HaberdasherServer(service=haberdasher)
     app = ConnecpyASGIApp()
     app.add_service(server)
-    transport = ASGITransport(app)
+    transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     recorded_response: Optional[Response] = None
 
@@ -322,7 +322,7 @@ async def test_async_client_errors(
     server = HaberdasherServer(service=haberdasher)
     app = ConnecpyASGIApp()
     app.add_service(server)
-    transport = ASGITransport(app)
+    transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     client = AsyncClient(transport=transport)
     response = await client.request(
