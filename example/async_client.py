@@ -17,13 +17,13 @@ async def main():
         base_url=server_url,
         timeout=timeout_s,
     ) as session:
+        # Example 1: POST request with Zstandard compression, receiving Brotli compressed response
         async with haberdasher_connecpy.AsyncHaberdasherClient(
             server_url,
             session=session,
             send_compression="zstd",
             accept_compression=("br",),
         ) as client:
-            # Example 1: POST request with Zstandard compression, receiving Brotli compressed response
             try:
                 response = await client.MakeHat(
                     request=haberdasher_pb2.Size(inches=12),
@@ -35,12 +35,12 @@ async def main():
             except ConnecpyServerException as e:
                 print(e.code, e.message, e.to_dict())
 
+        # Example 2: GET request, receiving Zstandard compressed response
         async with haberdasher_connecpy.AsyncHaberdasherClient(
             server_url,
             session=session,
             accept_compression=["zstd"],
         ) as client:
-            # Example 2: GET request, receiving Zstandard compressed response
             try:
                 response = await client.MakeHat(
                     request=haberdasher_pb2.Size(inches=8),
