@@ -100,6 +100,7 @@ class HaberdasherClient(ConnecpyClient):
         request: haberdasher__pb2.Size,
         *,
         headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         use_get: bool = False,
     ) -> haberdasher__pb2.Hat:
@@ -108,6 +109,7 @@ class HaberdasherClient(ConnecpyClient):
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/MakeHat",
             method=method,
             headers=headers,
+            timeout_ms=timeout_ms,
             request=request,
             response_class=haberdasher__pb2.Hat,
         )
@@ -117,6 +119,7 @@ class HaberdasherClient(ConnecpyClient):
         request: google_dot_protobuf_dot_empty__pb2.Empty,
         *,
         headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         method = "POST"
@@ -124,6 +127,7 @@ class HaberdasherClient(ConnecpyClient):
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/DoNothing",
             method=method,
             headers=headers,
+            timeout_ms=timeout_ms,
             request=request,
             response_class=google_dot_protobuf_dot_empty__pb2.Empty,
         )
@@ -135,6 +139,7 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         request: haberdasher__pb2.Size,
         *,
         headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         use_get: bool = False,
@@ -145,6 +150,7 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
             method=method,
             headers=headers,
             request=request,
+            timeout_ms=timeout_ms,
             response_class=haberdasher__pb2.Hat,
             session=session,
         )
@@ -154,6 +160,7 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         request: google_dot_protobuf_dot_empty__pb2.Empty,
         *,
         headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
@@ -163,6 +170,7 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
             method=method,
             headers=headers,
             request=request,
+            timeout_ms=timeout_ms,
             response_class=google_dot_protobuf_dot_empty__pb2.Empty,
             session=session,
         )

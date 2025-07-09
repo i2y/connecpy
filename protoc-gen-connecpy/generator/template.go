@@ -109,6 +109,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
         request: {{.InputType}},
         *,
         headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         {{if .NoSideEffects}}use_get: bool = False,{{end}}
     ) -> {{.OutputType}}:
@@ -117,6 +118,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
             method=method,
             headers=headers,
+            timeout_ms=timeout_ms,
             request=request,
             response_class={{.OutputType}},
         )
@@ -128,6 +130,7 @@ class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
         request: {{.InputType}},
         *,
         headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         {{if .NoSideEffects}}use_get: bool = False,{{end}}
@@ -138,6 +141,7 @@ class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
             method=method,
             headers=headers,
             request=request,
+            timeout_ms=timeout_ms,
             response_class={{.OutputType}},
             session=session,
         )
