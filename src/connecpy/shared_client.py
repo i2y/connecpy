@@ -1,30 +1,36 @@
 import base64
-from typing import Optional
+from typing import Iterable, Optional
 
-from . import context
+from httpx import Headers
+
+from ._protocol import CONNECT_PROTOCOL_VERSION
 
 
-def prepare_headers(ctx: Optional[context.ClientContext], kwargs, timeout):
-    # Lowercase all keys to ensure consistent header casing
-    headers = {k.lower(): v for k, v in ctx.get_headers().items()} if ctx else {}
-    if "headers" in kwargs:
-        headers.update({k.lower(): v for k, v in kwargs.pop("headers").items()})
-    if "content-type" in headers:
-        headers["content-type"] = headers.pop("content-type")
-    if "content-encoding" in headers:
-        headers["content-encoding"] = headers.pop("content-encoding")
-    if "accept-encoding" in headers:
-        headers["accept-encoding"] = headers.pop("accept-encoding")
-    # Set default headers
-    if "content-type" not in headers:
-        headers["content-type"] = "application/proto"
-    if "accept-encoding" not in headers:
+# TODO: Embed package version correctly
+_DEFAULT_CONNECT_USER_AGENT = "connecpy/0.0.0"
+
+
+def prepare_headers(
+    headers: Headers,
+    timeout_ms: Optional[int],
+    accept_compression: Optional[Iterable[str]],
+    send_compression: Optional[str],
+) -> Headers:
+    if "user-agent" not in headers:
+        headers["user-agent"] = _DEFAULT_CONNECT_USER_AGENT
+    headers["connect-protocol-version"] = CONNECT_PROTOCOL_VERSION
+    if accept_compression is not None:
+        headers["accept-encoding"] = ", ".join(accept_compression)
+    else:
         headers["accept-encoding"] = "gzip, br, zstd"
-    if "timeout" not in kwargs:
-        kwargs["timeout"] = timeout
-        headers["connect-timeout-ms"] = str(timeout * 1000)
-    kwargs["headers"] = headers
-    return headers, kwargs
+    if send_compression is not None:
+        headers["content-encoding"] = send_compression
+    else:
+        headers.pop("content-encoding", None)
+    headers["content-type"] = "application/proto"
+    if timeout_ms is not None:
+        headers["connect-timeout-ms"] = str(timeout_ms)
+    return headers
 
 
 def compress_request(request, headers, compression):
