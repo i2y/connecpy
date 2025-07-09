@@ -10,7 +10,8 @@ from connecpy.async_client import AsyncConnecpyClient
 from connecpy.base import Endpoint
 from connecpy.server import ConnecpyServer
 from connecpy.client import ConnecpyClient
-from connecpy.context import ClientContext, ServiceContext
+from connecpy.context import ServiceContext
+from connecpy.types import Headers
 import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 import haberdasher_pb2 as haberdasher__pb2
 
@@ -98,7 +99,7 @@ class HaberdasherClient(ConnecpyClient):
         self,
         request: haberdasher__pb2.Size,
         *,
-        ctx: Optional[ClientContext] = None,
+        headers: Optional[Headers] = None,
         server_path_prefix: str = "",
         use_get: bool = False,
         **kwargs,
@@ -106,10 +107,10 @@ class HaberdasherClient(ConnecpyClient):
         method = "GET" if use_get else "POST"
         return self._make_request(
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/MakeHat",
-            ctx=ctx,
+            method=method,
+            headers=headers,
             request=request,
             response_class=haberdasher__pb2.Hat,
-            method=method,
             **kwargs,
         )
 
@@ -117,17 +118,17 @@ class HaberdasherClient(ConnecpyClient):
         self,
         request: google_dot_protobuf_dot_empty__pb2.Empty,
         *,
-        ctx: Optional[ClientContext] = None,
+        headers: Optional[Headers] = None,
         server_path_prefix: str = "",
         **kwargs,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         method = "POST"
         return self._make_request(
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/DoNothing",
-            ctx=ctx,
+            method=method,
+            headers=headers,
             request=request,
             response_class=google_dot_protobuf_dot_empty__pb2.Empty,
-            method=method,
             **kwargs,
         )
 
@@ -137,7 +138,7 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         self,
         request: haberdasher__pb2.Size,
         *,
-        ctx: Optional[ClientContext] = None,
+        headers: Optional[Headers] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         use_get: bool = False,
@@ -146,10 +147,10 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         method = "GET" if use_get else "POST"
         return await self._make_request(
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/MakeHat",
-            ctx=ctx,
+            method=method,
+            headers=headers,
             request=request,
             response_class=haberdasher__pb2.Hat,
-            method=method,
             session=session,
             **kwargs,
         )
@@ -158,7 +159,7 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         self,
         request: google_dot_protobuf_dot_empty__pb2.Empty,
         *,
-        ctx: Optional[ClientContext] = None,
+        headers: Optional[Headers] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
         **kwargs,
@@ -166,10 +167,10 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         method = "POST"
         return await self._make_request(
             url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/DoNothing",
-            ctx=ctx,
+            method=method,
+            headers=headers,
             request=request,
             response_class=google_dot_protobuf_dot_empty__pb2.Empty,
-            method=method,
             session=session,
             **kwargs,
         )
