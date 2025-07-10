@@ -11,7 +11,6 @@ from httpx import (
 )
 import pytest
 from pytest import param as p
-from connecpy.asgi import ConnecpyASGIApplication
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
 from example.haberdasher_connecpy import (

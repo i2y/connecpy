@@ -25,7 +25,7 @@ else:
     Scope = "asgiref.typing.Scope"
 
 
-class ConnecpyASGIApplication(base.ConnecpyBaseApp):
+class ConnecpyASGIApplication:
     """ASGI application for Connecpy."""
 
     def __init__(

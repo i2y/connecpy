@@ -174,7 +174,7 @@ def read_chunked(input_stream):
     return body
 
 
-class ConnecpyWSGIApplication(base.ConnecpyBaseApp):
+class ConnecpyWSGIApplication:
     """WSGI application for Connecpy."""
 
     def __init__(self, *, path: str, endpoints: Mapping[str, base.Endpoint]):
