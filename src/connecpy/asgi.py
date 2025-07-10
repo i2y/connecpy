@@ -63,7 +63,6 @@ class ConnecpyASGIApplication:
         try:
             http_method = scope["method"]
 
-            print(scope)
             path = scope["path"]
             endpoint = self._endpoints.get(path)
             if not endpoint and scope["root_path"]:
