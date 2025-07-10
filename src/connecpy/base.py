@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import dataclass
 from http import HTTPStatus
 from functools import reduce
-from typing import Callable, Generic, Tuple, TypeVar, Union
+from typing import Callable, Generic, Iterable, Tuple, TypeVar, Union
 
 from . import context
 from . import interceptor
@@ -65,13 +65,13 @@ class Endpoint(Generic[T, U]):
 
     def make_async_proc(
         self,
-        interceptors: Tuple[interceptor.AsyncConnecpyServerInterceptor, ...],
+        interceptors: Iterable[interceptor.AsyncConnecpyServerInterceptor],
     ) -> Callable[[T, context.ServiceContext], U]:
         """
         Creates an asynchronous function that implements the endpoint.
 
         Args:
-            interceptors (Tuple[interceptor.AsyncConnecpyServerInterceptor, ...]): The interceptors to apply to the endpoint.
+            interceptors (Iterable[interceptor.AsyncConnecpyServerInterceptor]): The interceptors to apply to the endpoint.
 
         Returns:
             Callable[[T, context.ServiceContext], U]: The asynchronous function that implements the endpoint.
@@ -80,7 +80,7 @@ class Endpoint(Generic[T, U]):
             return self._async_proc
 
         method_name = self.name
-        reversed_interceptors = reversed(interceptors)
+        reversed_interceptors = reversed(tuple(interceptors))
         self._async_proc = reduce(  # type: ignore
             lambda acc, interceptor: interceptor.make_interceptor(acc, method_name),
             reversed_interceptors,
@@ -160,60 +160,6 @@ class ConnecpyBaseApp(object):
         proto_encoder: Encodes a service response to protobuf.
         _get_encoder_decoder: Retrieves the appropriate encoder and decoder for a given endpoint and content type.
     """
-
-    def __init__(
-        self,
-        interceptors: Tuple[interceptor.AsyncConnecpyServerInterceptor, ...] = (),
-        prefix="",
-        max_receive_message_length=1024 * 100 * 100,
-    ):
-        self._interceptors = interceptors
-        self._prefix = prefix
-        self._services = {}
-        self._max_receive_message_length = max_receive_message_length
-
-    def add_service(self, svc: server.ConnecpyServer):
-        """
-        Adds a service to the server.
-
-        Args:
-            svc (server.ConnecpyServer): The service to be added.
-        """
-        self._services[self._prefix + svc.prefix] = svc
-
-    def _get_endpoint(self, path: str):
-        """
-        Retrieves the endpoint for a given path.
-
-        Args:
-            path (str): The path of the endpoint.
-
-        Returns:
-            The endpoint for the given path.
-
-        Raises:
-            exceptions.ConnecpyServerException: If the endpoint is not found.
-        """
-        if path.startswith("/"):
-            path = path[1:]
-
-        # Split path into service path and method
-        try:
-            service_path, method_name = path.rsplit("/", 1)
-        except ValueError:
-            raise HTTPException(HTTPStatus.NOT_FOUND, [])
-
-        # Look for service
-        service = self._services.get(f"/{service_path}")
-        if service is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, [])
-
-        # Get endpoint from service
-        endpoint = service._endpoints.get(method_name)
-        if endpoint is None:
-            raise HTTPException(HTTPStatus.NOT_FOUND, [])
-
-        return endpoint
 
     def _get_encoder_decoder(self, endpoint, ctype: str):
         """

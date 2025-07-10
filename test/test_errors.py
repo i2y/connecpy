@@ -11,17 +11,16 @@ from httpx import (
 )
 import pytest
 from pytest import param as p
-from connecpy.asgi import ConnecpyASGIApp
+from connecpy.asgi import ConnecpyASGIApplication
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
-from connecpy.wsgi import ConnecpyWSGIApp
 from example.haberdasher_connecpy import (
     AsyncHaberdasherClient,
     Haberdasher,
-    HaberdasherServer,
-    HaberdasherSync,
-    HaberdasherServerSync,
+    HaberdasherASGIApplication,
     HaberdasherClient,
+    HaberdasherSync,
+    HaberdasherWSGIApplication,
 )
 from example.haberdasher_pb2 import Hat, Size
 from google.protobuf.empty_pb2 import Empty
@@ -67,9 +66,7 @@ def test_sync_errors(
             message=message,
         )
     )
-    server = HaberdasherServerSync(service=haberdasher)
-    app = ConnecpyWSGIApp()
-    app.add_service(server)
+    app = HaberdasherWSGIApplication(haberdasher)
     transport = WSGITransport(app)
 
     recorded_response: Optional[Response] = None
@@ -113,9 +110,7 @@ async def test_async_errors(
             message=message,
         )
     )
-    server = HaberdasherServer(service=haberdasher)
-    app = ConnecpyASGIApp()
-    app.add_service(server)
+    app = HaberdasherASGIApplication(haberdasher)
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     recorded_response: Optional[Response] = None
@@ -279,10 +274,7 @@ class ValidHaberdasherSync(HaberdasherSync):
 def test_sync_client_errors(
     method, path, headers, body, response_status, response_headers
 ):
-    haberdasher = ValidHaberdasherSync()
-    server = HaberdasherServerSync(service=haberdasher)
-    app = ConnecpyWSGIApp()
-    app.add_service(server)
+    app = HaberdasherWSGIApplication(ValidHaberdasherSync())
     transport = WSGITransport(app)
 
     client = Client(transport=transport)
@@ -313,9 +305,7 @@ async def test_async_client_errors(
     method, path, headers, body, response_status, response_headers
 ):
     haberdasher = ValidHaberdasher()
-    server = HaberdasherServer(service=haberdasher)
-    app = ConnecpyASGIApp()
-    app.add_service(server)
+    app = HaberdasherASGIApplication(haberdasher)
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     client = AsyncClient(transport=transport)
