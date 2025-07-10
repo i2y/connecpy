@@ -4,7 +4,9 @@ from typing import Optional
 from . import context
 
 
-def prepare_headers(ctx: Optional[context.ClientContext], kwargs, timeout):
+def prepare_headers(
+    ctx: Optional[context.ClientContext], kwargs, timeout_ms: Optional[int]
+):
     # Lowercase all keys to ensure consistent header casing
     headers = {k.lower(): v for k, v in ctx.get_headers().items()} if ctx else {}
     if "headers" in kwargs:
@@ -20,9 +22,8 @@ def prepare_headers(ctx: Optional[context.ClientContext], kwargs, timeout):
         headers["content-type"] = "application/proto"
     if "accept-encoding" not in headers:
         headers["accept-encoding"] = "gzip, br, zstd"
-    if "timeout" not in kwargs:
-        kwargs["timeout"] = timeout
-        headers["connect-timeout-ms"] = str(timeout * 1000)
+    if timeout_ms is not None:
+        headers["connect-timeout-ms"] = str(timeout_ms)
     kwargs["headers"] = headers
     return headers, kwargs
 
