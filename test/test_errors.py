@@ -29,7 +29,6 @@ from example.haberdasher_connecpy import (
     HaberdasherClient,
 )
 from example.haberdasher_pb2 import Hat, Size
-from google.protobuf.empty_pb2 import Empty
 
 
 _errors = [
