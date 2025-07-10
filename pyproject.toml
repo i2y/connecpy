@@ -24,6 +24,7 @@ build-backend = "hatchling.build"
 managed = true
 dev-dependencies = [
     "asgiref",
+    "flask",
     "grpcio",
     "grpcio-tools",
     "pip>=24.0",
