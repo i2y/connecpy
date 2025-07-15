@@ -1,7 +1,7 @@
 from wsgiref.simple_server import make_server
 from connecpy.wsgi import ConnecpyWSGIApp
-from wsgi_service import HaberdasherService
-from haberdasher_connecpy import HaberdasherServerSync
+from .wsgi_service import HaberdasherService
+from .haberdasher_connecpy import HaberdasherServerSync
 
 
 def main():

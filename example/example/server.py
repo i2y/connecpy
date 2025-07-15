@@ -5,8 +5,8 @@ from connecpy.asgi import ConnecpyASGIApp
 from connecpy.cors import CORSMiddleware
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
 
-import haberdasher_connecpy
-from service import HaberdasherService
+from . import haberdasher_connecpy
+from .service import HaberdasherService
 
 
 class MyInterceptor(AsyncConnecpyServerInterceptor):

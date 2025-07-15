@@ -5,8 +5,8 @@ import httpx
 from connecpy.context import ClientContext
 from connecpy.exceptions import ConnecpyServerException
 
-import haberdasher_connecpy
-import haberdasher_pb2
+from . import haberdasher_connecpy
+from . import haberdasher_pb2
 
 
 server_url = "http://localhost:3000"

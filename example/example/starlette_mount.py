@@ -1,4 +1,4 @@
-from server import app as server_app
+from .server import app as server_app
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware

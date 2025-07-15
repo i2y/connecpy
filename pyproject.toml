@@ -14,16 +14,13 @@ dependencies = [
     "zstandard>=0.22.0",
 ]
 readme = "README.md"
+license-files = ["LICENSE"]
 requires-python = ">= 3.9"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [tool.uv]
-managed = true
 dev-dependencies = [
     "asgiref",
+    "connecpy-example",
     "grpcio",
     "grpcio-tools",
     "pip>=24.0",
@@ -31,22 +28,12 @@ dev-dependencies = [
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.2",
     "ruff>=0.9.4",
-    "starlette",
     "zstd-asgi>=0.2",
 ]
 
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/connecpy"]
-
-[tool.pytest.ini_options]
-# Allow testing of example code.
-pythonpath = [".", "example"]
-addopts = [
-    "--import-mode=importlib",
-]
+[build-system]
+requires = ["uv_build>=0.7.21,<0.8.0"]
+build-backend = "uv_build"
 
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.
@@ -63,3 +50,10 @@ exclude = [
     # See https://github.com/grpc/grpc/issues/39555
     "**/*_pb2_grpc.py",
 ]
+
+[tool.uv.workspace]
+members = ["example"]
+
+[tool.uv.sources]
+connecpy = { workspace = true }
+connecpy-example = { workspace = true }

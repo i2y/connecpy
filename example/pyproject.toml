@@ -1,0 +1,21 @@
+[project]
+name = "connecpy-example"
+version = "0.1.0"
+
+dependencies = [
+    "connecpy",
+    "grpcio",
+    "protobuf",
+    "starlette",
+]
+
+[tool.ruff]
+extend = "../pyproject.toml"
+
+[build-system]
+requires = ["uv_build>=0.7.21,<0.8.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "example"
+module-root = ""
