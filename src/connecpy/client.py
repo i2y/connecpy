@@ -1,16 +1,16 @@
-from typing import Optional, TypeVar
+from typing import Iterable, Optional, TypeVar
 
 import httpx
 
 from google.protobuf.message import Message
-from httpx import Timeout
+from httpx import Headers as HttpxHeaders, Timeout
 
-from . import context
 from . import exceptions
 from . import errors
 from . import compression
 from . import shared_client
 from ._protocol import ConnectWireError
+from .types import Headers
 
 
 _RES = TypeVar("_RES", bound=Message)
@@ -31,11 +31,15 @@ class ConnecpyClient:
     def __init__(
         self,
         address: str,
+        accept_compression: Optional[Iterable[str]] = None,
+        send_compression: Optional[str] = None,
         timeout_ms: Optional[int] = None,
         session: Optional[httpx.Client] = None,
     ):
         self._address = address
         self._timeout_ms = timeout_ms
+        self._accept_compression = accept_compression
+        self._send_compression = send_compression
         if session:
             self._session = session
             self._close_client = False
@@ -62,37 +66,48 @@ class ConnecpyClient:
         *,
         url,
         request: Message,
-        ctx: Optional[context.ClientContext],
         response_class: type[_RES],
         method="POST",
+        headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
-        **kwargs,
     ) -> _RES:
         """Make an HTTP request to the server."""
-        # Prepare headers and kwargs using shared logic
+        # Prepare headers and request args using shared logic
+        request_args = {}
         if timeout_ms is None:
             timeout_ms = self._timeout_ms
         else:
             timeout = _convert_connect_timeout(timeout_ms)
-            kwargs["timeout"] = timeout
-        headers, kwargs = shared_client.prepare_headers(ctx, kwargs, timeout_ms)
+            request_args["timeout"] = timeout
+
+        user_headers = HttpxHeaders(headers) if headers else HttpxHeaders()
+        request_headers = shared_client.prepare_headers(
+            user_headers, timeout_ms, self._accept_compression, self._send_compression
+        )
 
         try:
-            if "content-encoding" in headers:
-                request_data, headers = shared_client.compress_request(
-                    request, headers, compression
+            if "content-encoding" in request_headers:
+                request_data, request_headers = shared_client.compress_request(
+                    request, request_headers, compression
                 )
             else:
                 request_data = request.SerializeToString()
 
             if method == "GET":
-                params = shared_client.prepare_get_params(request_data, headers)
-                kwargs["params"] = params
-                kwargs["headers"].pop("content-type", None)
-                resp = self._session.get(url=self._address + url, **kwargs)
+                params = shared_client.prepare_get_params(request_data, request_headers)
+                request_headers.pop("content-type", None)
+                resp = self._session.get(
+                    url=self._address + url,
+                    headers=request_headers,
+                    params=params,
+                    **request_args,
+                )
             else:
                 resp = self._session.post(
-                    url=self._address + url, content=request_data, **kwargs
+                    url=self._address + url,
+                    content=request_data,
+                    headers=request_headers,
+                    **request_args,
                 )
 
             if resp.status_code == 200:
