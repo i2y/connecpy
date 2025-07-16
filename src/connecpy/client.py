@@ -3,6 +3,7 @@ from typing import Optional, TypeVar
 import httpx
 
 from google.protobuf.message import Message
+from httpx import Timeout
 
 from . import context
 from . import exceptions
@@ -21,17 +22,25 @@ class ConnecpyClient:
 
     Args:
         address (str): The address of the Connecpy server.
-        session (httpx.Client): The httpx client session to use for making requests.
+        timeout_ms (int): The timeout in ms for the overall request. Note, this is currently only implemented
+            as a read timeout, which will be more forgiving than a timeout for the operation.
+        session (httpx.Client): The httpx client session to use for making requests. If setting timeout_ms,
+            the session should also at least have a read timeout set to the same value.
     """
 
-    def __init__(self, address: str, timeout=5, session: Optional[httpx.Client] = None):
+    def __init__(
+        self,
+        address: str,
+        timeout_ms: Optional[int] = None,
+        session: Optional[httpx.Client] = None,
+    ):
         self._address = address
-        self._timeout = timeout
+        self._timeout_ms = timeout_ms
         if session:
             self._session = session
             self._close_client = False
         else:
-            self._session = httpx.Client()
+            self._session = httpx.Client(timeout=_convert_connect_timeout(timeout_ms))
             self._close_client = True
         self._closed = False
 
@@ -56,11 +65,17 @@ class ConnecpyClient:
         ctx: Optional[context.ClientContext],
         response_class: type[_RES],
         method="POST",
+        timeout_ms: Optional[int] = None,
         **kwargs,
     ) -> _RES:
         """Make an HTTP request to the server."""
         # Prepare headers and kwargs using shared logic
-        headers, kwargs = shared_client.prepare_headers(ctx, kwargs, self._timeout)
+        if timeout_ms is None:
+            timeout_ms = self._timeout_ms
+        else:
+            timeout = _convert_connect_timeout(timeout_ms)
+            kwargs["timeout"] = timeout
+        headers, kwargs = shared_client.prepare_headers(ctx, kwargs, timeout_ms)
 
         try:
             if "content-encoding" in headers:
@@ -91,10 +106,10 @@ class ConnecpyClient:
                 return response
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except httpx.TimeoutException as e:
+        except httpx.TimeoutException:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.DeadlineExceeded,
-                message=str(e) or "request timeout",
+                message="Request timed out",
             )
         except exceptions.ConnecpyException:
             raise
@@ -102,3 +117,14 @@ class ConnecpyClient:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Unavailable, message=str(e)
             )
+
+
+# Convert a timeout with connect semantics to a httpx.Timeout. Connect timeouts
+# should apply to an entire operation but this is difficult in synchronous Python code
+# to do cross-platform. For now, we just apply the timeout to all httpx timeouts
+# if provided, or default to no read/write timeouts but with a connect timeout if
+# not provided to match connect-go behavior as closely as possible.
+def _convert_connect_timeout(timeout_ms: Optional[int]) -> Timeout:
+    if timeout_ms is None:
+        return Timeout(None, connect=30.0)
+    return Timeout(timeout_ms / 1000.0)

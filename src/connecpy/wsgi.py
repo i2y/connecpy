@@ -157,7 +157,7 @@ def prepare_response_headers(
 
 
 def read_chunked(input_stream):
-    body = b""
+    chunks = []
     while True:
         line = input_stream.readline()
         if not line:
@@ -169,9 +169,9 @@ def read_chunked(input_stream):
             break
 
         chunk = input_stream.read(chunk_size)
-        body += chunk
+        chunks.append(chunk)
         input_stream.read(2)  # CRLF
-    return body
+    return b"".join(chunks)
 
 
 class ConnecpyWSGIApplication:
