@@ -29,7 +29,6 @@ from example.haberdasher_connecpy import (
     HaberdasherClient,
 )
 from example.haberdasher_pb2 import Hat, Size
-from google.protobuf.empty_pb2 import Empty
 
 
 _errors = [
@@ -64,9 +63,6 @@ def test_sync_errors(
 
         def MakeHat(self, req, ctx):
             raise self._exception
-
-        def DoNothing(self, req, ctx):
-            return Empty()
 
     haberdasher = ErrorHaberdasherSync(
         ConnecpyServerException(
@@ -113,9 +109,6 @@ async def test_async_errors(
         async def MakeHat(self, req, ctx):
             raise self._exception
 
-        async def DoNothing(self, req, ctx):
-            return Empty()
-
     haberdasher = ErrorHaberdasher(
         ConnecpyServerException(
             code=error,
@@ -125,7 +118,7 @@ async def test_async_errors(
     server = HaberdasherServer(service=haberdasher)
     app = ConnecpyASGIApp()
     app.add_service(server)
-    transport = ASGITransport(app)
+    transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     recorded_response: Optional[Response] = None
 
@@ -284,9 +277,6 @@ def test_sync_client_errors(
         def MakeHat(self, req, ctx):
             return Hat()
 
-        def DoNothing(self, req, ctx):
-            return Empty()
-
     haberdasher = ValidHaberdasherSync()
     server = HaberdasherServerSync(service=haberdasher)
     app = ConnecpyWSGIApp()
@@ -316,14 +306,11 @@ async def test_async_client_errors(
         async def MakeHat(self, req, ctx):
             return Hat()
 
-        async def DoNothing(self, req, ctx):
-            return Empty()
-
     haberdasher = ValidHaberdasher()
     server = HaberdasherServer(service=haberdasher)
     app = ConnecpyASGIApp()
     app.add_service(server)
-    transport = ASGITransport(app)
+    transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     client = AsyncClient(transport=transport)
     response = await client.request(
@@ -344,9 +331,6 @@ def sync_timeout_server():
         def MakeHat(self, req, ctx):
             time.sleep(10)
             raise AssertionError("Should be timedout already")
-
-        def DoNothing(self, req, ctx):
-            return Empty()
 
     server = HaberdasherServerSync(service=SleepingHaberdasherSync())
     app = ConnecpyWSGIApp()

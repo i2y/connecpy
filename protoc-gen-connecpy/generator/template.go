@@ -42,6 +42,8 @@ import httpx
 
 from connecpy.async_client import AsyncConnecpyClient
 from connecpy.base import Endpoint
+from connecpy.errors import Errors
+from connecpy.exceptions import ConnecpyServerException
 from connecpy.server import ConnecpyServer
 from connecpy.client import ConnecpyClient
 from connecpy.context import ServiceContext
@@ -55,7 +57,8 @@ import {{.Name}} as {{.Alias}}
 
 
 class {{.Name}}(Protocol):{{- range .Methods }}
-    async def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}: ...
+    async def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 {{- end }}
 
 
@@ -80,7 +83,8 @@ class {{.Name}}Server(ConnecpyServer):
 
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
-    def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}: ...
+    def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 {{- end }}
 
 
