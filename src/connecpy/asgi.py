@@ -207,20 +207,21 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
         chunks = []
         while True:
             message = await receive()
-            if message["type"] == "http.request":
-                chunks.append(message.get("body", b""))
-                if not message.get("more_body", False):
-                    break
-            elif message["type"] == "http.disconnect":
-                raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.Canceled,
-                    message="Client disconnected before request completion",
-                )
-            else:
-                raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.Unknown,
-                    message="Unexpected message type",
-                )
+            match message["type"]:
+                case "http.request":
+                    chunks.append(message.get("body", b""))
+                    if not message.get("more_body", False):
+                        break
+                case "http.disconnect":
+                    raise exceptions.ConnecpyServerException(
+                        code=errors.Errors.Canceled,
+                        message="Client disconnected before request completion",
+                    )
+                case _:
+                    raise exceptions.ConnecpyServerException(
+                        code=errors.Errors.Unknown,
+                        message="Unexpected message type",
+                    )
         return b"".join(chunks)
 
     async def _handle_error(

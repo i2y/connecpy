@@ -6,7 +6,7 @@ from . import haberdasher_pb2
 
 
 server_url = "http://localhost:3000"
-timeout_s = 5
+timeout_ms = 5000
 
 
 def create_large_request():
@@ -19,7 +19,7 @@ def create_large_request():
 
 def main():
     with haberdasher_connecpy.HaberdasherClient(
-        server_url, timeout=timeout_s
+        server_url, timeout_ms=timeout_ms
     ) as client:
         # Example 1: POST request with gzip compression (large request)
         try:

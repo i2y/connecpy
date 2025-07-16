@@ -15,7 +15,7 @@ dependencies = [
 ]
 readme = "README.md"
 license-files = ["LICENSE"]
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 
 [tool.uv]
 dev-dependencies = [

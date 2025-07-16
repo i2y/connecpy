@@ -95,17 +95,18 @@ def get_encoder(
     endpoint: Any, ctype: str
 ) -> Callable[[Any], Tuple[bytes, Dict[str, List[str]]]]:
     """Get encoder function by content type."""
-    if ctype == "application/json":
-        return partial(json_encoder, data_obj=endpoint.output)
-    elif ctype == "application/proto":
-        return partial(proto_encoder, data_obj=endpoint.output)
-    else:
-        # Currently not possible because we validate content type before
-        # getting encoder.
-        raise exceptions.ConnecpyServerException(
-            code=errors.Errors.Internal,
-            message=f"unexpected Content-Type: {ctype}",
-        )
+    match ctype:
+        case "application/json":
+            return partial(json_encoder, data_obj=endpoint.output)
+        case "application/proto":
+            return partial(proto_encoder, data_obj=endpoint.output)
+        case _:
+            # Currently not possible because we validate content type before
+            # getting encoder.
+            raise exceptions.ConnecpyServerException(
+                code=errors.Errors.Internal,
+                message=f"unexpected Content-Type: {ctype}",
+            )
 
 
 def get_encoder_decoder_pair(

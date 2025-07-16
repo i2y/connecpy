@@ -2,7 +2,6 @@ from typing import Any, Callable
 
 from connecpy import context
 from connecpy.asgi import ConnecpyASGIApp
-from connecpy.cors import CORSMiddleware
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
 
 from . import haberdasher_connecpy
@@ -32,6 +31,3 @@ app = ConnecpyASGIApp(
     interceptors=(my_interceptor_a, my_interceptor_b),
 )
 app.add_service(service)
-
-# Add CORS support with default configuration
-app = CORSMiddleware(app)
