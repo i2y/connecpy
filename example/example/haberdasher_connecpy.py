@@ -19,10 +19,19 @@ import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
 class Haberdasher(Protocol):
-    async def MakeHat(self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext) -> example_dot_haberdasher__pb2.Hat:
-        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
-    async def DoNothing(self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+    async def MakeHat(
+        self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
+    ) -> example_dot_haberdasher__pb2.Hat:
+        raise ConnecpyServerException(
+            code=Errors.Unimplemented, message="Not implemented"
+        )
+
+    async def DoNothing(
+        self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext
+    ) -> google_dot_protobuf_dot_empty__pb2.Empty:
+        raise ConnecpyServerException(
+            code=Errors.Unimplemented, message="Not implemented"
+        )
 
 
 class HaberdasherServer(ConnecpyServer):
@@ -30,7 +39,9 @@ class HaberdasherServer(ConnecpyServer):
         super().__init__()
         self._prefix = f"{server_path_prefix}/i2y.connecpy.example.Haberdasher"
         self._endpoints = {
-            "MakeHat": Endpoint[example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat](
+            "MakeHat": Endpoint[
+                example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
+            ](
                 service_name="Haberdasher",
                 name="MakeHat",
                 function=getattr(service, "MakeHat"),
@@ -38,7 +49,10 @@ class HaberdasherServer(ConnecpyServer):
                 output=example_dot_haberdasher__pb2.Hat,
                 allowed_methods=("GET", "POST"),
             ),
-            "DoNothing": Endpoint[google_dot_protobuf_dot_empty__pb2.Empty, google_dot_protobuf_dot_empty__pb2.Empty](
+            "DoNothing": Endpoint[
+                google_dot_protobuf_dot_empty__pb2.Empty,
+                google_dot_protobuf_dot_empty__pb2.Empty,
+            ](
                 service_name="Haberdasher",
                 name="DoNothing",
                 function=getattr(service, "DoNothing"),
@@ -53,10 +67,19 @@ class HaberdasherServer(ConnecpyServer):
 
 
 class HaberdasherSync(Protocol):
-    def MakeHat(self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext) -> example_dot_haberdasher__pb2.Hat:
-        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
-    def DoNothing(self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+    def MakeHat(
+        self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
+    ) -> example_dot_haberdasher__pb2.Hat:
+        raise ConnecpyServerException(
+            code=Errors.Unimplemented, message="Not implemented"
+        )
+
+    def DoNothing(
+        self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext
+    ) -> google_dot_protobuf_dot_empty__pb2.Empty:
+        raise ConnecpyServerException(
+            code=Errors.Unimplemented, message="Not implemented"
+        )
 
 
 class HaberdasherServerSync(ConnecpyServer):
@@ -64,7 +87,9 @@ class HaberdasherServerSync(ConnecpyServer):
         super().__init__()
         self._prefix = f"{server_path_prefix}/i2y.connecpy.example.Haberdasher"
         self._endpoints = {
-            "MakeHat": Endpoint[example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat](
+            "MakeHat": Endpoint[
+                example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
+            ](
                 service_name="Haberdasher",
                 name="MakeHat",
                 function=getattr(service, "MakeHat"),
@@ -72,7 +97,10 @@ class HaberdasherServerSync(ConnecpyServer):
                 output=example_dot_haberdasher__pb2.Hat,
                 allowed_methods=("GET", "POST"),
             ),
-            "DoNothing": Endpoint[google_dot_protobuf_dot_empty__pb2.Empty, google_dot_protobuf_dot_empty__pb2.Empty](
+            "DoNothing": Endpoint[
+                google_dot_protobuf_dot_empty__pb2.Empty,
+                google_dot_protobuf_dot_empty__pb2.Empty,
+            ](
                 service_name="Haberdasher",
                 name="DoNothing",
                 function=getattr(service, "DoNothing"),
@@ -113,7 +141,6 @@ class HaberdasherClient(ConnecpyClient):
         headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
-        
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         method = "POST"
         return self._make_request(
@@ -156,7 +183,6 @@ class AsyncHaberdasherClient(AsyncConnecpyClient):
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
-        
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         method = "POST"
         return await self._make_request(
