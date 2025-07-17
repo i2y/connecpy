@@ -1,16 +1,16 @@
 from asyncio import wait_for
-from typing import Optional, TypeVar
+from typing import Iterable, Optional, TypeVar
 
 import httpx
 from google.protobuf.message import Message
-from httpx import Timeout
+from httpx import Headers as HttpxHeaders, Timeout
 
 from . import shared_client
 from . import compression
-from . import context
 from . import exceptions
 from . import errors
 from ._protocol import ConnectWireError
+from .types import Headers
 
 
 _RES = TypeVar("_RES", bound=Message)
@@ -30,11 +30,15 @@ class AsyncConnecpyClient:
     def __init__(
         self,
         address: str,
+        accept_compression: Optional[Iterable[str]] = None,
+        send_compression: Optional[str] = None,
         timeout_ms: Optional[int] = None,
         session: Optional[httpx.AsyncClient] = None,
     ) -> None:
         self._address = address
         self._timeout_ms = timeout_ms
+        self._accept_compression = accept_compression
+        self._send_compression = send_compression
         if session:
             self._session = session
             self._close_client = False
@@ -63,12 +67,11 @@ class AsyncConnecpyClient:
         *,
         url: str,
         request: Message,
-        ctx: Optional[context.ClientContext],
         response_class: type[_RES],
         method="POST",
+        headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
         session: Optional[httpx.AsyncClient] = None,
-        **kwargs,
     ) -> _RES:
         """
         Makes a request to the Connecpy server.
@@ -89,19 +92,24 @@ class AsyncConnecpyClient:
         Raises:
             exceptions.ConnecpyServerException: If an error occurs while making the request.
         """
-        # Prepare headers and kwargs using shared logic
+        # Prepare headers and request args using shared logic
+        request_args = {}
         if timeout_ms is None:
             timeout_ms = self._timeout_ms
         else:
             timeout = _convert_connect_timeout(timeout_ms)
-            kwargs["timeout"] = timeout
-        headers, kwargs = shared_client.prepare_headers(ctx, kwargs, timeout_ms)
+            request_args["timeout"] = timeout
+
+        user_headers = HttpxHeaders(headers) if headers else HttpxHeaders()
+        request_headers = shared_client.prepare_headers(
+            user_headers, timeout_ms, self._accept_compression, self._send_compression
+        )
         timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else None
 
         try:
             client = session or self._session
 
-            if "content-encoding" in headers:
+            if "content-encoding" in request_headers:
                 request_data, headers = shared_client.compress_request(
                     request, headers, compression
                 )
@@ -110,18 +118,23 @@ class AsyncConnecpyClient:
 
             if method == "GET":
                 params = shared_client.prepare_get_params(request_data, headers)
-                kwargs["params"] = params
-                kwargs["headers"].pop("content-type", None)
+                request_headers.pop("content-type", None)
                 resp = await wait_for(
-                    client.get(url=self._address + url, **kwargs),
+                    client.get(
+                        url=self._address + url,
+                        headers=request_headers,
+                        params=params,
+                        **request_args,
+                    ),
                     timeout_s,
                 )
             else:
                 resp = await wait_for(
                     client.post(
                         url=self._address + url,
+                        headers=request_headers,
                         content=request_data,
-                        **kwargs,
+                        **request_args,
                     ),
                     timeout_s,
                 )

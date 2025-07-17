@@ -8,6 +8,9 @@ from .errors import Errors
 from .exceptions import ConnecpyServerException
 
 
+CONNECT_PROTOCOL_VERSION = "1"
+
+
 # Define a custom class for HTTP Status to allow adding 499 status code
 @dataclass(frozen=True)
 class ExtendedHTTPStatus:

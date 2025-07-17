@@ -47,7 +47,8 @@ from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
 from connecpy.client import ConnecpyClient
-from connecpy.context import ClientContext, ServiceContext
+from connecpy.context import ServiceContext
+from connecpy.types import Headers
 from connecpy.wsgi import ConnecpyWSGIApplication
 
 {{- range .Imports }}
@@ -119,20 +120,19 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
         self,
         request: {{.InputType}},
         *,
-        ctx: Optional[ClientContext] = None,
+        headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
-        {{if .NoSideEffects}}use_get: bool = False,
-        **kwargs,
-        {{- else}}**kwargs,{{end}}
+        {{if .NoSideEffects}}use_get: bool = False,{{end}}
     ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
         return self._make_request(
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            ctx=ctx,
+            method=method,
+            headers=headers,
+            timeout_ms=timeout_ms,
             request=request,
             response_class={{.OutputType}},
-            method=method,
-            **kwargs,
         )
 {{end}}
 
@@ -141,21 +141,20 @@ class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
         self,
         request: {{.InputType}},
         *,
-        ctx: Optional[ClientContext] = None,
+        headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
-        {{if .NoSideEffects}}use_get: bool = False,
-        **kwargs,
-        {{- else}}**kwargs,{{end}}
+        {{if .NoSideEffects}}use_get: bool = False,{{end}}
     ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
         return await self._make_request(
             url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            ctx=ctx,
-            request=request,
-            response_class={{.OutputType}},
             method=method,
+            headers=headers,
+            request=request,
+            timeout_ms=timeout_ms,
+            response_class={{.OutputType}},
             session=session,
-            **kwargs,
         )
 {{end}}{{end}}`))
