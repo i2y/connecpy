@@ -13,6 +13,9 @@ from ._protocol import ConnectWireError
 from .types import Headers
 
 
+Response = shared_client.Response
+
+
 _RES = TypeVar("_RES", bound=Message)
 
 
@@ -109,6 +112,8 @@ class ConnecpyClient:
                     headers=request_headers,
                     **request_args,
                 )
+
+            shared_client.handle_response_headers(resp.headers)
 
             if resp.status_code == 200:
                 response = response_class()

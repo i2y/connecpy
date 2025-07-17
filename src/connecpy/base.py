@@ -110,7 +110,7 @@ class Endpoint(Generic[T, U]):
 
 
 def thread_pool_runner(func):
-    async def run(request, ctx: context.ConnecpyServiceContext):
+    async def run(request, ctx: context.ServiceContext):
         return await asyncio.to_thread(func, request, ctx)
 
     return run

@@ -48,7 +48,7 @@ def json_encoder(value: Any, data_obj: Any) -> Tuple[bytes, Dict[str, List[str]]
             data = value
         return (
             json.dumps(data).encode("utf-8"),
-            {"Content-Type": ["application/json"]},
+            {"content-type": ["application/json"]},
         )
     except Exception as e:
         raise exceptions.ConnecpyServerException(
@@ -64,7 +64,7 @@ def proto_encoder(
     try:
         return (
             value.SerializeToString(),
-            {"Content-Type": ["application/proto"]},
+            {"content-type": ["application/proto"]},
         )
     except Exception as e:
         raise exceptions.ConnecpyServerException(

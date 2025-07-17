@@ -1,0 +1,115 @@
+from httpx import (
+    ASGITransport,
+    AsyncClient,
+    Client,
+    WSGITransport,
+)
+import pytest
+from connecpy.asgi import ConnecpyASGIApp
+from connecpy.client import Response
+from connecpy.wsgi import ConnecpyWSGIApp
+from example.haberdasher_connecpy import (
+    AsyncHaberdasherClient,
+    Haberdasher,
+    HaberdasherServer,
+    HaberdasherSync,
+    HaberdasherServerSync,
+    HaberdasherClient,
+)
+from example.haberdasher_pb2 import Hat, Size
+
+_default_headers = (
+    ("content-type", "application/proto"),
+    ("content-encoding", "gzip"),
+    ("vary", "Accept-Encoding"),
+)
+_headers_cases = [
+    ([], [], [*_default_headers], []),
+    ([("x-animal", "bear")], [], [*_default_headers, ("x-animal", "bear")], []),
+    (
+        [("x-animal", "bear"), ("X-Animal", "cat")],
+        [],
+        [*_default_headers, ("x-animal", "bear"), ("x-animal", "cat")],
+        [],
+    ),
+    ([], [("token-cost", "1000")], [*_default_headers], [("token-cost", "1000")]),
+    (
+        [],
+        [("token-cost", "1000"), ("Token-Cost", "500")],
+        [*_default_headers],
+        [("token-cost", "1000"), ("token-cost", "500")],
+    ),
+    (
+        [("x-animal", "bear"), ("X-Animal", "cat")],
+        [("token-cost", "1000"), ("Token-Cost", "500")],
+        [*_default_headers, ("x-animal", "bear"), ("x-animal", "cat")],
+        [("token-cost", "1000"), ("token-cost", "500")],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "headers,trailers,response_headers,response_trailers", _headers_cases
+)
+def test_sync_headers(headers, trailers, response_headers, response_trailers):
+    class HeadersHaberdasherSync(HaberdasherSync):
+        def __init__(
+            self, headers: list[tuple[str, str]], trailers: list[tuple[str, str]]
+        ):
+            self.headers = headers
+            self.trailers = trailers
+
+        def MakeHat(self, req, ctx):
+            for key, value in self.headers:
+                ctx.add_response_header(key, value)
+            for key, value in self.trailers:
+                ctx.add_response_trailer(key, value)
+            return Hat()
+
+    server = HaberdasherServerSync(service=HeadersHaberdasherSync(headers, trailers))
+    app = ConnecpyWSGIApp()
+    app.add_service(server)
+    transport = WSGITransport(app)
+
+    client = HaberdasherClient("http://localhost", session=Client(transport=transport))
+
+    with Response() as resp:
+        client.MakeHat(Size(inches=10))
+
+    assert resp.headers().multi_items() == response_headers
+    assert resp.trailers().multi_items() == response_trailers
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "headers,trailers,response_headers,response_trailers", _headers_cases
+)
+async def test_async_headers(headers, trailers, response_headers, response_trailers):
+    class HeadersHaberdasher(Haberdasher):
+        def __init__(
+            self, headers: list[tuple[str, str]], trailers: list[tuple[str, str]]
+        ):
+            self.headers = headers
+            self.trailers = trailers
+
+        async def MakeHat(self, req, ctx):
+            for key, value in self.headers:
+                ctx.add_response_header(key, value)
+            for key, value in self.trailers:
+                ctx.add_response_trailer(key, value)
+            return Hat()
+
+    server = HaberdasherServer(service=HeadersHaberdasher(headers, trailers))
+    app = ConnecpyASGIApp()
+    app.add_service(server)
+    transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
+
+    client = AsyncHaberdasherClient(
+        "http://localhost", session=AsyncClient(transport=transport)
+    )
+
+    with Response() as resp:
+        await client.MakeHat(Size(inches=10))
+
+    assert resp.headers().multi_items() == response_headers
+    assert resp.trailers().multi_items() == response_trailers
