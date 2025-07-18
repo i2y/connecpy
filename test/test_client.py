@@ -97,8 +97,8 @@ async def test_async_headers(headers, trailers, response_headers, response_trail
             return Hat()
 
     transport = ASGITransport(
-        HaberdasherASGIApplication(HeadersHaberdasher(headers, trailers))
-    )  # pyright:ignore[reportArgumentType] - httpx type is not complete
+        HaberdasherASGIApplication(HeadersHaberdasher(headers, trailers))  # pyright:ignore[reportArgumentType] - httpx type is not complete
+    )
 
     client = AsyncHaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)
