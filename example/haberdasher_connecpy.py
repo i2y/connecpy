@@ -7,12 +7,11 @@ from typing import Iterable, Optional, Protocol, Union
 import httpx
 
 from connecpy.asgi import ConnecpyASGIApplication
-from connecpy.async_client import AsyncConnecpyClient
 from connecpy.base import Endpoint
+from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
-from connecpy.client import ConnecpyClient
 from connecpy.context import ServiceContext
 from connecpy.types import Headers
 from connecpy.wsgi import ConnecpyWSGIApplication
@@ -78,6 +77,49 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         return "i2y.connecpy.example.Haberdasher"
 
 
+class HaberdasherClient(ConnecpyClient):
+    async def MakeHat(
+        self,
+        request: haberdasher__pb2.Size,
+        *,
+        headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
+        server_path_prefix: str = "",
+        session: Union[httpx.AsyncClient, None] = None,
+        use_get: bool = False,
+    ) -> haberdasher__pb2.Hat:
+        method = "GET" if use_get else "POST"
+        return await self._make_request(
+            url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/MakeHat",
+            method=method,
+            headers=headers,
+            request=request,
+            timeout_ms=timeout_ms,
+            response_class=haberdasher__pb2.Hat,
+            session=session,
+        )
+
+    async def DoNothing(
+        self,
+        request: google_dot_protobuf_dot_empty__pb2.Empty,
+        *,
+        headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
+        server_path_prefix: str = "",
+        session: Union[httpx.AsyncClient, None] = None,
+    ) -> google_dot_protobuf_dot_empty__pb2.Empty:
+        method = "POST"
+        return await self._make_request(
+            url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/DoNothing",
+            method=method,
+            headers=headers,
+            request=request,
+            timeout_ms=timeout_ms,
+            response_class=google_dot_protobuf_dot_empty__pb2.Empty,
+            session=session,
+        )
+
+
 class HaberdasherSync(Protocol):
     def MakeHat(
         self, req: haberdasher__pb2.Size, ctx: ServiceContext
@@ -128,7 +170,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
         return "i2y.connecpy.example.Haberdasher"
 
 
-class HaberdasherClient(ConnecpyClient):
+class HaberdasherClientSync(ConnecpyClientSync):
     def MakeHat(
         self,
         request: haberdasher__pb2.Size,
@@ -164,47 +206,4 @@ class HaberdasherClient(ConnecpyClient):
             timeout_ms=timeout_ms,
             request=request,
             response_class=google_dot_protobuf_dot_empty__pb2.Empty,
-        )
-
-
-class AsyncHaberdasherClient(AsyncConnecpyClient):
-    async def MakeHat(
-        self,
-        request: haberdasher__pb2.Size,
-        *,
-        headers: Optional[Headers] = None,
-        timeout_ms: Optional[int] = None,
-        server_path_prefix: str = "",
-        session: Union[httpx.AsyncClient, None] = None,
-        use_get: bool = False,
-    ) -> haberdasher__pb2.Hat:
-        method = "GET" if use_get else "POST"
-        return await self._make_request(
-            url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/MakeHat",
-            method=method,
-            headers=headers,
-            request=request,
-            timeout_ms=timeout_ms,
-            response_class=haberdasher__pb2.Hat,
-            session=session,
-        )
-
-    async def DoNothing(
-        self,
-        request: google_dot_protobuf_dot_empty__pb2.Empty,
-        *,
-        headers: Optional[Headers] = None,
-        timeout_ms: Optional[int] = None,
-        server_path_prefix: str = "",
-        session: Union[httpx.AsyncClient, None] = None,
-    ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        method = "POST"
-        return await self._make_request(
-            url=f"{server_path_prefix}/i2y.connecpy.example.Haberdasher/DoNothing",
-            method=method,
-            headers=headers,
-            request=request,
-            timeout_ms=timeout_ms,
-            response_class=google_dot_protobuf_dot_empty__pb2.Empty,
-            session=session,
         )

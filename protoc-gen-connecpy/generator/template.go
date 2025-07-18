@@ -41,12 +41,11 @@ from typing import Iterable, Optional, Protocol, Union
 import httpx
 
 from connecpy.asgi import ConnecpyASGIApplication
-from connecpy.async_client import AsyncConnecpyClient
 from connecpy.base import Endpoint
+from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
-from connecpy.client import ConnecpyClient
 from connecpy.context import ServiceContext
 from connecpy.types import Headers
 from connecpy.wsgi import ConnecpyWSGIApplication
@@ -61,8 +60,7 @@ import {{.Name}} as {{.Alias}}
 class {{.Name}}(Protocol):{{- range .Methods }}
     async def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
         raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
-{{- end }}
-
+{{ end }}
 
 class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
     def __init__(self, service: {{.Name}}, *, interceptors: Iterable[AsyncConnecpyServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
@@ -85,8 +83,30 @@ class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
     @property
     def service_name(self):
         return "{{.Package}}.{{.Name}}"
-{{- end }}
 
+
+class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
+    async def {{.Name}}(
+        self,
+        request: {{.InputType}},
+        *,
+        headers: Optional[Headers] = None,
+        timeout_ms: Optional[int] = None,
+        server_path_prefix: str = "",
+        session: Union[httpx.AsyncClient, None] = None,
+        {{if .NoSideEffects}}use_get: bool = False,{{end}}
+    ) -> {{.OutputType}}:
+        {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
+        return await self._make_request(
+            url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
+            method=method,
+            headers=headers,
+            request=request,
+            timeout_ms=timeout_ms,
+            response_class={{.OutputType}},
+            session=session,
+        )
+{{end}}{{- end }}
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
     def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
@@ -115,7 +135,7 @@ class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
         return "{{.Package}}.{{.Name}}"
 
 
-class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
+class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
     def {{.Name}}(
         self,
         request: {{.InputType}},
@@ -133,28 +153,5 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
             timeout_ms=timeout_ms,
             request=request,
             response_class={{.OutputType}},
-        )
-{{end}}
-
-class Async{{.Name}}Client(AsyncConnecpyClient):{{range .Methods}}
-    async def {{.Name}}(
-        self,
-        request: {{.InputType}},
-        *,
-        headers: Optional[Headers] = None,
-        timeout_ms: Optional[int] = None,
-        server_path_prefix: str = "",
-        session: Union[httpx.AsyncClient, None] = None,
-        {{if .NoSideEffects}}use_get: bool = False,{{end}}
-    ) -> {{.OutputType}}:
-        {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
-        return await self._make_request(
-            url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            method=method,
-            headers=headers,
-            request=request,
-            timeout_ms=timeout_ms,
-            response_class={{.OutputType}},
-            session=session,
         )
 {{end}}{{end}}`))

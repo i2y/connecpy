@@ -16,7 +16,7 @@ from .types import Headers
 _RES = TypeVar("_RES", bound=Message)
 
 
-class AsyncConnecpyClient:
+class ConnecpyClient:
     """
     Represents an asynchronous client for Connecpy using httpx.
 
