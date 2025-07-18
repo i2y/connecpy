@@ -3,23 +3,18 @@ import threading
 import httpx
 import pytest
 from wsgiref.simple_server import make_server, WSGIServer
-from connecpy.context import ClientContext
-from connecpy.wsgi import ConnecpyWSGIApp
 from example.wsgi_service import HaberdasherService
 from example.haberdasher_pb2 import Size
 from example.haberdasher_connecpy import (
     AsyncHaberdasherClient,
     HaberdasherClient,
-    HaberdasherServerSync,
+    HaberdasherWSGIApplication,
 )
 
 
 @pytest.fixture(scope="module")
 def sync_server():
-    service = HaberdasherService()
-    server = HaberdasherServerSync(service=service)
-    app = ConnecpyWSGIApp()
-    app.add_service(server)
+    app = HaberdasherWSGIApplication(HaberdasherService())
 
     with make_server("", 0, app) as httpd:
         thread = threading.Thread(target=httpd.serve_forever)
@@ -49,9 +44,7 @@ def test_sync_client_custom_session_and_header(sync_server: WSGIServer):
     with HaberdasherClient(
         f"http://localhost:{sync_server.server_port}", session=session
     ) as client:
-        response = client.MakeHat(
-            request=Size(inches=10), ctx=ClientContext(headers={"x-animal": "bear"})
-        )
+        response = client.MakeHat(request=Size(inches=10), headers={"x-animal": "bear"})
         assert response.size == 10
     assert not session.is_closed
     assert recorded_request is not None
@@ -81,7 +74,7 @@ async def test_async_client_custom_session_and_header(sync_server: WSGIServer):
         f"http://localhost:{sync_server.server_port}", session=session
     ) as client:
         response = await client.MakeHat(
-            request=Size(inches=10), ctx=ClientContext(headers={"x-animal": "bear"})
+            request=Size(inches=10), headers={"x-animal": "bear"}
         )
         assert response.size == 10
     assert not session.is_closed

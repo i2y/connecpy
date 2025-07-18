@@ -1,9 +1,10 @@
 from collections import defaultdict
 from http import HTTPStatus
-from typing import List, Mapping, Optional, Union
+from typing import Iterable, List, Mapping, Optional, Union
 import base64
 from urllib.parse import parse_qs
 from functools import partial
+from wsgiref.types import WSGIEnvironment, StartResponse
 
 from . import base
 from . import context
@@ -14,7 +15,7 @@ from . import compression
 from ._protocol import ConnectWireError, HTTPException
 
 
-def normalize_wsgi_headers(environ) -> dict:
+def _normalize_wsgi_headers(environ: WSGIEnvironment) -> dict:
     """Extract and normalize HTTP headers from WSGI environment."""
     headers = {}
     if "CONTENT_TYPE" in environ:
@@ -156,7 +157,7 @@ def prepare_response_headers(
 
 
 def read_chunked(input_stream):
-    body = b""
+    chunks = []
     while True:
         line = input_stream.readline()
         if not line:
@@ -168,43 +169,116 @@ def read_chunked(input_stream):
             break
 
         chunk = input_stream.read(chunk_size)
-        body += chunk
+        chunks.append(chunk)
         input_stream.read(2)  # CRLF
-    return body
+    return b"".join(chunks)
 
 
-class ConnecpyWSGIApp(base.ConnecpyBaseApp):
+class ConnecpyWSGIApplication:
     """WSGI application for Connecpy."""
 
-    def __init__(self, interceptors=None):
+    def __init__(self, *, path: str, endpoints: Mapping[str, base.Endpoint]):
         """Initialize the WSGI application."""
-        super().__init__(interceptors=interceptors or ())
+        super().__init__()
+        self._path = path
+        self._endpoints = endpoints
 
-    def add_service(self, svc):
-        """Add a service to the application.
+    @property
+    def path(self) -> str:
+        """Get the path to mount the application to."""
+        return self._path
 
-        Args:
-            svc: Service instance to add
-        """
-        # Store the service with its full path prefix
-        self._services[svc._prefix] = svc
+    def __call__(
+        self, environ: WSGIEnvironment, start_response: StartResponse
+    ) -> Iterable[bytes]:
+        """Handle incoming WSGI requests."""
+        try:
+            request_headers = _normalize_wsgi_headers(environ)
+            request_method = environ.get("REQUEST_METHOD")
+            if request_method == "POST":
+                ctx = context.ConnecpyServiceContext(
+                    environ.get("REMOTE_ADDR", ""), convert_to_mapping(request_headers)
+                )
+            else:
+                metadata = {}
+                metadata.update(
+                    extract_metadata_from_query_params(environ.get("QUERY_STRING", ""))
+                )
+                ctx = context.ConnecpyServiceContext(
+                    environ.get("REMOTE_ADDR", ""), convert_to_mapping(metadata)
+                )
 
-    def handle_error(self, exc, _environ, start_response):
-        """Handle and log errors with detailed information."""
-        if isinstance(exc, HTTPException):
-            start_response(
-                f"{exc.status.value} {exc.status.phrase}",
-                exc.headers,
+            path = environ["PATH_INFO"]
+            if not path:
+                path = "/"
+
+            endpoint = self._endpoints.get(path)
+            if not endpoint and environ["SCRIPT_NAME"] == self._path:
+                # The application was mounted at the service's path so we reconstruct
+                # the full URL.
+                endpoint = self._endpoints.get(self._path + path)
+
+            if not endpoint:
+                raise HTTPException(HTTPStatus.NOT_FOUND, [])
+
+            request_method = environ["REQUEST_METHOD"]
+            if request_method not in endpoint.allowed_methods:
+                raise HTTPException(
+                    HTTPStatus.METHOD_NOT_ALLOWED,
+                    [("Allow", ", ".join(endpoint.allowed_methods))],
+                )
+            # Handle request based on method
+            if request_method == "GET":
+                request = self._handle_get_request(environ, endpoint, ctx)
+            else:
+                request = self._handle_post_request(environ, endpoint, ctx)
+
+            # Process request
+            proc = endpoint.make_proc()
+            response = proc(request, ctx)
+
+            # Encode response
+            encoder = encoding.get_encoder(endpoint, ctx.content_type())
+            res_bytes, base_headers = encoder(response)
+
+            # Handle compression if accepted
+            accept_encoding = request_headers.get("accept-encoding", "identity")
+            selected_encoding = compression.select_encoding(accept_encoding)
+            compressed_bytes = None
+            compressor = None
+            if selected_encoding != "identity":
+                compressor = compression.get_compressor(selected_encoding)
+                if compressor:
+                    compressed_bytes = compressor(res_bytes)
+            response_headers, use_compression = prepare_response_headers(
+                base_headers,
+                selected_encoding,
+                len(compressed_bytes) if compressed_bytes is not None else None,
             )
-            return []
-        wire_error = ConnectWireError.from_exception(exc)
-        http_status = wire_error.to_http_status()
-        status = f"{http_status.code} {http_status.reason}"
-        headers = [("Content-Type", "application/json")]
-        start_response(status, headers)
-        return [wire_error.to_json_bytes()]
 
-    def _handle_post_request(self, environ, endpoint, ctx):
+            # Convert headers to WSGI format
+            wsgi_headers = []
+            for key, value in response_headers.items():
+                if isinstance(value, list):
+                    if value:  # Only add if there are values
+                        wsgi_headers.append((key, str(value[0])))
+                else:
+                    wsgi_headers.append((key, str(value)))
+
+            start_response("200 OK", wsgi_headers)
+            final_response = (
+                compressed_bytes if use_compression and compressed_bytes else res_bytes
+            )
+            return [final_response]
+        except Exception as e:
+            return self._handle_error(e, environ, start_response)
+
+    def _handle_post_request(
+        self,
+        environ: WSGIEnvironment,
+        endpoint: base.Endpoint,
+        ctx: context.ConnecpyServiceContext,
+    ):
         """Handle POST request with body."""
         try:
             content_length = environ.get("CONTENT_LENGTH")
@@ -242,7 +316,7 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
             if content_type not in ["application/json", "application/proto"]:
                 content_type = "application/proto"
                 ctx = context.ConnecpyServiceContext(
-                    environ.get("REMOTE_ADDR"),
+                    environ.get("REMOTE_ADDR", ""),
                     convert_to_mapping({"content-type": ["application/proto"]}),
                 )
 
@@ -331,70 +405,17 @@ class ConnecpyWSGIApp(base.ConnecpyBaseApp):
                 )
             raise
 
-    def __call__(self, environ, start_response):
-        """Handle incoming WSGI requests."""
-        try:
-            request_headers = normalize_wsgi_headers(environ)
-            request_method = environ.get("REQUEST_METHOD")
-            if request_method == "POST":
-                ctx = context.ConnecpyServiceContext(
-                    environ.get("REMOTE_ADDR"), convert_to_mapping(request_headers)
-                )
-            else:
-                metadata = {}
-                metadata.update(
-                    extract_metadata_from_query_params(environ.get("QUERY_STRING"))
-                )
-                ctx = context.ConnecpyServiceContext(
-                    environ.get("REMOTE_ADDR"), convert_to_mapping(metadata)
-                )
-            endpoint = self._get_endpoint(environ.get("PATH_INFO"))
-            request_method = environ.get("REQUEST_METHOD")
-            if request_method not in endpoint.allowed_methods:
-                raise HTTPException(
-                    HTTPStatus.METHOD_NOT_ALLOWED,
-                    [("Allow", ", ".join(endpoint.allowed_methods))],
-                )
-            # Handle request based on method
-            if request_method == "GET":
-                request = self._handle_get_request(environ, endpoint, ctx)
-            else:
-                request = self._handle_post_request(environ, endpoint, ctx)
-
-            # Process request
-            proc = endpoint.make_proc()
-            response = proc(request, ctx)
-
-            # Encode response
-            encoder = encoding.get_encoder(endpoint, ctx.content_type())
-            res_bytes, base_headers = encoder(response)
-
-            # Handle compression if accepted
-            accept_encoding = request_headers.get("accept-encoding", "identity")
-            selected_encoding = compression.select_encoding(accept_encoding)
-            compressed_bytes = None
-            compressor = None
-            if selected_encoding != "identity":
-                compressor = compression.get_compressor(selected_encoding)
-                if compressor:
-                    compressed_bytes = compressor(res_bytes)
-            response_headers, use_compression = prepare_response_headers(
-                base_headers,
-                selected_encoding,
-                len(compressed_bytes) if compressed_bytes is not None else None,
+    def _handle_error(self, exc, _environ, start_response):
+        """Handle and log errors with detailed information."""
+        if isinstance(exc, HTTPException):
+            start_response(
+                f"{exc.status.value} {exc.status.phrase}",
+                exc.headers,
             )
-
-            # Convert headers to WSGI format
-            wsgi_headers = []
-            for key, value in response_headers.items():
-                if isinstance(value, list):
-                    if value:  # Only add if there are values
-                        wsgi_headers.append((key, str(value[0])))
-                else:
-                    wsgi_headers.append((key, str(value)))
-
-            start_response("200 OK", wsgi_headers)
-            final_response = compressed_bytes if use_compression else res_bytes
-            return [final_response]
-        except Exception as e:
-            return self.handle_error(e, environ, start_response)
+            return []
+        wire_error = ConnectWireError.from_exception(exc)
+        http_status = wire_error.to_http_status()
+        status = f"{http_status.code} {http_status.reason}"
+        headers = [("Content-Type", "application/json")]
+        start_response(status, headers)
+        return [wire_error.to_json_bytes()]

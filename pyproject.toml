@@ -14,7 +14,7 @@ dependencies = [
     "zstandard>=0.22.0",
 ]
 readme = "README.md"
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 
 [build-system]
 requires = ["hatchling"]
@@ -23,6 +23,8 @@ build-backend = "hatchling.build"
 [tool.uv]
 managed = true
 dev-dependencies = [
+    "asgiref",
+    "flask",
     "grpcio",
     "grpcio-tools",
     "pip>=24.0",

@@ -3,11 +3,11 @@ import random
 from connecpy.exceptions import InvalidArgument
 from connecpy.context import ServiceContext
 
-from google.protobuf.empty_pb2 import Empty
+from haberdasher_connecpy import Haberdasher
 from haberdasher_pb2 import Hat, Size
 
 
-class HaberdasherService(object):
+class HaberdasherService(Haberdasher):
     async def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
         print("remaining_time: ", ctx.time_remaining())
         if req.inches <= 0:
@@ -24,7 +24,3 @@ class HaberdasherService(object):
             )
 
         return response
-
-    # TODO: Service methods should default to Unimplemented if not implemented
-    async def DoNothing(self, req, ctx: ServiceContext):
-        return Empty()
