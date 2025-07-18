@@ -1,7 +1,6 @@
 from typing import Any, Callable
 
 from connecpy import context
-from connecpy.asgi import ConnecpyASGIApp
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
 
 from . import haberdasher_connecpy
@@ -26,8 +25,7 @@ class MyInterceptor(AsyncConnecpyServerInterceptor):
 my_interceptor_a = MyInterceptor("A")
 my_interceptor_b = MyInterceptor("B")
 
-service = haberdasher_connecpy.HaberdasherServer(service=HaberdasherService())
-app = ConnecpyASGIApp(
+app = haberdasher_connecpy.HaberdasherASGIApplication(
+    HaberdasherService(),
     interceptors=(my_interceptor_a, my_interceptor_b),
 )
-app.add_service(service)

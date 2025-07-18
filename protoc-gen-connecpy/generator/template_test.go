@@ -37,9 +37,9 @@ func TestConnecpyTemplate(t *testing.T) {
 				},
 			},
 			contains: []string{
-				"from typing import Optional, Protocol, Union",
+				"from typing import Iterable, Optional, Protocol, Union",
 				"class TestService(Protocol):",
-				"class TestServiceServer(ConnecpyServer):",
+				"class TestServiceASGIApplication(ConnecpyASGIApplication):",
 				"def TestMethod",
 				`allowed_methods=("POST",)`,
 			},

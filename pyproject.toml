@@ -21,6 +21,7 @@ requires-python = ">= 3.10"
 dev-dependencies = [
     "asgiref",
     "connecpy-example",
+    "flask",
     "grpcio",
     "grpcio-tools",
     "pip>=24.0",

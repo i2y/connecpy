@@ -16,17 +16,15 @@ from httpx import (
 )
 import pytest
 from pytest import param as p
-from connecpy.asgi import ConnecpyASGIApp
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
-from connecpy.wsgi import ConnecpyWSGIApp
 from example.haberdasher_connecpy import (
     AsyncHaberdasherClient,
     Haberdasher,
-    HaberdasherServer,
-    HaberdasherSync,
-    HaberdasherServerSync,
+    HaberdasherASGIApplication,
     HaberdasherClient,
+    HaberdasherSync,
+    HaberdasherWSGIApplication,
 )
 from example.haberdasher_pb2 import Hat, Size
 
@@ -70,9 +68,7 @@ def test_sync_errors(
             message=message,
         )
     )
-    server = HaberdasherServerSync(service=haberdasher)
-    app = ConnecpyWSGIApp()
-    app.add_service(server)
+    app = HaberdasherWSGIApplication(haberdasher)
     transport = WSGITransport(app)
 
     recorded_response: Optional[Response] = None
@@ -115,9 +111,7 @@ async def test_async_errors(
             message=message,
         )
     )
-    server = HaberdasherServer(service=haberdasher)
-    app = ConnecpyASGIApp()
-    app.add_service(server)
+    app = HaberdasherASGIApplication(haberdasher)
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     recorded_response: Optional[Response] = None
@@ -277,10 +271,7 @@ def test_sync_client_errors(
         def MakeHat(self, req, ctx):
             return Hat()
 
-    haberdasher = ValidHaberdasherSync()
-    server = HaberdasherServerSync(service=haberdasher)
-    app = ConnecpyWSGIApp()
-    app.add_service(server)
+    app = HaberdasherWSGIApplication(ValidHaberdasherSync())
     transport = WSGITransport(app)
 
     client = Client(transport=transport)
@@ -307,9 +298,7 @@ async def test_async_client_errors(
             return Hat()
 
     haberdasher = ValidHaberdasher()
-    server = HaberdasherServer(service=haberdasher)
-    app = ConnecpyASGIApp()
-    app.add_service(server)
+    app = HaberdasherASGIApplication(haberdasher)
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     client = AsyncClient(transport=transport)
@@ -332,9 +321,7 @@ def sync_timeout_server():
             time.sleep(10)
             raise AssertionError("Should be timedout already")
 
-    server = HaberdasherServerSync(service=SleepingHaberdasherSync())
-    app = ConnecpyWSGIApp()
-    app.add_service(server)
+    app = HaberdasherWSGIApplication(SleepingHaberdasherSync())
 
     with make_server("", 0, app) as httpd:
         thread = threading.Thread(target=httpd.serve_forever)
