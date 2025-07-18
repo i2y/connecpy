@@ -3,12 +3,12 @@ import random
 from connecpy.exceptions import InvalidArgument
 from connecpy.context import ServiceContext
 
-from haberdasher_connecpy import Haberdasher
-from haberdasher_pb2 import Hat, Size
+from .haberdasher_connecpy import HaberdasherSync
+from .haberdasher_pb2 import Hat, Size
 
 
-class HaberdasherService(Haberdasher):
-    async def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
+class HaberdasherService(HaberdasherSync):
+    def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
         print("remaining_time: ", ctx.time_remaining())
         if req.inches <= 0:
             raise InvalidArgument(
