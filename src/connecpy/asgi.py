@@ -11,6 +11,7 @@ from . import errors
 from . import exceptions
 from . import encoding
 from . import compression
+from . import interceptor
 from ._protocol import ConnectWireError, HTTPException
 
 
@@ -24,8 +25,28 @@ else:
     Scope = "asgiref.typing.Scope"
 
 
-class ConnecpyASGIApp(base.ConnecpyBaseApp):
+class ConnecpyASGIApplication:
     """ASGI application for Connecpy."""
+
+    def __init__(
+        self,
+        *,
+        path: str,
+        endpoints: Mapping[str, base.Endpoint],
+        interceptors: Iterable[interceptor.AsyncConnecpyServerInterceptor] = (),
+        max_receive_message_length=1024 * 100 * 100,
+    ):
+        """Initialize the ASGI application."""
+        super().__init__()
+        self._path = path
+        self._endpoints = endpoints
+        self._interceptors = interceptors
+        self._max_receive_message_length = max_receive_message_length
+
+    @property
+    def path(self) -> str:
+        """Get the path to mount the application to."""
+        return self._path
 
     async def __call__(
         self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
@@ -41,7 +62,17 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
         assert scope["type"] == "http"
         try:
             http_method = scope["method"]
-            endpoint = self._get_endpoint(scope["path"])
+
+            path = scope["path"]
+            endpoint = self._endpoints.get(path)
+            if not endpoint and scope["root_path"]:
+                # The application was mounted at some root so try stripping the prefix.
+                path = path.removeprefix(scope["root_path"])
+                endpoint = self._endpoints.get(path)
+
+            if not endpoint:
+                raise HTTPException(HTTPStatus.NOT_FOUND, [])
+
             if http_method not in endpoint.allowed_methods:
                 raise HTTPException(
                     HTTPStatus.METHOD_NOT_ALLOWED,
@@ -57,9 +88,9 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
             ctx = context.ServiceContext(peer, headers)
 
             if http_method == "GET":
-                request = await self._handle_get_request(scope, ctx)
+                request = await self._handle_get_request(endpoint, scope, ctx)
             else:
-                request = await self._handle_post_request(scope, receive, ctx)
+                request = await self._handle_post_request(endpoint, scope, receive, ctx)
 
             proc = endpoint.make_async_proc(self._interceptors)
             response_data = await proc(request, ctx)
@@ -107,7 +138,9 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
         except Exception as e:
             await self._handle_error(e, scope, receive, send)
 
-    async def _handle_get_request(self, scope: HTTPScope, ctx: context.ServiceContext):
+    async def _handle_get_request(
+        self, endpoint: base.Endpoint, scope: HTTPScope, ctx: context.ServiceContext
+    ):
         """Handle GET request with query parameters."""
         query_string = scope.get("query_string", b"").decode("utf-8")
         params = parse_qs(query_string)
@@ -157,16 +190,18 @@ class ConnecpyASGIApp(base.ConnecpyBaseApp):
             message = decompressor(message)
 
         # Get the appropriate decoder for the endpoint
-        endpoint = self._get_endpoint(scope["path"])
         decoder = partial(decoder, data_obj=endpoint.input)
         return decoder(message)
 
     async def _handle_post_request(
-        self, scope: HTTPScope, receive, ctx: context.ServiceContext
+        self,
+        endpoint: base.Endpoint,
+        scope: HTTPScope,
+        receive,
+        ctx: context.ServiceContext,
     ):
         """Handle POST request with body."""
         # Get request body and endpoint
-        endpoint = self._get_endpoint(scope["path"])
         req_body = await self._read_body(receive)
 
         if len(req_body) > self._max_receive_message_length:

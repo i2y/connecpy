@@ -5,16 +5,14 @@ from httpx import (
     WSGITransport,
 )
 import pytest
-from connecpy.asgi import ConnecpyASGIApp
 from connecpy.client import Response
-from connecpy.wsgi import ConnecpyWSGIApp
 from example.haberdasher_connecpy import (
     AsyncHaberdasherClient,
     Haberdasher,
-    HaberdasherServer,
-    HaberdasherSync,
-    HaberdasherServerSync,
+    HaberdasherASGIApplication,
     HaberdasherClient,
+    HaberdasherSync,
+    HaberdasherWSGIApplication,
 )
 from example.haberdasher_pb2 import Hat, Size
 
@@ -66,10 +64,9 @@ def test_sync_headers(headers, trailers, response_headers, response_trailers):
                 ctx.add_response_trailer(key, value)
             return Hat()
 
-    server = HaberdasherServerSync(service=HeadersHaberdasherSync(headers, trailers))
-    app = ConnecpyWSGIApp()
-    app.add_service(server)
-    transport = WSGITransport(app)
+    transport = WSGITransport(
+        HaberdasherWSGIApplication(HeadersHaberdasherSync(headers, trailers))
+    )
 
     client = HaberdasherClient("http://localhost", session=Client(transport=transport))
 
@@ -99,10 +96,9 @@ async def test_async_headers(headers, trailers, response_headers, response_trail
                 ctx.add_response_trailer(key, value)
             return Hat()
 
-    server = HaberdasherServer(service=HeadersHaberdasher(headers, trailers))
-    app = ConnecpyASGIApp()
-    app.add_service(server)
-    transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
+    transport = ASGITransport(
+        HaberdasherASGIApplication(HeadersHaberdasher(headers, trailers))
+    )  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
     client = AsyncHaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)

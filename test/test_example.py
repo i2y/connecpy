@@ -3,22 +3,18 @@ import threading
 import httpx
 import pytest
 from wsgiref.simple_server import make_server, WSGIServer
-from connecpy.wsgi import ConnecpyWSGIApp
 from example.wsgi_service import HaberdasherService
 from example.haberdasher_pb2 import Size
 from example.haberdasher_connecpy import (
     AsyncHaberdasherClient,
     HaberdasherClient,
-    HaberdasherServerSync,
+    HaberdasherWSGIApplication,
 )
 
 
 @pytest.fixture(scope="module")
 def sync_server():
-    service = HaberdasherService()
-    server = HaberdasherServerSync(service=service)
-    app = ConnecpyWSGIApp()
-    app.add_service(server)
+    app = HaberdasherWSGIApplication(HaberdasherService())
 
     with make_server("", 0, app) as httpd:
         thread = threading.Thread(target=httpd.serve_forever)
