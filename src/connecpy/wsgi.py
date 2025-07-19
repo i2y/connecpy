@@ -1,6 +1,6 @@
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Iterable, List, Mapping, Optional, Union
+from typing import Iterable, List, Mapping, Optional
 import base64
 from urllib.parse import parse_qs
 from functools import partial
@@ -47,58 +47,6 @@ def extract_metadata_from_query_params(query_string: str) -> dict:
     return parse_qs(query_string) if query_string else {}
 
 
-def reflect_header(key: str, value: Union[str, List[str]], headers: list) -> None:
-    """Add a header to the WSGI response headers list.
-
-    Args:
-        key: Header name
-        value: Header value or list of values
-        headers: List of header tuples to append to
-    """
-    if isinstance(value, list):
-        if value:  # Only add if there are values
-            headers.append((key, str(value[0])))
-    else:
-        headers.append((key, str(value)))
-
-
-def format_response_headers(
-    base_headers: dict, compression_info: dict, trailers: dict
-) -> list[tuple[str, str]]:
-    """Format response headers into WSGI compatible format.
-
-    Args:
-        base_headers (dict): Base headers from encoder
-        compression_info (dict): Compression related headers
-        trailers (dict): Trailer headers
-
-    Returns:
-        list[tuple[str, str]]: List of header tuples in WSGI format
-    """
-    # Combine all headers
-    headers = {}
-
-    # Start with base headers
-    for key, value in base_headers.items():
-        if isinstance(value, list):
-            headers[key] = value[0] if value else ""
-        else:
-            headers[key] = str(value)
-
-    # Add compression headers
-    headers.update(compression_info)
-
-    # Add trailers with prefix
-    for key, value in trailers.items():
-        if isinstance(value, list):
-            headers[f"trailer-{key.lower()}"] = value[0] if value else ""
-        else:
-            headers[f"trailer-{key.lower()}"] = str(value)
-
-    # Convert to WSGI format
-    return [(str(k).lower(), str(v)) for k, v in headers.items()]
-
-
 def validate_request_headers(headers: dict) -> tuple[str, str]:
     """Validate and normalize request headers.
 
@@ -128,10 +76,10 @@ def validate_request_headers(headers: dict) -> tuple[str, str]:
 
 
 def prepare_response_headers(
-    base_headers: dict,
+    base_headers: dict[str, list[str]],
     selected_encoding: str,
     compressed_size: Optional[int] = None,
-) -> tuple[dict, bool]:
+) -> tuple[dict[str, list[str]], bool]:
     """Prepare response headers and determine if compression should be used.
 
     Args:
@@ -146,13 +94,13 @@ def prepare_response_headers(
     use_compression = False
 
     if "content-type" not in headers:
-        headers["content-type"] = "application/proto"
+        headers["content-type"] = ["application/proto"]
 
     if selected_encoding != "identity" and compressed_size is not None:
-        headers["content-encoding"] = selected_encoding
+        headers["content-encoding"] = [selected_encoding]
         use_compression = True
 
-    headers["vary"] = "Accept-Encoding"
+    headers["vary"] = ["Accept-Encoding"]
     return headers, use_compression
 
 
@@ -196,7 +144,7 @@ class ConnecpyWSGIApplication:
             request_headers = _normalize_wsgi_headers(environ)
             request_method = environ.get("REQUEST_METHOD")
             if request_method == "POST":
-                ctx = context.ConnecpyServiceContext(
+                ctx = context.ServiceContext(
                     environ.get("REMOTE_ADDR", ""), convert_to_mapping(request_headers)
                 )
             else:
@@ -204,7 +152,7 @@ class ConnecpyWSGIApplication:
                 metadata.update(
                     extract_metadata_from_query_params(environ.get("QUERY_STRING", ""))
                 )
-                ctx = context.ConnecpyServiceContext(
+                ctx = context.ServiceContext(
                     environ.get("REMOTE_ADDR", ""), convert_to_mapping(metadata)
                 )
 
@@ -257,13 +205,15 @@ class ConnecpyWSGIApplication:
             )
 
             # Convert headers to WSGI format
-            wsgi_headers = []
-            for key, value in response_headers.items():
-                if isinstance(value, list):
-                    if value:  # Only add if there are values
-                        wsgi_headers.append((key, str(value[0])))
-                else:
-                    wsgi_headers.append((key, str(value)))
+            wsgi_headers: list[tuple[str, str]] = []
+            for key, values in response_headers.items():
+                for value in values:
+                    wsgi_headers.append((key.lower(), value))
+            wsgi_headers.extend(
+                (key.lower(), value) for key, value in ctx.response_headers()
+            )
+            for key, value in ctx.response_trailers():
+                wsgi_headers.append((f"trailer-{key.lower()}", value))
 
             start_response("200 OK", wsgi_headers)
             final_response = (
@@ -277,7 +227,7 @@ class ConnecpyWSGIApplication:
         self,
         environ: WSGIEnvironment,
         endpoint: base.Endpoint,
-        ctx: context.ConnecpyServiceContext,
+        ctx: context.ServiceContext,
     ):
         """Handle POST request with body."""
         try:
@@ -315,7 +265,7 @@ class ConnecpyWSGIApplication:
             # Default to proto if not specified
             if content_type not in ["application/json", "application/proto"]:
                 content_type = "application/proto"
-                ctx = context.ConnecpyServiceContext(
+                ctx = context.ServiceContext(
                     environ.get("REMOTE_ADDR", ""),
                     convert_to_mapping({"content-type": ["application/proto"]}),
                 )
