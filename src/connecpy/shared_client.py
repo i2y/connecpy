@@ -69,7 +69,7 @@ def prepare_get_params(request_data, headers):
     return params
 
 
-_current_response = ContextVar["Response"]("connecpy_current_response")
+_current_response = ContextVar["ResponseMetadata"]("connecpy_current_response")
 
 
 def handle_response_headers(headers: Headers):
