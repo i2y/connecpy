@@ -6,8 +6,8 @@ from wsgiref.simple_server import make_server, WSGIServer
 from example.wsgi_service import HaberdasherService
 from example.haberdasher_pb2 import Size
 from example.haberdasher_connecpy import (
-    AsyncHaberdasherClient,
     HaberdasherClient,
+    HaberdasherClientSync,
     HaberdasherWSGIApplication,
 )
 
@@ -27,7 +27,7 @@ def sync_server():
 
 
 def test_sync_client_basic(sync_server: WSGIServer):
-    with HaberdasherClient(f"http://localhost:{sync_server.server_port}") as client:
+    with HaberdasherClientSync(f"http://localhost:{sync_server.server_port}") as client:
         response = client.MakeHat(request=Size(inches=10))
         assert response.size == 10
     assert client._session.is_closed
@@ -41,7 +41,7 @@ def test_sync_client_custom_session_and_header(sync_server: WSGIServer):
         recorded_request = request
 
     session = httpx.Client(event_hooks={"request": [record_request]})
-    with HaberdasherClient(
+    with HaberdasherClientSync(
         f"http://localhost:{sync_server.server_port}", session=session
     ) as client:
         response = client.MakeHat(request=Size(inches=10), headers={"x-animal": "bear"})
@@ -53,7 +53,7 @@ def test_sync_client_custom_session_and_header(sync_server: WSGIServer):
 
 @pytest.mark.asyncio
 async def test_async_client_basic(sync_server: WSGIServer):
-    async with AsyncHaberdasherClient(
+    async with HaberdasherClient(
         f"http://localhost:{sync_server.server_port}"
     ) as client:
         response = await client.MakeHat(request=Size(inches=10))
@@ -70,7 +70,7 @@ async def test_async_client_custom_session_and_header(sync_server: WSGIServer):
         recorded_request = request
 
     session = httpx.AsyncClient(event_hooks={"request": [record_request]})
-    async with AsyncHaberdasherClient(
+    async with HaberdasherClient(
         f"http://localhost:{sync_server.server_port}", session=session
     ) as client:
         response = await client.MakeHat(

@@ -19,10 +19,10 @@ from pytest import param as p
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
 from example.haberdasher_connecpy import (
-    AsyncHaberdasherClient,
+    HaberdasherClient,
     Haberdasher,
     HaberdasherASGIApplication,
-    HaberdasherClient,
+    HaberdasherClientSync,
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
@@ -80,7 +80,7 @@ def test_sync_errors(
     session = Client(transport=transport, event_hooks={"response": [record_response]})
 
     with (
-        HaberdasherClient("http://localhost", session=session) as client,
+        HaberdasherClientSync("http://localhost", session=session) as client,
         pytest.raises(ConnecpyServerException) as exc_info,
     ):
         client.MakeHat(request=Size(inches=10))
@@ -124,7 +124,7 @@ async def test_async_errors(
         AsyncClient(
             transport=transport, event_hooks={"response": [record_response]}
         ) as session,
-        AsyncHaberdasherClient("http://localhost", session=session) as client,
+        HaberdasherClient("http://localhost", session=session) as client,
     ):
         with pytest.raises(ConnecpyServerException) as exc_info:
             await client.MakeHat(request=Size(inches=10))
@@ -180,7 +180,7 @@ _http_errors = [
 def test_sync_http_errors(response_status, response_kwargs, error, message):
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
     with (
-        HaberdasherClient(
+        HaberdasherClientSync(
             "http://localhost", session=Client(transport=transport)
         ) as client,
         pytest.raises(ConnecpyServerException) as exc_info,
@@ -194,7 +194,7 @@ def test_sync_http_errors(response_status, response_kwargs, error, message):
 @pytest.mark.parametrize("response_status,response_kwargs,error,message", _http_errors)
 async def test_async_http_errors(response_status, response_kwargs, error, message):
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
-    async with AsyncHaberdasherClient(
+    async with HaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)
     ) as client:
         with pytest.raises(ConnecpyServerException) as exc_info:
@@ -363,7 +363,7 @@ def test_sync_client_timeout(
             ),
             event_hooks={"request": [modify_timeout_header]},
         ) as session,
-        HaberdasherClient(
+        HaberdasherClientSync(
             f"http://localhost:{sync_timeout_server.server_port}",
             timeout_ms=client_timeout_ms,
             session=session,
@@ -400,7 +400,7 @@ async def test_async_client_timeout(
         AsyncClient(
             timeout=Timeout(None), event_hooks={"request": [modify_timeout_header]}
         ) as session,
-        AsyncHaberdasherClient(
+        HaberdasherClient(
             f"http://localhost:{sync_timeout_server.server_port}",
             timeout_ms=client_timeout_ms,
             session=session,

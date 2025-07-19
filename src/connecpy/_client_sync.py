@@ -1,31 +1,31 @@
-from asyncio import wait_for
 from typing import Iterable, Optional, TypeVar
 
 import httpx
+
 from google.protobuf.message import Message
 from httpx import Headers as HttpxHeaders, Timeout
 
-from . import _client_shared
-from . import compression
 from . import exceptions
 from . import errors
+from . import compression
+from . import _client_shared
 from ._protocol import ConnectWireError
 from .types import Headers
 
-ResponseMetadata = _client_shared.ResponseMetadata
 
 _RES = TypeVar("_RES", bound=Message)
 
 
-class AsyncConnecpyClient:
+class ConnecpyClientSync:
     """
-    Represents an asynchronous client for Connecpy using httpx.
+    Represents a synchronous client for Connecpy using httpx.
 
     Args:
         address (str): The address of the Connecpy server.
-        timeout_ms (int): The timeout in ms for the overall request.
-        session (httpx.AsyncClient): The httpx client session to use for making requests. If setting timeout_ms,
-            the session should have timeout disabled or set higher than timeout_ms.
+        timeout_ms (int): The timeout in ms for the overall request. Note, this is currently only implemented
+            as a read timeout, which will be more forgiving than a timeout for the operation.
+        session (httpx.Client): The httpx client session to use for making requests. If setting timeout_ms,
+            the session should also at least have a read timeout set to the same value.
     """
 
     def __init__(
@@ -34,8 +34,8 @@ class AsyncConnecpyClient:
         accept_compression: Optional[Iterable[str]] = None,
         send_compression: Optional[str] = None,
         timeout_ms: Optional[int] = None,
-        session: Optional[httpx.AsyncClient] = None,
-    ) -> None:
+        session: Optional[httpx.Client] = None,
+    ):
         self._address = address
         self._timeout_ms = timeout_ms
         self._accept_compression = accept_compression
@@ -44,35 +44,32 @@ class AsyncConnecpyClient:
             self._session = session
             self._close_client = False
         else:
-            self._session = httpx.AsyncClient(
-                timeout=_convert_connect_timeout(timeout_ms)
-            )
+            self._session = httpx.Client(timeout=_convert_connect_timeout(timeout_ms))
             self._close_client = True
         self._closed = False
 
-    async def close(self):
+    def close(self):
         """Close the HTTP client. After closing, the client cannot be used to make requests."""
         if not self._closed:
             self._closed = True
             if self._close_client:
-                await self._session.aclose()
+                self._session.close()
 
-    async def __aenter__(self):
+    def __enter__(self):
         return self
 
-    async def __aexit__(self, _exc_type, _exc_value, _traceback):
-        await self.close()
+    def __exit__(self, _exc_type, _exc_value, _traceback):
+        self.close()
 
-    async def _make_request(
+    def _make_request(
         self,
         *,
-        url: str,
+        url,
         request: Message,
         response_class: type[_RES],
         method="POST",
         headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
-        session: Optional[httpx.AsyncClient] = None,
     ) -> _RES:
         """Make an HTTP request to the server."""
         # Prepare headers and request args using shared logic
@@ -87,39 +84,32 @@ class AsyncConnecpyClient:
         request_headers = _client_shared.prepare_headers(
             user_headers, timeout_ms, self._accept_compression, self._send_compression
         )
-        timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else None
 
         try:
-            client = session or self._session
-
             if "content-encoding" in request_headers:
-                request_data, headers = _client_shared.compress_request(
-                    request, headers, compression
+                request_data, request_headers = _client_shared.compress_request(
+                    request, request_headers, compression
                 )
             else:
                 request_data = request.SerializeToString()
 
             if method == "GET":
-                params = _client_shared.prepare_get_params(request_data, headers)
+                params = _client_shared.prepare_get_params(
+                    request_data, request_headers
+                )
                 request_headers.pop("content-type", None)
-                resp = await wait_for(
-                    client.get(
-                        url=self._address + url,
-                        headers=request_headers,
-                        params=params,
-                        **request_args,
-                    ),
-                    timeout_s,
+                resp = self._session.get(
+                    url=self._address + url,
+                    headers=request_headers,
+                    params=params,
+                    **request_args,
                 )
             else:
-                resp = await wait_for(
-                    client.post(
-                        url=self._address + url,
-                        headers=request_headers,
-                        content=request_data,
-                        **request_args,
-                    ),
-                    timeout_s,
+                resp = self._session.post(
+                    url=self._address + url,
+                    content=request_data,
+                    headers=request_headers,
+                    **request_args,
                 )
 
             _client_shared.handle_response_headers(resp.headers)
@@ -135,7 +125,7 @@ class AsyncConnecpyClient:
                 return response
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError):
+        except httpx.TimeoutException:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.DeadlineExceeded,
                 message="Request timed out",
@@ -144,16 +134,16 @@ class AsyncConnecpyClient:
             raise
         except Exception as e:
             raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Unavailable,
-                message=str(e),
+                code=errors.Errors.Unavailable, message=str(e)
             )
 
 
+# Convert a timeout with connect semantics to a httpx.Timeout. Connect timeouts
+# should apply to an entire operation but this is difficult in synchronous Python code
+# to do cross-platform. For now, we just apply the timeout to all httpx timeouts
+# if provided, or default to no read/write timeouts but with a connect timeout if
+# not provided to match connect-go behavior as closely as possible.
 def _convert_connect_timeout(timeout_ms: Optional[int]) -> Timeout:
     if timeout_ms is None:
-        # If no timeout provided, match connect-go's default behavior of a 30s connect timeout
-        # and no read/write timeouts.
         return Timeout(None, connect=30.0)
-    # We apply the timeout to the entire operation per connect's semantics so don't need
-    # HTTP timeout
-    return Timeout(None)
+    return Timeout(timeout_ms / 1000.0)
