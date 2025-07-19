@@ -1,11 +1,12 @@
 from typing import cast
 
-from haberdasher_connecpy import HaberdasherASGIApplication
-from service import HaberdasherService
 from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.routing import Mount, Route
 from starlette.types import ASGIApp
+
+from .haberdasher_connecpy import HaberdasherASGIApplication
+from .service import HaberdasherService
 
 haberdasher_app = HaberdasherASGIApplication(HaberdasherService())
 

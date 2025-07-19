@@ -2,8 +2,8 @@ import asyncio
 
 from grpc.aio import insecure_channel
 
-import haberdasher_pb2
-import haberdasher_pb2_grpc
+from . import haberdasher_pb2
+from . import haberdasher_pb2_grpc
 
 
 target = "localhost:50051"
