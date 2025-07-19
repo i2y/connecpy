@@ -2,8 +2,8 @@ import asyncio
 
 from grpc.aio import server
 
-import haberdasher_pb2_grpc
-from service import HaberdasherService
+from . import haberdasher_pb2_grpc
+from .service import HaberdasherService
 
 
 host = "localhost:50051"

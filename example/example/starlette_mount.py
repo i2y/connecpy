@@ -1,12 +1,13 @@
 from typing import cast
 
-from server import app as server_app
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import PlainTextResponse
 from starlette.routing import Mount, Route
 from starlette.types import ASGIApp
+
+from .server import app as server_app
 
 app = Starlette(
     routes=[

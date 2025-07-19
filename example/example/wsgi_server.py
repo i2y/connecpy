@@ -1,6 +1,7 @@
 from wsgiref.simple_server import make_server
-from wsgi_service import HaberdasherService
-from haberdasher_connecpy import HaberdasherWSGIApplication
+
+from .wsgi_service import HaberdasherService
+from .haberdasher_connecpy import HaberdasherWSGIApplication
 
 
 def main():
