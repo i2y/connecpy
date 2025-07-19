@@ -12,6 +12,7 @@ from . import errors
 from ._protocol import ConnectWireError
 from .types import Headers
 
+ResponseMetadata = shared_client.ResponseMetadata
 
 _RES = TypeVar("_RES", bound=Message)
 
@@ -73,25 +74,7 @@ class ConnecpyClient:
         timeout_ms: Optional[int] = None,
         session: Optional[httpx.AsyncClient] = None,
     ) -> _RES:
-        """
-        Makes a request to the Connecpy server.
-
-        Args:
-            url (str): The URL to send the request to.
-            request: The request object to send.
-            ctx (context.ClientContext): The client context.
-            response_obj: The response object class to deserialize the response into.
-            method (str): The HTTP method to use for the request. Defaults to "POST".
-            session (httpx.AsyncClient, optional): The httpx client session to use for the request.
-                If not provided, the session passed to the constructor will be used.
-            **kwargs: Additional keyword arguments to pass to the request.
-
-        Returns:
-            The deserialized response object.
-
-        Raises:
-            exceptions.ConnecpyServerException: If an error occurs while making the request.
-        """
+        """Make an HTTP request to the server."""
         # Prepare headers and request args using shared logic
         request_args = {}
         if timeout_ms is None:
@@ -138,6 +121,8 @@ class ConnecpyClient:
                     ),
                     timeout_s,
                 )
+
+            shared_client.handle_response_headers(resp.headers)
 
             if resp.status_code == 200:
                 response = response_class()

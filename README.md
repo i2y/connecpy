@@ -107,7 +107,6 @@ import asyncio
 
 import httpx
 
-from connecpy.context import ClientContext
 from connecpy.exceptions import ConnecpyServerException
 
 import haberdasher_connecpy, haberdasher_pb2
@@ -126,8 +125,7 @@ async def main():
 
     try:
         response = await client.MakeHat(
-            ctx=ClientContext(),
-            request=haberdasher_pb2.Size(inches=12),
+            haberdasher_pb2.Size(inches=12),
             # Optionally provide a session per request
             # session=session,
         )
@@ -157,7 +155,6 @@ name: "bowler"
 
 ```python
 # client.py
-from connecpy.context import ClientContext
 from connecpy.exceptions import ConnecpyServerException
 
 import haberdasher_connecpy, haberdasher_pb2
@@ -171,8 +168,7 @@ def main():
     with haberdasher_connecpy.HaberdasherClient(server_url, timeout=timeout_s) as client:
         try:
             response = client.MakeHat(
-                ctx=ClientContext(),
-                request=haberdasher_pb2.Size(inches=12),
+                haberdasher_pb2.Size(inches=12),
             )
             if not response.HasField("name"):
                 print("We didn't get a name!")
@@ -267,17 +263,12 @@ The compression handling is built into both ASGI and WSGI applications. You don'
 
 For synchronous clients:
 ```python
-from connecpy.context import ClientContext
 
 with HaberdasherClient(server_url) as client:
     response = client.MakeHat(
-        ctx=ClientContext(
-            headers={
-                "Content-Encoding": "br",  # Use Brotli compression for request
-                "Accept-Encoding": "gzip",  # Accept gzip compressed response
-            }
-        ),
-        request=request_obj,
+        request_obj,
+        send_compression="br",
+        accept_compression=("gzip,")
     )
 ```
 
@@ -285,24 +276,18 @@ For async clients:
 ```python
 async with AsyncHaberdasherClient(server_url) as client:
     response = await client.MakeHat(
-        ctx=ClientContext(),
-        request=request_obj,
-        headers={
-            "Content-Encoding": "zstd",  # Use Zstandard compression for request
-            "Accept-Encoding": "br",     # Accept Brotli compressed response
-        },
+        request_obj,
+        send_compression="zstd",  # Use Zstandard compression for request
+        accept_compression=("br,")  # Accept Brotli compressed response
     )
 ```
 
 Using GET requests with compression:
 ```python
 response = client.MakeHat(
-    ctx=ClientContext(),
     request=request_obj,
     use_get=True,  # Enable GET request (for methods marked with no_side_effects)
-    params={
-        "compression": "gzip",  # Use gzip compression for the message
-    }
+    send_compression="gzip",  # Use gzip compression for the message
 )
 ```
 
@@ -335,7 +320,6 @@ service = haberdasher_connecpy.HaberdasherServer(
 ```python
 # async_client.py
 response = await client.MakeHat(
-    ctx=ClientContext(),
     request=haberdasher_pb2.Size(inches=12),
     server_path_prefix="/foo/bar",
 )

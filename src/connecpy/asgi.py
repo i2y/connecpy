@@ -85,7 +85,7 @@ class ConnecpyASGIApplication:
 
             client = scope["client"]
             peer = f"{client[0]}:{client[1]}" if client else ""
-            ctx = context.ConnecpyServiceContext(peer, headers)
+            ctx = context.ServiceContext(peer, headers)
 
             if http_method == "GET":
                 request = await self._handle_get_request(endpoint, scope, ctx)
@@ -104,24 +104,26 @@ class ConnecpyASGIApplication:
                 if compressor:
                     res_bytes = compressor(res_bytes)
                     headers["content-encoding"] = [selected_encoding]
+                    headers["vary"] = ["Accept-Encoding"]
 
-            encoded_trailers = {
-                f"trailer-{key}": values
-                for key, values in ctx.trailing_metadata().items()
-            }
-            final_headers = {
-                key: ", ".join(values)
-                for key, values in {**headers, **encoded_trailers}.items()
-            }
+            final_headers: list[tuple[bytes, bytes]] = []
+            for key, values in headers.items():
+                for value in values:
+                    final_headers.append((key.lower().encode(), value.encode()))
+            final_headers.extend(
+                (key.lower().encode(), value.encode())
+                for key, value in ctx.response_headers()
+            )
+            final_headers.extend(
+                (f"trailer-{key.lower()}".encode(), value.encode())
+                for key, value in ctx.response_trailers()
+            )
 
             await send(
                 {
                     "type": "http.response.start",
                     "status": 200,
-                    "headers": [
-                        (k.lower().encode(), v.encode())
-                        for k, v in final_headers.items()
-                    ],
+                    "headers": final_headers,
                     "trailers": False,
                 }
             )
@@ -137,10 +139,7 @@ class ConnecpyASGIApplication:
             await self._handle_error(e, scope, receive, send)
 
     async def _handle_get_request(
-        self,
-        endpoint: base.Endpoint,
-        scope: HTTPScope,
-        ctx: context.ConnecpyServiceContext,
+        self, endpoint: base.Endpoint, scope: HTTPScope, ctx: context.ServiceContext
     ):
         """Handle GET request with query parameters."""
         query_string = scope.get("query_string", b"").decode("utf-8")
@@ -199,7 +198,7 @@ class ConnecpyASGIApplication:
         endpoint: base.Endpoint,
         scope: HTTPScope,
         receive,
-        ctx: context.ConnecpyServiceContext,
+        ctx: context.ServiceContext,
     ):
         """Handle POST request with body."""
         # Get request body and endpoint
