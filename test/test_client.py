@@ -5,7 +5,7 @@ from httpx import (
     WSGITransport,
 )
 import pytest
-from connecpy.client import Response
+from connecpy.client import ResponseMetadata
 from example.haberdasher_connecpy import (
     AsyncHaberdasherClient,
     Haberdasher,
@@ -70,7 +70,7 @@ def test_sync_headers(headers, trailers, response_headers, response_trailers):
 
     client = HaberdasherClient("http://localhost", session=Client(transport=transport))
 
-    with Response() as resp:
+    with ResponseMetadata() as resp:
         client.MakeHat(Size(inches=10))
 
     assert resp.headers().multi_items() == response_headers
@@ -104,7 +104,7 @@ async def test_async_headers(headers, trailers, response_headers, response_trail
         "http://localhost", session=AsyncClient(transport=transport)
     )
 
-    with Response() as resp:
+    with ResponseMetadata() as resp:
         await client.MakeHat(Size(inches=10))
 
     assert resp.headers().multi_items() == response_headers

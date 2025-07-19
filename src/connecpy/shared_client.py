@@ -92,9 +92,9 @@ def handle_response_headers(headers: Headers):
         response._trailers = Headers(response_trailers)
 
 
-class Response:
+class ResponseMetadata:
     """
-    Response data separate from the message payload.
+    Response metadata separate from the message payload.
 
     Commonly, RPC client invocations only need the message payload and do not need to
     directly read other data such as headers or trailers. In cases where they are needed,
@@ -102,7 +102,7 @@ class Response:
     for the invocation made within the context.
 
     Example:
-        with Response() as resp_data:
+        with ResponseMetadata() as resp_data:
             resp = client.MakeHat(Size(inches=10))
             do_something_with_response_payload(resp)
             check_response_headers(resp_data.headers())
@@ -111,9 +111,9 @@ class Response:
 
     _headers: Optional[Headers] = None
     _trailers: Optional[Headers] = None
-    _token: Optional[Token["Response"]] = None
+    _token: Optional[Token["ResponseMetadata"]] = None
 
-    def __enter__(self) -> "Response":
+    def __enter__(self) -> "ResponseMetadata":
         self._token = _current_response.set(self)
         return self
 

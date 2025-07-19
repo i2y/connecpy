@@ -12,7 +12,7 @@ from . import errors
 from ._protocol import ConnectWireError
 from .types import Headers
 
-Response = shared_client.Response
+ResponseMetadata = shared_client.ResponseMetadata
 
 _RES = TypeVar("_RES", bound=Message)
 
