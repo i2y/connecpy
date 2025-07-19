@@ -7,10 +7,10 @@ from httpx import (
 import pytest
 from connecpy.client import ResponseMetadata
 from example.haberdasher_connecpy import (
-    AsyncHaberdasherClient,
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
+    HaberdasherClientSync,
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
@@ -68,7 +68,9 @@ def test_sync_headers(headers, trailers, response_headers, response_trailers):
         HaberdasherWSGIApplication(HeadersHaberdasherSync(headers, trailers))
     )
 
-    client = HaberdasherClient("http://localhost", session=Client(transport=transport))
+    client = HaberdasherClientSync(
+        "http://localhost", session=Client(transport=transport)
+    )
 
     with ResponseMetadata() as resp:
         client.MakeHat(Size(inches=10))
@@ -100,7 +102,7 @@ async def test_async_headers(headers, trailers, response_headers, response_trail
         HaberdasherASGIApplication(HeadersHaberdasher(headers, trailers))  # pyright:ignore[reportArgumentType] - httpx type is not complete
     )
 
-    client = AsyncHaberdasherClient(
+    client = HaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)
     )
 

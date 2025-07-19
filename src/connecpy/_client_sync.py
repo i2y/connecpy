@@ -8,12 +8,9 @@ from httpx import Headers as HttpxHeaders, Timeout
 from . import exceptions
 from . import errors
 from . import compression
-from . import shared_client
+from . import _client_shared
 from ._protocol import ConnectWireError
 from .types import Headers
-
-
-ResponseMetadata = shared_client.ResponseMetadata
 
 
 _RES = TypeVar("_RES", bound=Message)
@@ -84,20 +81,22 @@ class ConnecpyClientSync:
             request_args["timeout"] = timeout
 
         user_headers = HttpxHeaders(headers) if headers else HttpxHeaders()
-        request_headers = shared_client.prepare_headers(
+        request_headers = _client_shared.prepare_headers(
             user_headers, timeout_ms, self._accept_compression, self._send_compression
         )
 
         try:
             if "content-encoding" in request_headers:
-                request_data, request_headers = shared_client.compress_request(
+                request_data, request_headers = _client_shared.compress_request(
                     request, request_headers, compression
                 )
             else:
                 request_data = request.SerializeToString()
 
             if method == "GET":
-                params = shared_client.prepare_get_params(request_data, request_headers)
+                params = _client_shared.prepare_get_params(
+                    request_data, request_headers
+                )
                 request_headers.pop("content-type", None)
                 resp = self._session.get(
                     url=self._address + url,
@@ -113,7 +112,7 @@ class ConnecpyClientSync:
                     **request_args,
                 )
 
-            shared_client.handle_response_headers(resp.headers)
+            _client_shared.handle_response_headers(resp.headers)
 
             if resp.status_code == 200:
                 response = response_class()

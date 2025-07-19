@@ -5,14 +5,12 @@ import httpx
 from google.protobuf.message import Message
 from httpx import Headers as HttpxHeaders, Timeout
 
-from . import shared_client
+from . import _client_shared
 from . import compression
 from . import exceptions
 from . import errors
 from ._protocol import ConnectWireError
 from .types import Headers
-
-ResponseMetadata = shared_client.ResponseMetadata
 
 _RES = TypeVar("_RES", bound=Message)
 
@@ -84,7 +82,7 @@ class ConnecpyClient:
             request_args["timeout"] = timeout
 
         user_headers = HttpxHeaders(headers) if headers else HttpxHeaders()
-        request_headers = shared_client.prepare_headers(
+        request_headers = _client_shared.prepare_headers(
             user_headers, timeout_ms, self._accept_compression, self._send_compression
         )
         timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else None
@@ -93,14 +91,14 @@ class ConnecpyClient:
             client = session or self._session
 
             if "content-encoding" in request_headers:
-                request_data, headers = shared_client.compress_request(
+                request_data, headers = _client_shared.compress_request(
                     request, headers, compression
                 )
             else:
                 request_data = request.SerializeToString()
 
             if method == "GET":
-                params = shared_client.prepare_get_params(request_data, headers)
+                params = _client_shared.prepare_get_params(request_data, headers)
                 request_headers.pop("content-type", None)
                 resp = await wait_for(
                     client.get(
@@ -122,7 +120,7 @@ class ConnecpyClient:
                     timeout_s,
                 )
 
-            shared_client.handle_response_headers(resp.headers)
+            _client_shared.handle_response_headers(resp.headers)
 
             if resp.status_code == 200:
                 response = response_class()
