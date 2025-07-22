@@ -1,5 +1,5 @@
 import json
-from typing import Optional, Sequence
+from typing import Sequence
 
 from google.protobuf.any import Any, pack
 from google.protobuf.message import Message
@@ -22,7 +22,7 @@ class ConnecpyServerException(ConnecpyException):
         message (str): The error message associated with the exception.
     """
 
-    def __init__(self, *, code, message, details: Optional[Sequence[Message]] = None):
+    def __init__(self, *, code, message, details: Sequence[Message] = ()):
         """
         Initializes a new instance of the ConnecpyServerException class.
 

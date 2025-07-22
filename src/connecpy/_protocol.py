@@ -1,7 +1,7 @@
 from base64 import b64decode, b64encode
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import cast, Optional
+from typing import cast, Optional, Sequence
 import json
 
 import httpx
@@ -78,15 +78,15 @@ _http_status_code_to_error = {
 class ConnectWireError:
     code: Errors
     message: str
-    details: Optional[list[Any]]
+    details: Sequence[Any]
 
     @staticmethod
     def from_exception(exc: Exception) -> "ConnectWireError":
         if isinstance(exc, ConnecpyServerException):
             return ConnectWireError(
-                code=exc.code, message=exc.message, details=list(exc.details)
+                code=exc.code, message=exc.message, details=exc.details
             )
-        return ConnectWireError(code=Errors.Unknown, message=str(exc), details=None)
+        return ConnectWireError(code=Errors.Unknown, message=str(exc), details=())
 
     @staticmethod
     def from_response(response: httpx.Response) -> "ConnectWireError":
@@ -94,7 +94,7 @@ class ConnectWireError:
             data = response.json()
         except Exception:
             data = None
-        details: Optional[list[Any]] = None
+        details: Sequence[Any] = ()
         if isinstance(data, dict):
             code_str = data.get("code")
             if code_str:
