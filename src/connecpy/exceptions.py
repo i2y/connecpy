@@ -1,4 +1,8 @@
 import json
+from typing import Optional, Sequence
+
+from google.protobuf.any import Any, pack
+from google.protobuf.message import Message
 
 from . import errors
 
@@ -18,7 +22,7 @@ class ConnecpyServerException(ConnecpyException):
         message (str): The error message associated with the exception.
     """
 
-    def __init__(self, *, code, message):
+    def __init__(self, *, code, message, details: Optional[Sequence[Message]] = None):
         """
         Initializes a new instance of the ConnecpyServerException class.
 
@@ -26,12 +30,16 @@ class ConnecpyServerException(ConnecpyException):
             code (int): The error code.
             message (str): The error message.
         """
+        super(ConnecpyServerException, self).__init__(message)
         try:
             self._code = errors.Errors(code)
         except ValueError:
             self._code = errors.Errors.Unknown
         self._message = message
-        super(ConnecpyServerException, self).__init__(message)
+
+        self._details = (
+            [m if isinstance(m, Any) else pack(m) for m in details] if details else ()
+        )
 
     @property
     def code(self):
@@ -42,6 +50,10 @@ class ConnecpyServerException(ConnecpyException):
     @property
     def message(self):
         return self._message
+
+    @property
+    def details(self) -> Sequence[Any]:
+        return self._details
 
     def to_dict(self):
         return {"code": self._code.value, "msg": self._message}
