@@ -15,7 +15,6 @@ from connectrpc.conformance.v1.service_pb2 import UnaryRequest
 from connectrpc.conformance.v1.service_connecpy import ConformanceServiceClientSync
 
 
-
 def _convert_code(error: Errors) -> Code:
     if error == Errors.Canceled:
         return Code.CODE_CANCELED
@@ -51,7 +50,6 @@ def _convert_code(error: Errors) -> Code:
         return Code.CODE_UNAUTHENTICATED
 
 
-
 def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
     test_response = ClientCompatResponse()
     test_response.test_name = test_request.test_name
@@ -71,7 +69,9 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
     with (
         httpx.Client() as session,
         ConformanceServiceClientSync(
-            f"http://{test_request.host}:{test_request.port}", session=session, timeout_ms=timeout_ms,
+            f"http://{test_request.host}:{test_request.port}",
+            session=session,
+            timeout_ms=timeout_ms,
         ) as client,
     ):
         if test_request.method == "Unary":
@@ -84,14 +84,21 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
                         client_response = client.Unary(
                             client_request, headers=request_headers
                         )
-                    test_response.response.payloads.add().MergeFrom(client_response.payload)
+                    test_response.response.payloads.add().MergeFrom(
+                        client_response.payload
+                    )
                     for name in meta.headers().keys():
-                        test_response.response.response_headers.add(name=name, value=meta.headers().get_list(name))
+                        test_response.response.response_headers.add(
+                            name=name, value=meta.headers().get_list(name)
+                        )
                     for name in meta.trailers().keys():
-                        test_response.response.response_trailers.add(name=name, value=meta.trailers().get_list(name))
+                        test_response.response.response_trailers.add(
+                            name=name, value=meta.trailers().get_list(name)
+                        )
                 except ConnecpyServerException as e:
                     test_response.response.error.code = _convert_code(e.code)
                     test_response.response.error.message = e.message
+                    test_response.response.error.details.extend(e.details)
                 except Exception as e:
                     test_response.error.message = str(e)
 
@@ -103,7 +110,9 @@ async def _create_standard_streams():
     stdin = asyncio.StreamReader()
     protocol = asyncio.StreamReaderProtocol(stdin)
     await loop.connect_read_pipe(lambda: protocol, sys.stdin)
-    w_transport, w_protocol = await loop.connect_write_pipe(asyncio.streams.FlowControlMixin, sys.stdout)
+    w_transport, w_protocol = await loop.connect_write_pipe(
+        asyncio.streams.FlowControlMixin, sys.stdout
+    )
     stdout = asyncio.StreamWriter(w_transport, w_protocol, stdin, loop)
     return stdin, stdout
 
