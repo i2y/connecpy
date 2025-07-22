@@ -86,7 +86,7 @@ class ConnectWireError:
             return ConnectWireError(
                 code=exc.code, message=exc.message, details=list(exc.details)
             )
-        return ConnectWireError(code=Errors.Unknown, message=str(exc), details=[])
+        return ConnectWireError(code=Errors.Unknown, message=str(exc), details=None)
 
     @staticmethod
     def from_response(response: httpx.Response) -> "ConnectWireError":
