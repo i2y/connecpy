@@ -1,8 +1,11 @@
+from base64 import b64decode, b64encode
 from dataclasses import dataclass
 from http import HTTPStatus
+from typing import cast, Optional, Sequence
 import json
 
 import httpx
+from google.protobuf.any_pb2 import Any
 
 from .errors import Errors
 from .exceptions import ConnecpyServerException
@@ -75,12 +78,15 @@ _http_status_code_to_error = {
 class ConnectWireError:
     code: Errors
     message: str
+    details: Sequence[Any]
 
     @staticmethod
     def from_exception(exc: Exception) -> "ConnectWireError":
         if isinstance(exc, ConnecpyServerException):
-            return ConnectWireError(code=exc.code, message=exc.message)
-        return ConnectWireError(code=Errors.Unknown, message=str(exc))
+            return ConnectWireError(
+                code=exc.code, message=exc.message, details=exc.details
+            )
+        return ConnectWireError(code=Errors.Unknown, message=str(exc), details=())
 
     @staticmethod
     def from_response(response: httpx.Response) -> "ConnectWireError":
@@ -88,6 +94,7 @@ class ConnectWireError:
             data = response.json()
         except Exception:
             data = None
+        details: Sequence[Any] = ()
         if isinstance(data, dict):
             code_str = data.get("code")
             if code_str:
@@ -97,6 +104,21 @@ class ConnectWireError:
                     response.status_code, Errors.Unknown
                 )
             message = data.get("message", "")
+            details_json = cast(Optional[list[dict[str, str]]], data.get("details"))
+            if details_json:
+                details = []
+                for detail in details_json:
+                    detail_type = detail.get("type")
+                    detail_value = detail.get("value")
+                    if detail_type is None or detail_value is None:
+                        # Ignore malformed details
+                        continue
+                    details.append(
+                        Any(
+                            type_url="type.googleapis.com/" + detail_type,
+                            value=b64decode(detail_value + "==="),
+                        )
+                    )
         else:
             code = _http_status_code_to_error.get(response.status_code, Errors.Unknown)
             try:
@@ -107,18 +129,36 @@ class ConnectWireError:
                     message = "Client Closed Request"
                 else:
                     message = ""
-        return ConnectWireError(code=code, message=message)
+        return ConnectWireError(code=code, message=message, details=details)
 
     def to_exception(self) -> ConnecpyServerException:
-        return ConnecpyServerException(code=self.code, message=self.message)
+        return ConnecpyServerException(
+            code=self.code, message=self.message, details=self.details
+        )
 
     def to_http_status(self) -> ExtendedHTTPStatus:
         return _error_to_http_status.get(self.code, _INTERNAL_SERVER_ERROR)
 
     def to_json_bytes(self) -> bytes:
-        return json.dumps({"code": self.code.value, "message": self.message}).encode(
-            "utf-8"
-        )
+        data: dict = {
+            "code": self.code.value,
+            "message": self.message,
+        }
+        if self.details:
+            details: list[dict[str, str]] = []
+            for detail in self.details:
+                if detail.type_url.startswith("type.googleapis.com/"):
+                    detail_type = detail.type_url[len("type.googleapis.com/") :]
+                else:
+                    detail_type = detail.type_url
+                details.append(
+                    {
+                        "type": detail_type,
+                        "value": b64encode(detail.value).decode("utf-8"),
+                    }
+                )
+            data["details"] = details
+        return json.dumps(data).encode("utf-8")
 
 
 class HTTPException(Exception):
