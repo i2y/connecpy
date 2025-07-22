@@ -6,8 +6,7 @@ from urllib.parse import parse_qs
 from functools import partial
 from wsgiref.types import WSGIEnvironment, StartResponse
 
-from . import base
-from . import context
+from . import _server_shared
 from . import errors
 from . import exceptions
 from . import encoding
@@ -125,7 +124,7 @@ def read_chunked(input_stream):
 class ConnecpyWSGIApplication:
     """WSGI application for Connecpy."""
 
-    def __init__(self, *, path: str, endpoints: Mapping[str, base.Endpoint]):
+    def __init__(self, *, path: str, endpoints: Mapping[str, _server_shared.Endpoint]):
         """Initialize the WSGI application."""
         super().__init__()
         self._path = path
@@ -144,7 +143,7 @@ class ConnecpyWSGIApplication:
             request_headers = _normalize_wsgi_headers(environ)
             request_method = environ.get("REQUEST_METHOD")
             if request_method == "POST":
-                ctx = context.ServiceContext(
+                ctx = _server_shared.ServiceContext(
                     environ.get("REMOTE_ADDR", ""), convert_to_mapping(request_headers)
                 )
             else:
@@ -152,7 +151,7 @@ class ConnecpyWSGIApplication:
                 metadata.update(
                     extract_metadata_from_query_params(environ.get("QUERY_STRING", ""))
                 )
-                ctx = context.ServiceContext(
+                ctx = _server_shared.ServiceContext(
                     environ.get("REMOTE_ADDR", ""), convert_to_mapping(metadata)
                 )
 
@@ -226,8 +225,8 @@ class ConnecpyWSGIApplication:
     def _handle_post_request(
         self,
         environ: WSGIEnvironment,
-        endpoint: base.Endpoint,
-        ctx: context.ServiceContext,
+        endpoint: _server_shared.Endpoint,
+        ctx: _server_shared.ServiceContext,
     ):
         """Handle POST request with body."""
         try:
@@ -265,7 +264,7 @@ class ConnecpyWSGIApplication:
             # Default to proto if not specified
             if content_type not in ["application/json", "application/proto"]:
                 content_type = "application/proto"
-                ctx = context.ServiceContext(
+                ctx = _server_shared.ServiceContext(
                     environ.get("REMOTE_ADDR", ""),
                     convert_to_mapping({"content-type": ["application/proto"]}),
                 )

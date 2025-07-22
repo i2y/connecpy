@@ -6,15 +6,17 @@ from typing import Iterable, Optional, Protocol, Union
 
 import httpx
 
-from connecpy.asgi import ConnecpyASGIApplication
-from connecpy.base import Endpoint
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
-from connecpy.interceptor import AsyncConnecpyServerInterceptor
-from connecpy.context import ServiceContext
+from connecpy.server import (
+    ConnecpyASGIApplication,
+    ConnecpyWSGIApplication,
+    Endpoint,
+    ServerInterceptor,
+    ServiceContext,
+)
 from connecpy.types import Headers
-from connecpy.wsgi import ConnecpyWSGIApplication
 import example.haberdasher_pb2 as example_dot_haberdasher__pb2
 import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
@@ -40,7 +42,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         self,
         service: Haberdasher,
         *,
-        interceptors: Iterable[AsyncConnecpyServerInterceptor] = (),
+        interceptors: Iterable[ServerInterceptor] = (),
         max_receive_message_length=1024 * 100 * 100,
     ):
         super().__init__(

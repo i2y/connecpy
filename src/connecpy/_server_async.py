@@ -5,13 +5,11 @@ from urllib.parse import parse_qs
 import base64
 from functools import partial
 
-from . import base
-from . import context
+from . import _server_shared
 from . import errors
 from . import exceptions
 from . import encoding
 from . import compression
-from . import interceptor
 from ._protocol import ConnectWireError, HTTPException
 
 
@@ -32,8 +30,8 @@ class ConnecpyASGIApplication:
         self,
         *,
         path: str,
-        endpoints: Mapping[str, base.Endpoint],
-        interceptors: Iterable[interceptor.AsyncConnecpyServerInterceptor] = (),
+        endpoints: Mapping[str, _server_shared.Endpoint],
+        interceptors: Iterable[_server_shared.ServerInterceptor] = (),
         max_receive_message_length=1024 * 100 * 100,
     ):
         """Initialize the ASGI application."""
@@ -85,7 +83,7 @@ class ConnecpyASGIApplication:
 
             client = scope["client"]
             peer = f"{client[0]}:{client[1]}" if client else ""
-            ctx = context.ServiceContext(peer, headers)
+            ctx = _server_shared.ServiceContext(peer, headers)
 
             if http_method == "GET":
                 request = await self._handle_get_request(endpoint, scope, ctx)
@@ -139,7 +137,10 @@ class ConnecpyASGIApplication:
             await self._handle_error(e, scope, receive, send)
 
     async def _handle_get_request(
-        self, endpoint: base.Endpoint, scope: HTTPScope, ctx: context.ServiceContext
+        self,
+        endpoint: _server_shared.Endpoint,
+        scope: HTTPScope,
+        ctx: _server_shared.ServiceContext,
     ):
         """Handle GET request with query parameters."""
         query_string = scope.get("query_string", b"").decode("utf-8")
@@ -195,10 +196,10 @@ class ConnecpyASGIApplication:
 
     async def _handle_post_request(
         self,
-        endpoint: base.Endpoint,
+        endpoint: _server_shared.Endpoint,
         scope: HTTPScope,
         receive,
-        ctx: context.ServiceContext,
+        ctx: _server_shared.ServiceContext,
     ):
         """Handle POST request with body."""
         # Get request body and endpoint
