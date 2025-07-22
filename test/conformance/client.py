@@ -3,7 +3,7 @@ import sys
 import time
 
 import httpx
-from connecpy.context import ClientContext
+from connecpy.client import ResponseMetadata
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
 from connectrpc.conformance.v1.config_pb2 import Code
@@ -12,7 +12,7 @@ from connectrpc.conformance.v1.client_compat_pb2 import (
     ClientCompatResponse,
 )
 from connectrpc.conformance.v1.service_pb2 import UnaryRequest
-from connectrpc.conformance.v1.service_connecpy import ConformanceServiceClient
+from connectrpc.conformance.v1.service_connecpy import ConformanceServiceClientSync
 
 
 
@@ -59,24 +59,19 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
     if test_request.request_delay_ms:
         time.sleep(test_request.request_delay_ms / 1000.0)
 
-    request_headers = {h.name: h.value[0] for h in test_request.request_headers}
+    request_headers = []
+    for header in test_request.request_headers:
+        for value in header.value:
+            request_headers.append((header.name, value))
 
-    http_response: httpx.Response = httpx.Response(status_code=200)
-
-    def record_response(resp: httpx.Response) -> None:
-        nonlocal http_response
-        http_response = resp
-
-    timeout = 60
+    timeout_ms = None
     if test_request.timeout_ms:
-        timeout = int(test_request.timeout_ms / 1000.0)
+        timeout_ms = test_request.timeout_ms
 
     with (
-        httpx.Client(
-            event_hooks={"response": [record_response]},
-        ) as session,
-        ConformanceServiceClient(
-            f"http://{test_request.host}:{test_request.port}", session=session, timeout=timeout,
+        httpx.Client() as session,
+        ConformanceServiceClientSync(
+            f"http://{test_request.host}:{test_request.port}", session=session, timeout_ms=timeout_ms,
         ) as client,
     ):
         if test_request.method == "Unary":
@@ -85,19 +80,20 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
                 if not message_any.Unpack(client_request):
                     raise ValueError("Failed to unpack message")
                 try:
-                    client_response = client.Unary(
-                        client_request, ctx=ClientContext(headers=request_headers)
-                    )
+                    with ResponseMetadata() as meta:
+                        client_response = client.Unary(
+                            client_request, headers=request_headers
+                        )
                     test_response.response.payloads.add().MergeFrom(client_response.payload)
+                    for name in meta.headers().keys():
+                        test_response.response.response_headers.add(name=name, value=meta.headers().get_list(name))
+                    for name in meta.trailers().keys():
+                        test_response.response.response_trailers.add(name=name, value=meta.trailers().get_list(name))
                 except ConnecpyServerException as e:
                     test_response.response.error.code = _convert_code(e.code)
                     test_response.response.error.message = e.message
-                except Exception:
-                    pass
-                for header, value in http_response.headers.items():
-                    test_response.response.response_headers.add(
-                        name=header, value=[value]
-                    )
+                except Exception as e:
+                    test_response.error.message = str(e)
 
     return test_response
 
