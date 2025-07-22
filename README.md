@@ -44,7 +44,7 @@ protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 import random
 
 from connecpy.exceptions import InvalidArgument
-from connecpy.context import ServiceContext
+from connecpy.server import ServiceContext
 
 from haberdasher_pb2 import Hat, Size
 
@@ -71,16 +71,13 @@ class HaberdasherService(object):
 ```python
 # server.py
 from connecpy import context
-from connecpy.asgi import ConnecpyASGIApp
 
 import haberdasher_connecpy
 from service import HaberdasherService
 
-service = haberdasher_connecpy.HaberdasherServer(
-    service=HaberdasherService()
+app = haberdasher_connecpy.HaberdasherWSGIApplication(
+    HaberdasherService()
 )
-app = ConnecpyASGIApp()
-app.add_service(service)
 ```
 
 Run the server with
@@ -121,7 +118,7 @@ async def main():
         base_url=server_url,
         timeout=timeout_s,
     )
-    client = haberdasher_connecpy.AsyncHaberdasherClient(server_url, session=session)
+    client = haberdasher_connecpy.HaberdasherClient(server_url, session=session)
 
     try:
         response = await client.MakeHat(
@@ -165,7 +162,7 @@ timeout_s = 5
 
 
 def main():
-    with haberdasher_connecpy.HaberdasherClient(server_url, timeout=timeout_s) as client:
+    with haberdasher_connecpy.HaberdasherClientSync(server_url, timeout=timeout_s) as client:
         try:
             response = client.MakeHat(
                 haberdasher_pb2.Size(inches=12),
@@ -265,7 +262,7 @@ For synchronous clients:
 ```python
 
 with HaberdasherClient(server_url) as client:
-    response = client.MakeHat(
+    response = await client.MakeHat(
         request_obj,
         send_compression="br",
         accept_compression=("gzip,")
@@ -274,8 +271,8 @@ with HaberdasherClient(server_url) as client:
 
 For async clients:
 ```python
-async with AsyncHaberdasherClient(server_url) as client:
-    response = await client.MakeHat(
+async with HaberdasherClientSync(server_url) as client:
+    response = client.MakeHat(
         request_obj,
         send_compression="zstd",  # Use Zstandard compression for request
         accept_compression=("br,")  # Accept Brotli compressed response
@@ -304,45 +301,28 @@ Currently, Connecpy supports only Unary RPCs using the POST HTTP method. Connecp
 
 ## Misc
 
-### Server Path Prefix
+### Routing
 
-You can set server path prefix by passing `server_path_prefix` to `ConnecpyASGIApp` constructor.
-
-This example sets server path prefix to `/foo/bar`.
-```python
-# server.py
-service = haberdasher_connecpy.HaberdasherServer(
-    service=HaberdasherService(),
-    server_path_prefix="/foo/bar",
-)
-```
-
-```python
-# async_client.py
-response = await client.MakeHat(
-    request=haberdasher_pb2.Size(inches=12),
-    server_path_prefix="/foo/bar",
-)
-```
+Connecpy applications are standard WSGI or ASGI applications. For complex routing requirements,
+you can use a routing framework such as [werkzeug](./example/examples/flask_mount.py) or
+[starlette](./examples/examples/routing_asgi.py).
 
 ### Interceptor (Server Side)
 
-ConnecpyASGIApp supports interceptors. You can add interceptors by passing `interceptors` to `ConnecpyASGIApp` constructor.
-AsyncConnecpyServerInterceptor
+ConnecpyASGIApplication supports interceptors. You can add interceptors by passing `interceptors` to the application constructor.
+ConnecpyServerInterceptor
 
 ```python
 # server.py
 from typing import Any, Callable
 
-from connecpy import context
-from connecpy.asgi import ConnecpyASGIApp
-from connecpy.interceptor import AsyncConnecpyServerInterceptor
+from connecpy.server import ServerInterceptor, ServiceContext
 
 import haberdasher_connecpy
 from service import HaberdasherService
 
 
-class MyInterceptor(AsyncConnecpyServerInterceptor):
+class MyInterceptor(ServerInterceptor):
     def __init__(self, msg):
         self._msg = msg
 
@@ -350,7 +330,7 @@ class MyInterceptor(AsyncConnecpyServerInterceptor):
         self,
         method: Callable,
         request: Any,
-        ctx: context.ServiceContext,
+        ctx: ServiceContext,
         method_name: str,
     ) -> Any:
         print("intercepting " + method_name + " with " + self._msg)
@@ -360,19 +340,15 @@ class MyInterceptor(AsyncConnecpyServerInterceptor):
 my_interceptor_a = MyInterceptor("A")
 my_interceptor_b = MyInterceptor("B")
 
-service = haberdasher_connecpy.HaberdasherServer(service=HaberdasherService())
-app = ConnecpyASGIApp(
-    interceptors=(my_interceptor_a, my_interceptor_b),
-)
-app.add_service(service)
+service = haberdasher_connecpy.HaberdasherASGIApplication(HaberdasherService())
 ```
 
-Btw, `ConnecpyServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
+Btw, `ServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
 
 
 ### gRPC Compatibility
-In Connecpy, unlike connect-go, it is not possible to simultaneously support both gRPC and Connect RPC on the same server and port. In addition to it, Connecpy itself doesn't support gRPC. However, implementing a gRPC server using the same service code used for Connecpy server is feasible, as shown below. This is possible because the type signature of the service class in Connecpy is compatible with type signature gRPC farmework requires.
-The example below uses [grpc.aio](https://grpc.github.io/grpc/python/grpc_asyncio.html) and there are in [example dicrectory](example/README.md).
+In Connecpy, unlike connect-go, it is not possible to simultaneously support both gRPC and Connect RPC on the same server and port. In addition to it, Connecpy itself doesn't support gRPC. However, implementing a gRPC server using the same service code used for Connecpy server is feasible, as shown below. This is possible because the type signature of the service class in Connecpy is compatible with type signature gRPC framework requires.
+The example below uses [grpc.aio](https://grpc.github.io/grpc/python/grpc_asyncio.html) and there are in [example directory](example/README.md).
 
 
 ```python
@@ -429,11 +405,11 @@ if __name__ == "__main__":
 
 ### Message Body Length
 
-Currently, message body length limit is set to 100kb, you can override this by passing `max_receive_message_length` to `ConnecpyASGIApp` constructor.
+Currently, message body length limit is set to 100kb, you can override this by passing `max_receive_message_length` to the application constructor.
 
 ```python
 # this sets max message length to be 10 bytes
-app = ConnecpyASGIApp(max_receive_message_length=10)
+app = HaberedasherASGIApplication(max_receive_message_length=10)
 
 ```
 
