@@ -1,7 +1,7 @@
 from connecpy.exceptions import ConnecpyException, ConnecpyServerException
 
-import haberdasher_connecpy
-import haberdasher_pb2
+from . import haberdasher_connecpy
+from . import haberdasher_pb2
 
 
 server_url = "http://localhost:3000"
@@ -18,7 +18,7 @@ def create_large_request():
 
 def main():
     # Example 1: POST request with gzip compression (large request)
-    with haberdasher_connecpy.HaberdasherClient(
+    with haberdasher_connecpy.HaberdasherClientSync(
         server_url,
         timeout_ms=timeout_ms,
         send_compression="gzip",
@@ -34,7 +34,7 @@ def main():
             print("POST with gzip compression failed:", str(e))
 
     # Example 2: POST request with brotli compression (large request)
-    with haberdasher_connecpy.HaberdasherClient(
+    with haberdasher_connecpy.HaberdasherClientSync(
         server_url,
         timeout_ms=timeout_ms,
         send_compression="br",
@@ -50,7 +50,7 @@ def main():
             print("POST with brotli compression failed:", str(e))
 
     # Example 3: GET request without compression
-    with haberdasher_connecpy.HaberdasherClient(
+    with haberdasher_connecpy.HaberdasherClientSync(
         server_url, timeout_ms=timeout_ms, accept_compression=()
     ) as client:
         try:
@@ -64,7 +64,7 @@ def main():
             print("GET without compression failed:", str(e))
 
     # Example 4: GET request with ztstd compression (large request)
-    with haberdasher_connecpy.HaberdasherClient(
+    with haberdasher_connecpy.HaberdasherClientSync(
         server_url,
         timeout_ms=timeout_ms,
         send_compression="zstd",
@@ -81,7 +81,7 @@ def main():
             print("GET with zstd compression failed:", str(e))
 
     # Example 5: Test multiple accepted encodings
-    with haberdasher_connecpy.HaberdasherClient(
+    with haberdasher_connecpy.HaberdasherClientSync(
         server_url,
         timeout_ms=timeout_ms,
         send_compression="br",

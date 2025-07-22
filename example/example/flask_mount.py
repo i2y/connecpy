@@ -1,7 +1,8 @@
 from flask import Flask
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from wsgi_service import HaberdasherService
-from haberdasher_connecpy import HaberdasherWSGIApplication
+
+from .wsgi_service import HaberdasherService
+from .haberdasher_connecpy import HaberdasherWSGIApplication
 
 haberdasher_app = HaberdasherWSGIApplication(HaberdasherService())
 

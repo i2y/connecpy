@@ -3,7 +3,7 @@
 
 import grpc
 
-import haberdasher_pb2 as haberdasher__pb2
+import example.haberdasher_pb2 as haberdasher__pb2
 
 
 class HaberdasherStub(object):

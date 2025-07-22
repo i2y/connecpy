@@ -12,12 +12,10 @@ from . import errors
 from ._protocol import ConnectWireError
 from .types import Headers
 
-ResponseMetadata = _client_shared.ResponseMetadata
-
 _RES = TypeVar("_RES", bound=Message)
 
 
-class AsyncConnecpyClient:
+class ConnecpyClient:
     """
     Represents an asynchronous client for Connecpy using httpx.
 

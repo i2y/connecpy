@@ -3,8 +3,8 @@ from typing import Any, Callable
 from connecpy import context
 from connecpy.interceptor import AsyncConnecpyServerInterceptor
 
-import haberdasher_connecpy
-from service import HaberdasherService
+from . import haberdasher_connecpy
+from .service import HaberdasherService
 
 
 class MyInterceptor(AsyncConnecpyServerInterceptor):
