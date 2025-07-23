@@ -1,17 +1,21 @@
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Iterable, List, Mapping, Optional
+from typing import Any, Iterable, List, Mapping, Optional
 import base64
 from urllib.parse import parse_qs
-from functools import partial
 from wsgiref.types import WSGIEnvironment, StartResponse
 
 from . import _server_shared
 from . import errors
 from . import exceptions
-from . import encoding
+from ._codec import Codec, get_codec
 from . import compression
-from ._protocol import ConnectWireError, HTTPException
+from ._protocol import (
+    CONNECT_UNARY_CONTENT_TYPE_PREFIX,
+    ConnectWireError,
+    HTTPException,
+    codec_name_from_content_type,
+)
 
 
 def _normalize_wsgi_headers(environ: WSGIEnvironment) -> dict:
@@ -176,17 +180,21 @@ class ConnecpyWSGIApplication:
                 )
             # Handle request based on method
             if request_method == "GET":
-                request = self._handle_get_request(environ, endpoint, ctx)
+                request, codec = self._handle_get_request(environ, endpoint, ctx)
             else:
-                request = self._handle_post_request(environ, endpoint, ctx)
+                request, codec = self._handle_post_request(
+                    environ, endpoint, ctx, request_headers
+                )
 
             # Process request
             proc = endpoint.make_proc()
             response = proc(request, ctx)
 
             # Encode response
-            encoder = encoding.get_encoder(endpoint, ctx.content_type())
-            res_bytes, base_headers = encoder(response)
+            res_bytes = codec.encode(response)
+            base_headers = {
+                "content-type": [f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"]
+            }
 
             # Handle compression if accepted
             accept_encoding = request_headers.get("accept-encoding", "identity")
@@ -227,8 +235,20 @@ class ConnecpyWSGIApplication:
         environ: WSGIEnvironment,
         endpoint: _server_shared.Endpoint,
         ctx: _server_shared.ServiceContext,
-    ):
+        request_headers: dict[str, str],
+    ) -> tuple[Any, Codec]:
         """Handle POST request with body."""
+
+        codec_name = codec_name_from_content_type(
+            request_headers.get("content-type", "")
+        )
+        codec = get_codec(codec_name)
+        if not codec:
+            raise HTTPException(
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                [("Accept-Post", "application/json, application/proto")],
+            )
+
         try:
             content_length = environ.get("CONTENT_LENGTH")
             if not content_length:
@@ -269,21 +289,8 @@ class ConnecpyWSGIApplication:
                     convert_to_mapping({"content-type": ["application/proto"]}),
                 )
 
-            decoder = encoding.get_decoder_by_name(
-                "proto" if content_type == "application/proto" else "json"
-            )
-            assert decoder is not None
-            decoder = encoding.get_decoder_by_content_type(ctx.content_type())
-            if not decoder:
-                raise HTTPException(
-                    HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                    [("Accept-Post", "application/json, application/proto")],
-                )
-
-            decoder = partial(decoder, data_obj=endpoint.input)
             try:
-                request = decoder(req_body)
-                return request
+                return codec.decode(req_body, endpoint.input()), codec
             except Exception as e:
                 raise exceptions.ConnecpyServerException(
                     code=errors.Errors.InvalidArgument,
@@ -298,7 +305,7 @@ class ConnecpyWSGIApplication:
                 )
             raise
 
-    def _handle_get_request(self, environ, endpoint, ctx):
+    def _handle_get_request(self, environ, endpoint, ctx) -> tuple[Any, Codec]:
         """Handle GET request with query parameters."""
         try:
             query_string = environ.get("QUERY_STRING", "")
@@ -335,15 +342,22 @@ class ConnecpyWSGIApplication:
                             message=f"Failed to decompress message: {str(e)}",
                         )
 
+            codec_name = params.get("encoding", ("",))[0]
+            codec = get_codec(codec_name)
+            if not codec:
+                raise exceptions.ConnecpyServerException(
+                    code=errors.Errors.Unimplemented,
+                    message=f"invalid message encoding: '{codec_name}'",
+                )
             # Handle GET request with proto decoder
             try:
                 # TODO - Use content type from queryparam
-                request = encoding.proto_decoder(message, data_obj=endpoint.input)
-                return request
+                request = codec.decode(message, endpoint.input())
+                return request, codec
             except Exception as e:
                 raise exceptions.ConnecpyServerException(
                     code=errors.Errors.InvalidArgument,
-                    message=f"Failed to decode proto message: {str(e)}",
+                    message=f"Failed to decode message: {str(e)}",
                 )
 
         except Exception as e:
