@@ -12,6 +12,7 @@ from .exceptions import ConnecpyServerException
 
 
 CONNECT_PROTOCOL_VERSION = "1"
+CONNECT_UNARY_CONTENT_TYPE_PREFIX = "application/"
 
 
 # Define a custom class for HTTP Status to allow adding 499 status code
@@ -119,17 +120,22 @@ class ConnectWireError:
                             value=b64decode(detail_value + "==="),
                         )
                     )
+            return ConnectWireError(code=code, message=message, details=details)
         else:
-            code = _http_status_code_to_error.get(response.status_code, Errors.Unknown)
-            try:
-                http_status = HTTPStatus(response.status_code)
-                message = http_status.phrase
-            except ValueError:
-                if response.status_code == 499:
-                    message = "Client Closed Request"
-                else:
-                    message = ""
-        return ConnectWireError(code=code, message=message, details=details)
+            return ConnectWireError.from_http_status(response.status_code)
+
+    @staticmethod
+    def from_http_status(status_code: int) -> "ConnectWireError":
+        code = _http_status_code_to_error.get(status_code, Errors.Unknown)
+        try:
+            http_status = HTTPStatus(status_code)
+            message = http_status.phrase
+        except ValueError:
+            if status_code == 499:
+                message = "Client Closed Request"
+            else:
+                message = ""
+        return ConnectWireError(code=code, message=message, details=())
 
     def to_exception(self) -> ConnecpyServerException:
         return ConnecpyServerException(
@@ -167,3 +173,11 @@ class HTTPException(Exception):
     def __init__(self, status: HTTPStatus, headers: list[tuple[str, str]]):
         self.status = status
         self.headers = headers
+
+
+def codec_name_from_content_type(content_type: str) -> str:
+    if content_type.startswith(CONNECT_UNARY_CONTENT_TYPE_PREFIX):
+        return content_type[len(CONNECT_UNARY_CONTENT_TYPE_PREFIX) :]
+    # Follow connect-go behavior for malformed content type. If the content type misses the prefix,
+    # it will still be coincidentally handled.
+    return content_type

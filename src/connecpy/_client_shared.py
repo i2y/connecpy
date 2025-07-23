@@ -1,10 +1,20 @@
 import base64
 from contextvars import ContextVar, Token
+from http import HTTPStatus
 from typing import Iterable, Optional
 
 from httpx import Headers
 
-from ._protocol import CONNECT_PROTOCOL_VERSION
+from . import compression
+from .errors import Errors
+from .exceptions import ConnecpyServerException
+from ._codec import CODEC_NAME_JSON, CODEC_NAME_JSON_CHARSET_UTF8, Codec
+from ._protocol import (
+    CONNECT_PROTOCOL_VERSION,
+    CONNECT_UNARY_CONTENT_TYPE_PREFIX,
+    ConnectWireError,
+    codec_name_from_content_type,
+)
 
 
 # TODO: Embed package version correctly
@@ -12,6 +22,7 @@ _DEFAULT_CONNECT_USER_AGENT = "connecpy/0.0.0"
 
 
 def prepare_headers(
+    codec: Codec,
     headers: Headers,
     timeout_ms: Optional[int],
     accept_compression: Optional[Iterable[str]],
@@ -28,14 +39,13 @@ def prepare_headers(
         headers["content-encoding"] = send_compression
     else:
         headers.pop("content-encoding", None)
-    headers["content-type"] = "application/proto"
+    headers["content-type"] = f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"
     if timeout_ms is not None:
         headers["connect-timeout-ms"] = str(timeout_ms)
     return headers
 
 
-def compress_request(request, headers, compression):
-    request_data = request.SerializeToString()
+def compress_request(request_data: bytes, headers: Headers) -> tuple[bytes, Headers]:
     # If compression is requested
     if "content-encoding" in headers:
         compression_name = headers["content-encoding"].lower()
@@ -56,20 +66,58 @@ def compress_request(request, headers, compression):
     return request_data, headers
 
 
-def prepare_get_params(request_data, headers):
+def prepare_get_params(codec: Codec, request_data, headers):
     params = {"connect": f"v{CONNECT_PROTOCOL_VERSION}"}
     if request_data:
         params["message"] = base64.urlsafe_b64encode(request_data).decode("ascii")
         params["base64"] = "1"
-        params["encoding"] = (
-            "proto" if headers.get("content-type") == "application/proto" else "json"
-        )
+        params["encoding"] = codec.name()
     if "content-encoding" in headers:
         params["compression"] = headers.pop("content-encoding")
     return params
 
 
 _current_response = ContextVar["ResponseMetadata"]("connecpy_current_response")
+
+
+def validate_response_content_type(
+    request_codec_name: str,
+    status_code: int,
+    response_content_type: str,
+):
+    if status_code != HTTPStatus.OK:
+        # Error responses must be JSON-encoded
+        if response_content_type in (
+            f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{CODEC_NAME_JSON}",
+            f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{CODEC_NAME_JSON_CHARSET_UTF8}",
+        ):
+            return
+        raise ConnectWireError.from_http_status(status_code).to_exception()
+
+    if not response_content_type.startswith(CONNECT_UNARY_CONTENT_TYPE_PREFIX):
+        raise ConnecpyServerException(
+            code=Errors.Unknown,
+            message=f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
+        )
+
+    response_codec_name = codec_name_from_content_type(response_content_type)
+    if response_codec_name == request_codec_name:
+        return
+
+    if (
+        response_codec_name == CODEC_NAME_JSON
+        and request_codec_name == CODEC_NAME_JSON_CHARSET_UTF8
+    ) or (
+        response_codec_name == CODEC_NAME_JSON_CHARSET_UTF8
+        and request_codec_name == CODEC_NAME_JSON
+    ):
+        # Both are JSON
+        return
+
+    raise ConnecpyServerException(
+        code=Errors.Internal,
+        message=f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
+    )
 
 
 def handle_response_headers(headers: Headers):

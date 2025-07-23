@@ -1,16 +1,20 @@
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Iterable, Mapping, Tuple, TYPE_CHECKING
+from typing import Any, Iterable, Mapping, Tuple, TYPE_CHECKING
 from urllib.parse import parse_qs
 import base64
-from functools import partial
 
 from . import _server_shared
 from . import errors
 from . import exceptions
-from . import encoding
 from . import compression
-from ._protocol import ConnectWireError, HTTPException
+from ._codec import Codec, get_codec
+from ._protocol import (
+    CONNECT_UNARY_CONTENT_TYPE_PREFIX,
+    ConnectWireError,
+    HTTPException,
+    codec_name_from_content_type,
+)
 
 
 if TYPE_CHECKING:
@@ -86,15 +90,19 @@ class ConnecpyASGIApplication:
             ctx = _server_shared.ServiceContext(peer, headers)
 
             if http_method == "GET":
-                request = await self._handle_get_request(endpoint, scope, ctx)
+                request, codec = await self._handle_get_request(endpoint, scope, ctx)
             else:
-                request = await self._handle_post_request(endpoint, scope, receive, ctx)
+                request, codec = await self._handle_post_request(
+                    endpoint, scope, receive, ctx, headers
+                )
 
             proc = endpoint.make_async_proc(self._interceptors)
             response_data = await proc(request, ctx)
 
-            encoder = encoding.get_encoder(endpoint, ctx.content_type())
-            res_bytes, headers = encoder(response_data)
+            res_bytes = codec.encode(response_data)
+            headers = {
+                "content-type": [f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"]
+            }
 
             # Compress response if needed
             if selected_encoding != "identity":
@@ -141,7 +149,7 @@ class ConnecpyASGIApplication:
         endpoint: _server_shared.Endpoint,
         scope: HTTPScope,
         ctx: _server_shared.ServiceContext,
-    ):
+    ) -> tuple[Any, Codec]:
         """Handle GET request with query parameters."""
         query_string = scope.get("query_string", b"").decode("utf-8")
         params = parse_qs(query_string)
@@ -169,12 +177,12 @@ class ConnecpyASGIApplication:
             message = message.encode("utf-8")
 
         # Handle encoding
-        encoding_name = params.get("encoding", ["json"])[0]
-        decoder = encoding.get_decoder_by_name(encoding_name)
-        if not decoder:
+        codec_name = params.get("encoding", ("",))[0]
+        codec = get_codec(codec_name)
+        if not codec:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Unimplemented,
-                message=f"Unsupported encoding: {encoding_name}",
+                message=f"invalid message encoding: '{codec_name}'",
             )
 
         # Handle compression
@@ -191,8 +199,7 @@ class ConnecpyASGIApplication:
             message = decompressor(message)
 
         # Get the appropriate decoder for the endpoint
-        decoder = partial(decoder, data_obj=endpoint.input)
-        return decoder(message)
+        return codec.decode(message, endpoint.input()), codec
 
     async def _handle_post_request(
         self,
@@ -200,8 +207,20 @@ class ConnecpyASGIApplication:
         scope: HTTPScope,
         receive,
         ctx: _server_shared.ServiceContext,
-    ):
+        headers: Mapping[str, list[str]],
+    ) -> tuple[Any, Codec]:
         """Handle POST request with body."""
+
+        codec_name = codec_name_from_content_type(
+            _get_header_value(headers, "content-type")
+        )
+        codec = get_codec(codec_name)
+        if not codec:
+            raise HTTPException(
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                [("Accept-Post", "application/json, application/proto")],
+            )
+
         # Get request body and endpoint
         req_body = await self._read_body(receive)
 
@@ -225,18 +244,7 @@ class ConnecpyASGIApplication:
         if req_body:  # Don't decompress empty body
             req_body = decompressor(req_body)
 
-        # Get the decoder based on content type
-        base_decoder = encoding.get_decoder_by_name(
-            "proto" if ctx.content_type() == "application/proto" else "json"
-        )
-        if not base_decoder:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Unimplemented,
-                message=f"Unsupported encoding: {ctx.content_type()}",
-            )
-
-        decoder = partial(base_decoder, data_obj=endpoint.input)
-        return decoder(req_body)
+        return codec.decode(req_body, endpoint.input()), codec
 
     async def _read_body(self, receive: ASGIReceiveCallable) -> bytes:
         """Read the body of the request."""
