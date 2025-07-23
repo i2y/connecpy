@@ -5,7 +5,6 @@ from httpx import (
     WSGITransport,
 )
 import pytest
-from connecpy.client import ResponseMetadata
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
 from example.haberdasher_connecpy import (
@@ -16,7 +15,7 @@ from example.haberdasher_connecpy import (
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
-from example.haberdasher_pb2 import Hat, Size
+from example.haberdasher_pb2 import Size
 from google.protobuf.any import pack
 from google.protobuf.struct_pb2 import Struct, Value
 
@@ -66,8 +65,9 @@ async def test_details_async():
             )
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
+    transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
     async with HaberdasherClient(
-        "http://localhost", session=AsyncClient(transport=ASGITransport(app=app))
+        "http://localhost", session=AsyncClient(transport=transport)
     ) as client:
         with pytest.raises(ConnecpyServerException) as exc_info:
             await client.MakeHat(request=Size(inches=10))

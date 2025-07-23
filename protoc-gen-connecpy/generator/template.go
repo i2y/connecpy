@@ -40,15 +40,11 @@ from typing import Iterable, Optional, Protocol, Union
 
 import httpx
 
-from connecpy.asgi import ConnecpyASGIApplication
-from connecpy.base import Endpoint
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
-from connecpy.interceptor import AsyncConnecpyServerInterceptor
-from connecpy.context import ServiceContext
+from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, ServerInterceptor, ServiceContext
 from connecpy.types import Headers
-from connecpy.wsgi import ConnecpyWSGIApplication
 
 {{- range .Imports }}
 import {{.Name}} as {{.Alias}}
@@ -63,7 +59,7 @@ class {{.Name}}(Protocol):{{- range .Methods }}
 {{ end }}
 
 class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: {{.Name}}, *, interceptors: Iterable[AsyncConnecpyServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
+    def __init__(self, service: {{.Name}}, *, interceptors: Iterable[ServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
         super().__init__(
             path="/{{.Package}}.{{.Name}}",
             endpoints={ {{- range .Methods }}
