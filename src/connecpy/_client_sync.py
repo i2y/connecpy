@@ -7,8 +7,8 @@ from httpx import Headers as HttpxHeaders, Timeout
 
 from . import exceptions
 from . import errors
-from . import compression
 from . import _client_shared
+from ._codec import get_proto_binary_codec, get_proto_json_codec
 from ._protocol import ConnectWireError
 from .types import Headers
 
@@ -31,12 +31,14 @@ class ConnecpyClientSync:
     def __init__(
         self,
         address: str,
+        proto_json: bool = False,
         accept_compression: Optional[Iterable[str]] = None,
         send_compression: Optional[str] = None,
         timeout_ms: Optional[int] = None,
         session: Optional[httpx.Client] = None,
     ):
         self._address = address
+        self._codec = get_proto_json_codec() if proto_json else get_proto_binary_codec()
         self._timeout_ms = timeout_ms
         self._accept_compression = accept_compression
         self._send_compression = send_compression
@@ -82,20 +84,23 @@ class ConnecpyClientSync:
 
         user_headers = HttpxHeaders(headers) if headers else HttpxHeaders()
         request_headers = _client_shared.prepare_headers(
-            user_headers, timeout_ms, self._accept_compression, self._send_compression
+            self._codec,
+            user_headers,
+            timeout_ms,
+            self._accept_compression,
+            self._send_compression,
         )
 
         try:
+            request_data = self._codec.encode(request)
             if "content-encoding" in request_headers:
                 request_data, request_headers = _client_shared.compress_request(
-                    request, request_headers, compression
+                    request_data, request_headers
                 )
-            else:
-                request_data = request.SerializeToString()
 
             if method == "GET":
                 params = _client_shared.prepare_get_params(
-                    request_data, request_headers
+                    self._codec, request_data, request_headers
                 )
                 request_headers.pop("content-type", None)
                 resp = self._session.get(
@@ -112,12 +117,17 @@ class ConnecpyClientSync:
                     **request_args,
                 )
 
+            _client_shared.validate_response_content_type(
+                self._codec.name(),
+                resp.status_code,
+                resp.headers.get("content-type", ""),
+            )
             _client_shared.handle_response_headers(resp.headers)
 
             if resp.status_code == 200:
                 response = response_class()
                 try:
-                    response.ParseFromString(resp.content)
+                    self._codec.decode(resp.content, response)
                 except Exception as e:
                     raise exceptions.ConnecpyException(
                         f"Failed to parse response message: {str(e)}"
