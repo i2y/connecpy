@@ -1,0 +1,13 @@
+[project]
+name = "noextras"
+version = "0.1.0"
+
+dependencies = [
+    "connecpy",
+    "example",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.2",
+]
+
+[tool.ruff]
+extend = "../pyproject.toml"

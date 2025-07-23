@@ -39,7 +39,7 @@ def test_roundtrip_sync(proto_json: bool, compression: str):
 @pytest.mark.parametrize("proto_json", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
 @pytest.mark.asyncio
-async def test_details_async(proto_json: bool, compression: str):
+async def test_roundtrip_async(proto_json: bool, compression: str):
     class DetailsHaberdasher(Haberdasher):
         async def MakeHat(self, req, ctx):
             return Hat(size=req.inches, color="green")

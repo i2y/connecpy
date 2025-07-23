@@ -1,5 +1,5 @@
 [project]
-name = "connecpy-example"
+name = "example"
 version = "0.1.0"
 
 dependencies = [

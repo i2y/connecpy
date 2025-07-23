@@ -1,8 +1,6 @@
 from collections.abc import KeysView
 from typing import Optional, Protocol
 import gzip
-import brotli
-import zstandard
 
 
 class Compression(Protocol):
