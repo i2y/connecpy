@@ -6,89 +6,40 @@ from typing import Iterable, Optional, Protocol, Union
 
 import httpx
 
-from connecpy.asgi import ConnecpyASGIApplication
-from connecpy.base import Endpoint
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
-from connecpy.interceptor import AsyncConnecpyServerInterceptor
-from connecpy.context import ServiceContext
+from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, ServerInterceptor, ServiceContext
 from connecpy.types import Headers
-from connecpy.wsgi import ConnecpyWSGIApplication
 import connectrpc.conformance.v1.service_pb2 as connectrpc_dot_conformance_dot_v1_dot_service__pb2
 
 
 class ConformanceService(Protocol):
-    async def Unary(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
+    async def Unary(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 
-    async def ServerStream(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
+    async def ServerStream(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 
-    async def ClientStream(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
+    async def ClientStream(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 
-    async def BidiStream(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
+    async def BidiStream(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 
-    async def Unimplemented(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
+    async def Unimplemented(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 
-    async def IdempotentUnary(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
+    async def IdempotentUnary(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 
 
 class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
-    def __init__(
-        self,
-        service: ConformanceService,
-        *,
-        interceptors: Iterable[AsyncConnecpyServerInterceptor] = (),
-        max_receive_message_length=1024 * 100 * 100,
-    ):
+    def __init__(self, service: ConformanceService, *, interceptors: Iterable[ServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
         super().__init__(
             path="/connectrpc.conformance.v1.ConformanceService",
             endpoints={
-                "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse](
                     service_name="ConformanceService",
                     name="Unary",
                     function=getattr(service, "Unary"),
@@ -96,10 +47,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ServerStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/ServerStream": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse](
                     service_name="ConformanceService",
                     name="ServerStream",
                     function=getattr(service, "ServerStream"),
@@ -107,10 +55,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ClientStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/ClientStream": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse](
                     service_name="ConformanceService",
                     name="ClientStream",
                     function=getattr(service, "ClientStream"),
@@ -118,10 +63,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/BidiStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/BidiStream": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse](
                     service_name="ConformanceService",
                     name="BidiStream",
                     function=getattr(service, "BidiStream"),
@@ -129,10 +71,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse](
                     service_name="ConformanceService",
                     name="Unimplemented",
                     function=getattr(service, "Unimplemented"),
@@ -140,10 +79,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse](
                     service_name="ConformanceService",
                     name="IdempotentUnary",
                     function=getattr(service, "IdempotentUnary"),
@@ -153,7 +89,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 ),
             },
             interceptors=interceptors,
-            max_receive_message_length=max_receive_message_length,
+             max_receive_message_length=max_receive_message_length
         )
 
     @property
@@ -170,6 +106,7 @@ class ConformanceServiceClient(ConnecpyClient):
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
         method = "POST"
         return await self._make_request(
@@ -190,6 +127,7 @@ class ConformanceServiceClient(ConnecpyClient):
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
         method = "POST"
         return await self._make_request(
@@ -210,6 +148,7 @@ class ConformanceServiceClient(ConnecpyClient):
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         method = "POST"
         return await self._make_request(
@@ -230,6 +169,7 @@ class ConformanceServiceClient(ConnecpyClient):
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
         method = "POST"
         return await self._make_request(
@@ -250,6 +190,7 @@ class ConformanceServiceClient(ConnecpyClient):
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
         method = "POST"
         return await self._make_request(
@@ -285,59 +226,18 @@ class ConformanceServiceClient(ConnecpyClient):
 
 
 class ConformanceServiceSync(Protocol):
-    def Unary(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
-
-    def ServerStream(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
-
-    def ClientStream(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
-
-    def BidiStream(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
-
-    def Unimplemented(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
-
-    def IdempotentUnary(
-        self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-        ctx: ServiceContext,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
-        raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
-        )
+    def Unary(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+    def ServerStream(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+    def ClientStream(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+    def BidiStream(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+    def Unimplemented(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+    def IdempotentUnary(self, req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest, ctx: ServiceContext) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
+        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
 
 
 class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
@@ -345,10 +245,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
         super().__init__(
             path="/connectrpc.conformance.v1.ConformanceService",
             endpoints={
-                "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse](
                     service_name="ConformanceService",
                     name="Unary",
                     function=getattr(service, "Unary"),
@@ -356,10 +253,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ServerStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/ServerStream": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse](
                     service_name="ConformanceService",
                     name="ServerStream",
                     function=getattr(service, "ServerStream"),
@@ -367,10 +261,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ClientStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/ClientStream": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse](
                     service_name="ConformanceService",
                     name="ClientStream",
                     function=getattr(service, "ClientStream"),
@@ -378,10 +269,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/BidiStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/BidiStream": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse](
                     service_name="ConformanceService",
                     name="BidiStream",
                     function=getattr(service, "BidiStream"),
@@ -389,10 +277,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse](
                     service_name="ConformanceService",
                     name="Unimplemented",
                     function=getattr(service, "Unimplemented"),
@@ -400,10 +285,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
-                ](
+                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": Endpoint[connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest, connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse](
                     service_name="ConformanceService",
                     name="IdempotentUnary",
                     function=getattr(service, "IdempotentUnary"),
@@ -411,7 +293,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
                     allowed_methods=("GET", "POST"),
                 ),
-            },
+            }
         )
 
     @property
@@ -427,6 +309,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
         method = "POST"
         return self._make_request(
@@ -445,6 +328,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
         method = "POST"
         return self._make_request(
@@ -463,6 +347,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         method = "POST"
         return self._make_request(
@@ -481,6 +366,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
         method = "POST"
         return self._make_request(
@@ -499,6 +385,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         headers: Optional[Headers] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
+        
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
         method = "POST"
         return self._make_request(
