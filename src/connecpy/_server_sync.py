@@ -9,7 +9,7 @@ from . import _server_shared
 from . import errors
 from . import exceptions
 from ._codec import Codec, get_codec
-from . import compression
+from . import _compression
 from ._protocol import (
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
     ConnectWireError,
@@ -198,13 +198,12 @@ class ConnecpyWSGIApplication:
 
             # Handle compression if accepted
             accept_encoding = request_headers.get("accept-encoding", "identity")
-            selected_encoding = compression.select_encoding(accept_encoding)
+            selected_encoding = _compression.select_encoding(accept_encoding)
             compressed_bytes = None
-            compressor = None
             if selected_encoding != "identity":
-                compressor = compression.get_compressor(selected_encoding)
-                if compressor:
-                    compressed_bytes = compressor(res_bytes)
+                compression = _compression.get_compression(selected_encoding)
+                if compression:
+                    compressed_bytes = compression.compress(res_bytes)
             response_headers, use_compression = prepare_response_headers(
                 base_headers,
                 selected_encoding,
@@ -262,16 +261,16 @@ class ConnecpyWSGIApplication:
                 req_body = read_chunked(input_stream)
 
             # Handle compression if specified
-            content_encoding = environ.get("HTTP_CONTENT_ENCODING", "identity").lower()
-            if content_encoding != "identity":
-                decompressor = compression.get_decompressor(content_encoding)
-                if not decompressor:
+            compression_name = environ.get("HTTP_CONTENT_ENCODING", "identity").lower()
+            if compression_name != "identity":
+                compression = _compression.get_compression(compression_name)
+                if not compression:
                     raise exceptions.ConnecpyServerException(
                         code=errors.Errors.Unimplemented,
-                        message=f"Unsupported compression: {content_encoding}",
+                        message=f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
                     )
                 try:
-                    req_body = decompressor(req_body)
+                    req_body = compression.decompress(req_body)
                 except Exception as e:
                     raise exceptions.ConnecpyServerException(
                         code=errors.Errors.InvalidArgument,
@@ -332,15 +331,14 @@ class ConnecpyWSGIApplication:
 
             # Handle compression if specified
             if "compression" in params:
-                decompressor = compression.get_decompressor(params["compression"][0])
-                if decompressor:
-                    try:
-                        message = decompressor(message)
-                    except Exception as e:
-                        raise exceptions.ConnecpyServerException(
-                            code=errors.Errors.InvalidArgument,
-                            message=f"Failed to decompress message: {str(e)}",
-                        )
+                compression_name = params["compression"][0]
+                compression = _compression.get_compression(compression_name)
+                if not compression:
+                    raise exceptions.ConnecpyServerException(
+                        code=errors.Errors.Unimplemented,
+                        message=f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
+                    )
+                message = compression.decompress(message)
 
             codec_name = params.get("encoding", ("",))[0]
             codec = get_codec(codec_name)

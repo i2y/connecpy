@@ -7,7 +7,7 @@ import base64
 from . import _server_shared
 from . import errors
 from . import exceptions
-from . import compression
+from . import _compression
 from ._codec import Codec, get_codec
 from ._protocol import (
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
@@ -83,7 +83,7 @@ class ConnecpyASGIApplication:
 
             headers = _process_headers(scope.get("headers", ()))
             accept_encoding = _get_header_value(headers, "accept-encoding")
-            selected_encoding = compression.select_encoding(accept_encoding)
+            selected_encoding = _compression.select_encoding(accept_encoding)
 
             client = scope["client"]
             peer = f"{client[0]}:{client[1]}" if client else ""
@@ -106,9 +106,9 @@ class ConnecpyASGIApplication:
 
             # Compress response if needed
             if selected_encoding != "identity":
-                compressor = compression.get_compressor(selected_encoding)
+                compressor = _compression.get_compression(selected_encoding)
                 if compressor:
-                    res_bytes = compressor(res_bytes)
+                    res_bytes = compressor.compress(res_bytes)
                     headers["content-encoding"] = [selected_encoding]
                     headers["vary"] = ["Accept-Encoding"]
 
@@ -187,16 +187,16 @@ class ConnecpyASGIApplication:
 
         # Handle compression
         compression_name = params.get("compression", ["identity"])[0]
-        decompressor = compression.get_decompressor(compression_name)
-        if not decompressor:
+        compression = _compression.get_compression(compression_name)
+        if not compression:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Unimplemented,
-                message=f"Unsupported compression: {compression_name}",
+                message=f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
             )
 
         # Decompress and decode message
         if message:  # Don't decompress empty messages
-            message = decompressor(message)
+            message = compression.decompress(message)
 
         # Get the appropriate decoder for the endpoint
         return codec.decode(message, endpoint.input()), codec
@@ -231,18 +231,21 @@ class ConnecpyASGIApplication:
             )
 
         # Handle compression if specified
-        compression_header = (
-            dict(scope["headers"]).get(b"content-encoding", b"identity").decode("ascii")
+        compression_name = (
+            dict(scope["headers"])
+            .get(b"content-encoding", b"identity")
+            .decode("ascii")
+            .lower()
         )
-        decompressor = compression.get_decompressor(compression_header)
-        if not decompressor:
+        compression = _compression.get_compression(compression_name)
+        if not compression:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Unimplemented,
-                message=f"Unsupported compression: {compression_header}",
+                message=f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
             )
 
         if req_body:  # Don't decompress empty body
-            req_body = decompressor(req_body)
+            req_body = compression.decompress(req_body)
 
         return codec.decode(req_body, endpoint.input()), codec
 

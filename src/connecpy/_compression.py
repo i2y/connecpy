@@ -1,106 +1,84 @@
-from collections.abc import Callable
-from typing import Optional
+from collections.abc import KeysView
+from typing import Optional, Protocol
 import gzip
 import brotli
 import zstandard
 
 
-def gzip_decompress(data: bytes) -> bytes:
-    """Decompress data using gzip."""
-    try:
-        return gzip.decompress(data)
-    except gzip.BadGzipFile:
-        raise
+class Compression(Protocol):
+    def compress(self, data: bytes) -> bytes:
+        """Compress the given data."""
+        ...
+
+    def decompress(self, data: bytes) -> bytes:
+        """Decompress the given data."""
+        ...
 
 
-def brotli_decompress(data: bytes) -> bytes:
-    """Decompress data using brotli."""
-    try:
-        return brotli.decompress(data)
-    except brotli.error:
-        raise
+_compressions: dict[str, Compression] = {}
 
 
-def zstd_decompress(data: bytes) -> bytes:
-    """Decompress data using zstandard."""
-    try:
-        dctx = zstandard.ZstdDecompressor()
-        return dctx.decompress(data)
-    except zstandard.ZstdError:
-        raise
-
-
-def gzip_compress(data: bytes) -> bytes:
-    """Compress data using gzip."""
-    try:
+class GZipCompression(Compression):
+    def compress(self, data: bytes) -> bytes:
         return gzip.compress(data)
-    except Exception:
-        raise
+
+    def decompress(self, data: bytes) -> bytes:
+        return gzip.decompress(data)
 
 
-def brotli_compress(data: bytes) -> bytes:
-    """Compress data using brotli."""
-    try:
-        return brotli.compress(data)
-    except Exception:
-        raise
+_compressions["gzip"] = GZipCompression()
+
+try:
+    import brotli
+
+    class BrotliCompression(Compression):
+        def compress(self, data: bytes) -> bytes:
+            return brotli.compress(data)
+
+        def decompress(self, data: bytes) -> bytes:
+            return brotli.decompress(data)
+
+    _compressions["br"] = BrotliCompression()
+except ImportError:
+    pass
+
+try:
+    import zstandard
+
+    class ZstdCompression(Compression):
+        def compress(self, data: bytes) -> bytes:
+            cctx = zstandard.ZstdCompressor()
+            return cctx.compress(data)
+
+        def decompress(self, data: bytes) -> bytes:
+            dctx = zstandard.ZstdDecompressor()
+            return dctx.decompress(data)
+
+    _compressions["zstd"] = ZstdCompression()
+except ImportError:
+    pass
 
 
-def zstd_compress(data: bytes) -> bytes:
-    """Compress data using zstandard."""
-    try:
-        cctx = zstandard.ZstdCompressor()
-        return cctx.compress(data)
-    except Exception:
-        raise
+class IdentityCompression(Compression):
+    def compress(self, data: bytes) -> bytes:
+        """Return data as-is without compression."""
+        return data
+
+    def decompress(self, data: bytes) -> bytes:
+        """Return data as-is without decompression."""
+        return data
 
 
-def identity(data: bytes) -> bytes:
-    """Return data as-is without compression."""
-    return data
+_compressions["identity"] = IdentityCompression()
 
 
-_decompressors = {
-    "identity": identity,
-    "gzip": gzip_decompress,
-    "br": brotli_decompress,
-    "zstd": zstd_decompress,
-}
+def get_compression(name: str) -> Optional[Compression]:
+    return _compressions.get(name.lower())
 
 
-def get_decompressor(compression_name: str) -> Callable[[bytes], bytes] | None:
-    """Get decompressor function by compression name.
-
-    Args:
-        compression_name (str): The name of the compression. Can be "identity", "gzip", "br", or "zstd".
-
-    Returns:
-        Callable[[bytes], bytes]: The decompressor function for the specified compression.
-    """
-    cmp_lower = compression_name.lower()
-    decompressor = _decompressors.get(cmp_lower)
-    if decompressor:
-        return decompressor
-
-    return None
-
-
-def get_compressor(compression_name: str) -> Optional[Callable[[bytes], bytes]]:
-    """Get compressor function by compression name.
-
-    Args:
-        compression_name (str): The name of the compression. Can be "identity", "gzip", "br", or "zstd".
-
-    Returns:
-        Callable[[bytes], bytes]: The compressor function for the specified compression.
-    """
-    compressors = {
-        "identity": identity,
-        "gzip": gzip_compress,
-        "br": brotli_compress,
-        "zstd": zstd_compress,
-    }
-    return compressors.get(compression_name)
+def get_available_compressions() -> KeysView:
+    """Returns a list of available compression names."""
+    return _compressions.keys()
 
 
 def parse_accept_encoding(accept_encoding: str | bytes) -> list[tuple[str, float]]:
@@ -158,7 +136,6 @@ def parse_accept_encoding(accept_encoding: str | bytes) -> list[tuple[str, float
 # TODO: wrong sorting order, use preference order instead of available order
 def select_encoding(
     accept_encoding: str | bytes,
-    available_encodings: tuple[str, ...] = ("br", "gzip", "zstd", "identity"),
 ) -> str:
     """Select the best compression encoding based on Accept-Encoding header.
 
@@ -185,13 +162,13 @@ def select_encoding(
         if client_encoding == "*":
             # For wildcard, choose any available encoding not explicitly defined by the client.
             excluded = {enc for enc, _ in encodings if enc != "*"}
-            candidates = [enc for enc in available_encodings if enc not in excluded]
+            candidates = [enc for enc in _compressions if enc not in excluded]
             if candidates:
                 return candidates[0]
             else:
                 # If all available encodings were explicitly mentioned, return the first available.
-                return available_encodings[0]
-        elif client_encoding in available_encodings:
+                return next(iter(get_available_compressions()))
+        elif client_encoding in _compressions:
             return client_encoding
 
     # If no match found, fallback to identity

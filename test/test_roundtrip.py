@@ -16,14 +16,9 @@ from example.haberdasher_connecpy import (
 from example.haberdasher_pb2 import Hat, Size
 
 
-_roundtrip_cases = [
-    (False),
-    (True),
-]
-
-
-@pytest.mark.parametrize("proto_json", _roundtrip_cases)
-def test_roundtrip_sync(proto_json: bool):
+@pytest.mark.parametrize("proto_json", [False, True])
+@pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity", None])
+def test_roundtrip_sync(proto_json: bool, compression: str):
     class RoundtripHaberdasherSync(HaberdasherSync):
         def MakeHat(self, req, ctx):
             return Hat(size=req.inches, color="green")
@@ -33,15 +28,18 @@ def test_roundtrip_sync(proto_json: bool):
         "http://localhost",
         session=Client(transport=WSGITransport(app=app)),
         proto_json=proto_json,
+        send_compression=compression,
+        accept_compression=[compression] if compression else None,
     ) as client:
         response = client.MakeHat(request=Size(inches=10))
     assert response.size == 10
     assert response.color == "green"
 
 
-@pytest.mark.parametrize("proto_json", _roundtrip_cases)
+@pytest.mark.parametrize("proto_json", [False, True])
+@pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
 @pytest.mark.asyncio
-async def test_details_async(proto_json: bool):
+async def test_details_async(proto_json: bool, compression: str):
     class DetailsHaberdasher(Haberdasher):
         async def MakeHat(self, req, ctx):
             return Hat(size=req.inches, color="green")
@@ -52,6 +50,8 @@ async def test_details_async(proto_json: bool):
         "http://localhost",
         session=AsyncClient(transport=transport),
         proto_json=proto_json,
+        send_compression=compression,
+        accept_compression=[compression] if compression else None,
     ) as client:
         response = await client.MakeHat(request=Size(inches=10))
     assert response.size == 10
