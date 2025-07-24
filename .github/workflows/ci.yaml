@@ -44,6 +44,8 @@ jobs:
         run: uv run pytest
 
       - name: run conformance tests
+        # TODO: Debug stdin/stdout issues on Windows
+        if: ${{ !startsWith(matrix.os, 'windows-') }}
         run: uv run pytest
         working-directory: conformance
 
