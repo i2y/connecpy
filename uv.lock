@@ -5,6 +5,7 @@ requires-python = ">=3.10"
 [manifest]
 members = [
     "connecpy",
+    "connecpy-conformance",
     "connecpy-example",
     "connecpy-noextras",
 ]
@@ -247,6 +248,23 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.25.2" },
     { name = "ruff", specifier = ">=0.9.4" },
     { name = "zstandard" },
+]
+
+[[package]]
+name = "connecpy-conformance"
+version = "0.1.0"
+source = { virtual = "conformance" }
+dependencies = [
+    { name = "connecpy" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "connecpy", editable = "." },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-asyncio", specifier = ">=0.25.2" },
 ]
 
 [[package]]

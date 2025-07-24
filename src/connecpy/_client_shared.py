@@ -61,7 +61,7 @@ def maybe_compress_request(request_data: bytes, headers: Headers) -> bytes:
 
 
 def prepare_get_params(codec: Codec, request_data, headers):
-    params = {}
+    params = {"connect": f"v{CONNECT_PROTOCOL_VERSION}"}
     if request_data:
         params["message"] = base64.urlsafe_b64encode(request_data).decode("ascii")
         params["base64"] = "1"

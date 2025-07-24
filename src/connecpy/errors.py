@@ -37,7 +37,7 @@ class Errors(Enum):
         try:
             return Errors(code)
         except ValueError:
-            return Errors.Unknown
+            return Errors.Unavailable
 
     @staticmethod
     def get_status_code(code: "Errors") -> int:
