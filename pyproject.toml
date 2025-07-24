@@ -17,7 +17,7 @@ license-files = ["LICENSE"]
 dev-dependencies = [
     "asgiref",
     "brotli",
-    "example",
+    "connecpy-example",
     "flask",
     "grpcio",
     "grpcio-tools",
@@ -62,4 +62,4 @@ members = [
 
 [tool.uv.sources]
 connecpy = { workspace = true }
-example = { workspace = true }
+connecpy-example = { workspace = true }

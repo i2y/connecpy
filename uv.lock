@@ -5,8 +5,8 @@ requires-python = ">=3.10"
 [manifest]
 members = [
     "connecpy",
-    "example",
-    "noextras",
+    "connecpy-example",
+    "connecpy-noextras",
 ]
 
 [[package]]
@@ -215,7 +215,7 @@ dependencies = [
 dev = [
     { name = "asgiref" },
     { name = "brotli" },
-    { name = "example" },
+    { name = "connecpy-example" },
     { name = "flask" },
     { name = "grpcio" },
     { name = "grpcio-tools" },
@@ -237,7 +237,7 @@ requires-dist = [
 dev = [
     { name = "asgiref" },
     { name = "brotli" },
-    { name = "example", editable = "example" },
+    { name = "connecpy-example", editable = "example" },
     { name = "flask" },
     { name = "grpcio" },
     { name = "grpcio-tools" },
@@ -250,7 +250,7 @@ dev = [
 ]
 
 [[package]]
-name = "example"
+name = "connecpy-example"
 version = "0.1.0"
 source = { editable = "example" }
 dependencies = [
@@ -266,6 +266,25 @@ requires-dist = [
     { name = "grpcio" },
     { name = "protobuf" },
     { name = "starlette" },
+]
+
+[[package]]
+name = "connecpy-noextras"
+version = "0.1.0"
+source = { virtual = "noextras" }
+dependencies = [
+    { name = "connecpy" },
+    { name = "connecpy-example" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "connecpy", editable = "." },
+    { name = "connecpy-example", editable = "example" },
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-asyncio", specifier = ">=0.25.2" },
 ]
 
 [[package]]
@@ -544,25 +563,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/be/2b/04e0e7f7305fe2ba30fd4610bfb432516e0f65379fe6c2902f4b7b1ad436/nodejs_wheel_binaries-22.17.0-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:715f413c81500f0770ea8936ef1fc2529b900da8054cbf6da67cec3ee308dc76", size = 60830079, upload-time = "2025-06-29T20:24:12.21Z" },
     { url = "https://files.pythonhosted.org/packages/ce/67/12070b24b88040c2d694883f3dcb067052f748798f4c63f7c865769a5747/nodejs_wheel_binaries-22.17.0-py2.py3-none-win_amd64.whl", hash = "sha256:51165630493c8dd4acfe1cae1684b76940c9b03f7f355597d55e2d056a572ddd", size = 40117877, upload-time = "2025-06-29T20:24:17.51Z" },
     { url = "https://files.pythonhosted.org/packages/2e/ec/53ac46af423527c23e40c7343189f2bce08a8337efedef4d8a33392cee23/nodejs_wheel_binaries-22.17.0-py2.py3-none-win_arm64.whl", hash = "sha256:fae56d172227671fccb04461d3cd2b26a945c6c7c7fc29edb8618876a39d8b4a", size = 38865278, upload-time = "2025-06-29T20:24:21.065Z" },
-]
-
-[[package]]
-name = "noextras"
-version = "0.1.0"
-source = { virtual = "noextras" }
-dependencies = [
-    { name = "connecpy" },
-    { name = "example" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "connecpy", editable = "." },
-    { name = "example", editable = "example" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "pytest-asyncio", specifier = ">=0.25.2" },
 ]
 
 [[package]]
