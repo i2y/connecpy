@@ -97,10 +97,9 @@ class ConnecpyClient:
             request_data = self._codec.encode(request)
             client = session or self._session
 
-            if "content-encoding" in request_headers:
-                request_data, request_headers = _client_shared.compress_request(
-                    request_data, request_headers
-                )
+            request_data = _client_shared.maybe_compress_request(
+                request_data, request_headers
+            )
 
             if method == "GET":
                 params = _client_shared.prepare_get_params(
@@ -127,6 +126,9 @@ class ConnecpyClient:
                     timeout_s,
                 )
 
+            _client_shared.validate_response_content_encoding(
+                resp.headers.get("content-encoding", "")
+            )
             _client_shared.validate_response_content_type(
                 self._codec.name(),
                 resp.status_code,

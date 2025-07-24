@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 
 from httpx import Headers
 
-from . import compression
+from . import _compression
 from .errors import Errors
 from .exceptions import ConnecpyServerException
 from ._codec import CODEC_NAME_JSON, CODEC_NAME_JSON_CHARSET_UTF8, Codec
@@ -45,25 +45,19 @@ def prepare_headers(
     return headers
 
 
-def compress_request(request_data: bytes, headers: Headers) -> tuple[bytes, Headers]:
-    # If compression is requested
-    if "content-encoding" in headers:
-        compression_name = headers["content-encoding"].lower()
-        compressor = compression.get_compressor(compression_name)
-        if not compressor:
-            raise Exception(f"Unsupported compression method: {compression_name}")
-        try:
-            compressed = compressor(request_data)
-            if len(compressed) < len(request_data):
-                # Optionally, log compression details
-                request_data = compressed
-            else:
-                headers.pop("content-encoding", None)
-        except Exception as e:
-            raise Exception(
-                f"Failed to compress request with {compression_name}: {str(e)}"
-            )
-    return request_data, headers
+def maybe_compress_request(request_data: bytes, headers: Headers) -> bytes:
+    if "content-encoding" not in headers:
+        return request_data
+
+    compression_name = headers["content-encoding"].lower()
+    compression = _compression.get_compression(compression_name)
+    if not compression:
+        # TODO: Validate within client construction instead of request
+        raise ValueError(f"Unsupported compression method: {compression_name}")
+    try:
+        return compression.compress(request_data)
+    except Exception as e:
+        raise Exception(f"Failed to compress request with {compression_name}: {str(e)}")
 
 
 def prepare_get_params(codec: Codec, request_data, headers):
@@ -78,6 +72,18 @@ def prepare_get_params(codec: Codec, request_data, headers):
 
 
 _current_response = ContextVar["ResponseMetadata"]("connecpy_current_response")
+
+
+def validate_response_content_encoding(
+    encoding: str | None,
+):
+    if not encoding:
+        return
+    if encoding.lower() not in _compression.get_available_compressions():
+        raise ConnecpyServerException(
+            code=Errors.Internal,
+            message=f"unknown encoding '{encoding}'; accepted encodings are {', '.join(_compression.get_available_compressions())}",
+        )
 
 
 def validate_response_content_type(
