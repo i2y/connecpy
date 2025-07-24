@@ -1,8 +1,7 @@
 import argparse
 import asyncio
 import sys
-from collections.abc import Coroutine
-from typing import Any, Literal
+from typing import Literal
 
 import httpx
 from connecpy.client import ResponseMetadata
