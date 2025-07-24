@@ -14,7 +14,7 @@ def maybe_patch_args_with_debug(args: list[str]) -> list[str]:
     # This invokes internal methods from bundles provided by the IDE
     # and may not always work.
     try:
-        from pydevd import (  # pyright:ignore[reportMissingImports] - provided by IDE        )
+        from pydevd import (  # pyright:ignore[reportMissingImports] - provided by IDE
             _pydev_bundle,
         )
 
