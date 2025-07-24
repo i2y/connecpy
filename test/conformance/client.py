@@ -2,7 +2,6 @@ import asyncio
 import sys
 import time
 
-import httpx
 from connecpy.client import ResponseMetadata
 from connecpy.errors import Errors
 from connecpy.exceptions import ConnecpyServerException
@@ -68,10 +67,8 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
         timeout_ms = test_request.timeout_ms
 
     with (
-        httpx.Client() as session,
         ConformanceServiceClientSync(
             f"http://{test_request.host}:{test_request.port}",
-            session=session,
             timeout_ms=timeout_ms,
         ) as client,
     ):
@@ -88,8 +85,8 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
                     return test_response
             if not message_any.Unpack(client_request):
                 raise ValueError("Failed to unpack message")
-            try:
-                with ResponseMetadata() as meta:
+            with ResponseMetadata() as meta:
+                try:
                     match client_request:
                         case IdempotentUnaryRequest():
                             client_response = client.IdempotentUnary(
@@ -105,9 +102,16 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
                                 client_request, headers=request_headers
                             )
                             raise ValueError("Can't happen")
-                test_response.response.payloads.add().MergeFrom(
-                    client_response.payload
-                )
+                    test_response.response.payloads.add().MergeFrom(
+                        client_response.payload
+                    )
+                except ConnecpyServerException as e:
+                    test_response.response.error.code = _convert_code(e.code)
+                    test_response.response.error.message = e.message
+                    test_response.response.error.details.extend(e.details)
+                except Exception as e:
+                    test_response.error.message = str(e)
+
                 for name in meta.headers().keys():
                     test_response.response.response_headers.add(
                         name=name, value=meta.headers().get_list(name)
@@ -116,12 +120,6 @@ def _run_test_sync(test_request: ClientCompatRequest) -> ClientCompatResponse:
                     test_response.response.response_trailers.add(
                         name=name, value=meta.trailers().get_list(name)
                     )
-            except ConnecpyServerException as e:
-                test_response.response.error.code = _convert_code(e.code)
-                test_response.response.error.message = e.message
-                test_response.response.error.details.extend(e.details)
-            except Exception as e:
-                test_response.error.message = str(e)
 
     return test_response
 
