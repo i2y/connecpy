@@ -43,6 +43,10 @@ jobs:
       - name: run python tests
         run: uv run pytest
 
+      - name: run conformance tests
+        run: uv run pytest
+        working-directory: conformance
+
       - name: run tests with minimal dependencies
         run: |
           uv sync --exact

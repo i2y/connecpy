@@ -20,7 +20,10 @@ from connectrpc.conformance.v1.service_pb2 import (
     UnaryResponse,
     UnimplementedRequest,
 )
-from connectrpc.conformance.v1.service_connecpy import ConformanceServiceClientSync, ConformanceServiceClient
+from connectrpc.conformance.v1.service_connecpy import (
+    ConformanceServiceClientSync,
+    ConformanceServiceClient,
+)
 
 
 def _convert_code(error: Errors) -> Code:
@@ -59,7 +62,10 @@ def _convert_code(error: Errors) -> Code:
             return Code.CODE_UNAUTHENTICATED
 
 
-async def _run_test(client: ConformanceServiceClientSync | ConformanceServiceClient, test_request: ClientCompatRequest) -> ClientCompatResponse:
+async def _run_test(
+    client: ConformanceServiceClientSync | ConformanceServiceClient,
+    test_request: ClientCompatRequest,
+) -> ClientCompatResponse:
     test_response = ClientCompatResponse()
     test_response.test_name = test_request.test_name
 
@@ -90,35 +96,46 @@ async def _run_test(client: ConformanceServiceClientSync | ConformanceServiceCli
                 match client_request:
                     case IdempotentUnaryRequest():
                         if isinstance(client, ConformanceServiceClientSync):
-                            task = asyncio.create_task(asyncio.to_thread(client.IdempotentUnary,
-                                client_request,
-                                headers=request_headers,
-                                use_get=test_request.use_get_http_method,
-                                timeout_ms=timeout_ms,
-                            ))
+                            task = asyncio.create_task(
+                                asyncio.to_thread(
+                                    client.IdempotentUnary,
+                                    client_request,
+                                    headers=request_headers,
+                                    use_get=test_request.use_get_http_method,
+                                    timeout_ms=timeout_ms,
+                                )
+                            )
                         else:
-                            task = asyncio.create_task(client.IdempotentUnary(
-                                client_request,
-                                headers=request_headers,
-                                use_get=test_request.use_get_http_method,
-                                timeout_ms=timeout_ms,
-                            ))
+                            task = asyncio.create_task(
+                                client.IdempotentUnary(
+                                    client_request,
+                                    headers=request_headers,
+                                    use_get=test_request.use_get_http_method,
+                                    timeout_ms=timeout_ms,
+                                )
+                            )
                     case UnaryRequest():
                         if isinstance(client, ConformanceServiceClientSync):
-                            task = asyncio.create_task(asyncio.to_thread(client.Unary,
-                                client_request,
-                                headers=request_headers,
-                                timeout_ms=timeout_ms,
-                            ))
+                            task = asyncio.create_task(
+                                asyncio.to_thread(
+                                    client.Unary,
+                                    client_request,
+                                    headers=request_headers,
+                                    timeout_ms=timeout_ms,
+                                )
+                            )
                         else:
-                            task = asyncio.create_task(client.Unary(
-                                client_request,
-                                headers=request_headers,
-                                timeout_ms=timeout_ms,
-                            ))
+                            task = asyncio.create_task(
+                                client.Unary(
+                                    client_request,
+                                    headers=request_headers,
+                                    timeout_ms=timeout_ms,
+                                )
+                            )
                     case UnimplementedRequest():
                         if isinstance(client, ConformanceServiceClientSync):
-                            await asyncio.to_thread(client.Unimplemented,
+                            await asyncio.to_thread(
+                                client.Unimplemented,
                                 client_request,
                                 headers=request_headers,
                                 timeout_ms=timeout_ms,
@@ -130,13 +147,13 @@ async def _run_test(client: ConformanceServiceClientSync | ConformanceServiceCli
                                 timeout_ms=timeout_ms,
                             )
                         raise ValueError("Can't happen")
-                if test_request.HasField('cancel'):
-                    await asyncio.sleep(test_request.cancel.after_close_send_ms / 1000.0)
+                if test_request.HasField("cancel"):
+                    await asyncio.sleep(
+                        test_request.cancel.after_close_send_ms / 1000.0
+                    )
                     task.cancel()
                 client_response = await task
-                test_response.response.payloads.add().MergeFrom(
-                    client_response.payload
-                )
+                test_response.response.payloads.add().MergeFrom(client_response.payload)
             except ConnecpyServerException as e:
                 test_response.response.error.code = _convert_code(e.code)
                 test_response.response.error.message = e.message
@@ -151,7 +168,7 @@ async def _run_test(client: ConformanceServiceClientSync | ConformanceServiceCli
             for name in meta.trailers().keys():
                 test_response.response.response_trailers.add(
                     name=name, value=meta.trailers().get_list(name)
-                    )
+                )
 
     return test_response
 
@@ -170,6 +187,7 @@ async def _create_standard_streams():
 
 class Args(argparse.Namespace):
     mode: Literal["sync"] | Literal["async"]
+
 
 async def main():
     parser = argparse.ArgumentParser(description="Conformance client")
@@ -192,10 +210,16 @@ async def main():
 
                 match args.mode:
                     case "sync":
-                        with ConformanceServiceClientSync(f"http://{request.host}:{request.port}", session=sync_session) as client:
+                        with ConformanceServiceClientSync(
+                            f"http://{request.host}:{request.port}",
+                            session=sync_session,
+                        ) as client:
                             response = await _run_test(client, request)
                     case "async":
-                        async with ConformanceServiceClient(f"http://{request.host}:{request.port}", session=async_session) as client:
+                        async with ConformanceServiceClient(
+                            f"http://{request.host}:{request.port}",
+                            session=async_session,
+                        ) as client:
                             response = await _run_test(client, request)
 
                 response_buf = response.SerializeToString()

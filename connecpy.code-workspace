@@ -1,0 +1,60 @@
+{
+  "folders": [
+    {
+      "name": "/",
+      "path": "."
+    },
+    {
+      "name": "conformance",
+      "path": "./conformance"
+    },
+    {
+      "name": "example",
+      "path": "./example"
+    },
+    {
+      "name": "noextras",
+      "path": "./noextras"
+    }
+  ],
+  "extensions": {
+    "recommendations": [
+      "bufbuild.vscode-buf",
+      "charliermarsh.ruff",
+      "esbenp.prettier-vscode",
+      "github.vscode-github-actions",
+      "golang.go",
+      "ms-python.python",
+      "ms-python.vscode-pylance"
+    ]
+  },
+  "settings": {
+    "editor.formatOnSave": true,
+    "files.insertFinalNewline": true,
+    "python.defaultInterpreterPath": "${workspaceFolder:/}/.venv/bin/python",
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["test"],
+    "python.testing.unittestEnabled": false,
+    "[github-actions-workflow]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[python]": {
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+      },
+      "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "[json][jsonc]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "yaml.format.enable": false,
+    "[yaml]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+  }
+}

@@ -1,13 +1,13 @@
 version: v2
 inputs:
-- directory: test/conformance/proto
+- directory: test/proto
 plugins:
 - remote: buf.build/protocolbuffers/python:v29.3
-  out: test/conformance/
+  out: test/
 - remote: buf.build/protocolbuffers/pyi:v29.3
-  out: test/conformance/
+  out: test/
 - local:
   - go
   - run
-  - ./protoc-gen-connecpy
-  out: test/conformance/
+  - ../protoc-gen-connecpy
+  out: test/
