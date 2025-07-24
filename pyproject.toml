@@ -5,21 +5,18 @@ description = "Code generator, server library and client library for the Connect
 authors = [
     { name = "Yasushi Itoh" }
 ]
+requires-python = ">= 3.10"
 dependencies = [
     "httpx",
     "protobuf",
-    "zstd-asgi>=0.2",
-    "brotli-asgi>=1.4.0",
-    "brotli>=1.1.0",
-    "zstandard>=0.22.0",
 ]
 readme = "README.md"
 license-files = ["LICENSE"]
-requires-python = ">= 3.10"
 
 [tool.uv]
 dev-dependencies = [
     "asgiref",
+    "brotli",
     "connecpy-example",
     "flask",
     "grpcio",
@@ -29,12 +26,17 @@ dev-dependencies = [
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.2",
     "ruff>=0.9.4",
-    "zstd-asgi>=0.2",
+    "zstandard",
 ]
 
 [build-system]
 requires = ["uv_build>=0.7.21,<0.8.0"]
 build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "test",
+]
 
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.
@@ -53,7 +55,10 @@ exclude = [
 ]
 
 [tool.uv.workspace]
-members = ["example"]
+members = [
+    "example", 
+    "noextras",
+]
 
 [tool.uv.sources]
 connecpy = { workspace = true }

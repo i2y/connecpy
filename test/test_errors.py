@@ -173,6 +173,13 @@ _http_errors = [
         "Bad Gateway",
         id="bad json",
     ),
+    p(
+        200,
+        {"text": "weird encoding", "headers": {"content-encoding": "weird"}},
+        Errors.Internal,
+        "unknown encoding 'weird'; accepted encodings are gzip, br, zstd, identity",
+        id="bad encoding",
+    ),
 ]
 
 
