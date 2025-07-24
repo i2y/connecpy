@@ -1,4 +1,4 @@
-from asyncio import wait_for
+from asyncio import CancelledError, wait_for
 from typing import Iterable, Optional, TypeVar
 
 import httpx
@@ -136,12 +136,7 @@ class ConnecpyClient:
 
             if resp.status_code == 200:
                 response = response_class()
-                try:
-                    self._codec.decode(resp.content, response)
-                except Exception as e:
-                    raise exceptions.ConnecpyException(
-                        f"Failed to parse response message: {str(e)}"
-                    )
+                self._codec.decode(resp.content, response)
                 return response
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
@@ -152,6 +147,11 @@ class ConnecpyClient:
             )
         except exceptions.ConnecpyException:
             raise
+        except CancelledError as e:
+            raise exceptions.ConnecpyServerException(
+                code=errors.Errors.Canceled,
+                message="Request was cancelled",
+            ) from e
         except Exception as e:
             raise exceptions.ConnecpyServerException(
                 code=errors.Errors.Unavailable,
