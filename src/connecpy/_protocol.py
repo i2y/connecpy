@@ -1,15 +1,14 @@
+import json
 from base64 import b64decode, b64encode
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import cast, Optional, Sequence
-import json
+from typing import Optional, Sequence, cast
 
 import httpx
 from google.protobuf.any_pb2 import Any
 
-from .errors import Errors
+from .code import Code
 from .exceptions import ConnecpyServerException
-
 
 CONNECT_PROTOCOL_VERSION = "1"
 CONNECT_UNARY_CONTENT_TYPE_PREFIX = "application/"
@@ -34,50 +33,46 @@ _INTERNAL_SERVER_ERROR = ExtendedHTTPStatus.from_http_status(
 )
 
 _error_to_http_status = {
-    Errors.Canceled: ExtendedHTTPStatus(499, "Client Closed Request"),
-    Errors.Unknown: _INTERNAL_SERVER_ERROR,
-    Errors.InvalidArgument: _BAD_REQUEST,
-    Errors.DeadlineExceeded: ExtendedHTTPStatus.from_http_status(
+    Code.CANCELED: ExtendedHTTPStatus(499, "Client Closed Request"),
+    Code.UNKNOWN: _INTERNAL_SERVER_ERROR,
+    Code.INVALID_ARGUMENT: _BAD_REQUEST,
+    Code.DEADLINE_EXCEEDED: ExtendedHTTPStatus.from_http_status(
         HTTPStatus.GATEWAY_TIMEOUT
     ),
-    Errors.NotFound: ExtendedHTTPStatus.from_http_status(HTTPStatus.NOT_FOUND),
-    Errors.AlreadyExists: _CONFLICT,
-    Errors.PermissionDenied: ExtendedHTTPStatus.from_http_status(HTTPStatus.FORBIDDEN),
-    Errors.ResourceExhausted: ExtendedHTTPStatus.from_http_status(
+    Code.NOT_FOUND: ExtendedHTTPStatus.from_http_status(HTTPStatus.NOT_FOUND),
+    Code.ALREADY_EXISTS: _CONFLICT,
+    Code.PERMISSION_DENIED: ExtendedHTTPStatus.from_http_status(HTTPStatus.FORBIDDEN),
+    Code.RESOURCE_EXHAUSTED: ExtendedHTTPStatus.from_http_status(
         HTTPStatus.TOO_MANY_REQUESTS
     ),
-    Errors.FailedPrecondition: _BAD_REQUEST,
-    Errors.Aborted: _CONFLICT,
-    Errors.OutOfRange: _BAD_REQUEST,
-    Errors.Unimplemented: ExtendedHTTPStatus.from_http_status(
-        HTTPStatus.NOT_IMPLEMENTED
-    ),
-    Errors.Internal: _INTERNAL_SERVER_ERROR,
-    Errors.Unavailable: ExtendedHTTPStatus.from_http_status(
+    Code.FAILED_PRECONDITION: _BAD_REQUEST,
+    Code.ABORTED: _CONFLICT,
+    Code.OUT_OF_RANGE: _BAD_REQUEST,
+    Code.UNIMPLEMENTED: ExtendedHTTPStatus.from_http_status(HTTPStatus.NOT_IMPLEMENTED),
+    Code.INTERNAL: _INTERNAL_SERVER_ERROR,
+    Code.UNAVAILABLE: ExtendedHTTPStatus.from_http_status(
         HTTPStatus.SERVICE_UNAVAILABLE
     ),
-    Errors.DataLoss: _INTERNAL_SERVER_ERROR,
-    Errors.Unauthenticated: ExtendedHTTPStatus.from_http_status(
-        HTTPStatus.UNAUTHORIZED
-    ),
+    Code.DATA_LOSS: _INTERNAL_SERVER_ERROR,
+    Code.UNAUTHENTICATED: ExtendedHTTPStatus.from_http_status(HTTPStatus.UNAUTHORIZED),
 }
 
 
 _http_status_code_to_error = {
-    400: Errors.Internal,
-    401: Errors.Unauthenticated,
-    403: Errors.PermissionDenied,
-    404: Errors.Unimplemented,
-    429: Errors.Unavailable,
-    502: Errors.Unavailable,
-    503: Errors.Unavailable,
-    504: Errors.Unavailable,
+    400: Code.INTERNAL,
+    401: Code.UNAUTHENTICATED,
+    403: Code.PERMISSION_DENIED,
+    404: Code.UNIMPLEMENTED,
+    429: Code.UNAVAILABLE,
+    502: Code.UNAVAILABLE,
+    503: Code.UNAVAILABLE,
+    504: Code.UNAVAILABLE,
 }
 
 
 @dataclass(frozen=True, kw_only=True)
 class ConnectWireError:
-    code: Errors
+    code: Code
     message: str
     details: Sequence[Any]
 
@@ -87,7 +82,7 @@ class ConnectWireError:
             return ConnectWireError(
                 code=exc.code, message=exc.message, details=exc.details
             )
-        return ConnectWireError(code=Errors.Unknown, message=str(exc), details=())
+        return ConnectWireError(code=Code.UNKNOWN, message=str(exc), details=())
 
     @staticmethod
     def from_response(response: httpx.Response) -> "ConnectWireError":
@@ -99,10 +94,13 @@ class ConnectWireError:
         if isinstance(data, dict):
             code_str = data.get("code")
             if code_str:
-                code = Errors.from_string(code_str)
+                try:
+                    code = Code(code_str)
+                except ValueError:
+                    code = Code.UNAVAILABLE
             else:
                 code = _http_status_code_to_error.get(
-                    response.status_code, Errors.Unknown
+                    response.status_code, Code.UNKNOWN
                 )
             message = data.get("message", "")
             details_json = cast(Optional[list[dict[str, str]]], data.get("details"))
@@ -126,7 +124,7 @@ class ConnectWireError:
 
     @staticmethod
     def from_http_status(status_code: int) -> "ConnectWireError":
-        code = _http_status_code_to_error.get(status_code, Errors.Unknown)
+        code = _http_status_code_to_error.get(status_code, Code.UNKNOWN)
         try:
             http_status = HTTPStatus(status_code)
             message = http_status.phrase

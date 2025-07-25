@@ -1,11 +1,5 @@
-from httpx import (
-    ASGITransport,
-    AsyncClient,
-    Client,
-    WSGITransport,
-)
 import pytest
-from connecpy.errors import Errors
+from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
 from example.haberdasher_connecpy import (
     Haberdasher,
@@ -16,6 +10,12 @@ from example.haberdasher_connecpy import (
     HaberdasherWSGIApplication,
 )
 from example.haberdasher_pb2 import Hat, Size
+from httpx import (
+    ASGITransport,
+    AsyncClient,
+    Client,
+    WSGITransport,
+)
 
 
 @pytest.mark.parametrize("compression", ["gzip", "identity", None])
@@ -73,7 +73,7 @@ def test_invalid_compression_sync(compression: str):
         pytest.raises(ConnecpyServerException) as exc_info,
     ):
         client.MakeHat(request=Size(inches=10))
-    assert exc_info.value.code == Errors.Unavailable
+    assert exc_info.value.code == Code.UNAVAILABLE
     assert exc_info.value.message == f"Unsupported compression method: {compression}"
 
 
@@ -94,5 +94,5 @@ async def test_invalid_compression_async(compression: str):
     ) as client:
         with pytest.raises(ConnecpyServerException) as exc_info:
             await client.MakeHat(request=Size(inches=10))
-    assert exc_info.value.code == Errors.Unavailable
+    assert exc_info.value.code == Code.UNAVAILABLE
     assert exc_info.value.message == f"Unsupported compression method: {compression}"

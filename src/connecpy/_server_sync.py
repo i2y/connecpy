@@ -1,21 +1,19 @@
+import base64
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Iterable, List, Mapping, Optional
-import base64
 from urllib.parse import parse_qs
-from wsgiref.types import WSGIEnvironment, StartResponse
+from wsgiref.types import StartResponse, WSGIEnvironment
 
-from . import _server_shared
-from . import errors
-from . import exceptions
+from . import _compression, _server_shared, exceptions
 from ._codec import Codec, get_codec
-from . import _compression
 from ._protocol import (
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
     ConnectWireError,
     HTTPException,
     codec_name_from_content_type,
 )
+from .code import Code
 
 
 def _normalize_wsgi_headers(environ: WSGIEnvironment) -> dict:
@@ -63,7 +61,7 @@ def validate_request_headers(headers: dict) -> tuple[str, str]:
     content_type = headers.get("content-type", "application/json").lower()
     if content_type not in ["application/json", "application/proto"]:
         raise exceptions.ConnecpyServerException(
-            code=errors.Errors.InvalidArgument,
+            code=Code.INVALID_ARGUMENT,
             message=f"Unsupported Content-Type: {content_type}",
         )
 
@@ -71,7 +69,7 @@ def validate_request_headers(headers: dict) -> tuple[str, str]:
     content_encoding = headers.get("content-encoding", "identity").lower()
     if content_encoding not in ["identity", "gzip", "br", "zstd"]:
         raise exceptions.ConnecpyServerException(
-            code=errors.Errors.Unimplemented,
+            code=Code.UNIMPLEMENTED,
             message=f"Unsupported Content-Encoding: {content_encoding}",
         )
 
@@ -266,14 +264,14 @@ class ConnecpyWSGIApplication:
                 compression = _compression.get_compression(compression_name)
                 if not compression:
                     raise exceptions.ConnecpyServerException(
-                        code=errors.Errors.Unimplemented,
+                        code=Code.UNIMPLEMENTED,
                         message=f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
                     )
                 try:
                     req_body = compression.decompress(req_body)
                 except Exception as e:
                     raise exceptions.ConnecpyServerException(
-                        code=errors.Errors.InvalidArgument,
+                        code=Code.INVALID_ARGUMENT,
                         message=f"Failed to decompress request body: {str(e)}",
                     )
 
@@ -292,14 +290,14 @@ class ConnecpyWSGIApplication:
                 return codec.decode(req_body, endpoint.input()), codec
             except Exception as e:
                 raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.InvalidArgument,
+                    code=Code.INVALID_ARGUMENT,
                     message=f"Failed to decode request body: {str(e)}",
                 )
 
         except Exception as e:
             if not isinstance(e, exceptions.ConnecpyServerException):
                 raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.Internal,
+                    code=Code.INTERNAL,
                     message=str(e),  # TODO
                 )
             raise
@@ -312,7 +310,7 @@ class ConnecpyWSGIApplication:
 
             if "message" not in params:
                 raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.InvalidArgument,
+                    code=Code.INVALID_ARGUMENT,
                     message="'message' parameter is required for GET requests",
                 )
 
@@ -323,7 +321,7 @@ class ConnecpyWSGIApplication:
                     message = base64.urlsafe_b64decode(message.encode("ascii"))
                 except Exception as e:
                     raise exceptions.ConnecpyServerException(
-                        code=errors.Errors.InvalidArgument,
+                        code=Code.INVALID_ARGUMENT,
                         message=f"Invalid base64 encoding: {str(e)}",
                     )
             else:
@@ -335,7 +333,7 @@ class ConnecpyWSGIApplication:
                 compression = _compression.get_compression(compression_name)
                 if not compression:
                     raise exceptions.ConnecpyServerException(
-                        code=errors.Errors.Unimplemented,
+                        code=Code.UNIMPLEMENTED,
                         message=f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
                     )
                 message = compression.decompress(message)
@@ -344,7 +342,7 @@ class ConnecpyWSGIApplication:
             codec = get_codec(codec_name)
             if not codec:
                 raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.Unimplemented,
+                    code=Code.UNIMPLEMENTED,
                     message=f"invalid message encoding: '{codec_name}'",
                 )
             # Handle GET request with proto decoder
@@ -354,14 +352,14 @@ class ConnecpyWSGIApplication:
                 return request, codec
             except Exception as e:
                 raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.InvalidArgument,
+                    code=Code.INVALID_ARGUMENT,
                     message=f"Failed to decode message: {str(e)}",
                 )
 
         except Exception as e:
             if not isinstance(e, exceptions.ConnecpyServerException):
                 raise exceptions.ConnecpyServerException(
-                    code=errors.Errors.Internal,
+                    code=Code.INTERNAL,
                     message=str(e),
                 )
             raise

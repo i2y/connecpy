@@ -6,8 +6,8 @@ from typing import Iterable, Optional, Protocol, Union
 
 import httpx
 
-from connecpy.client import ConnecpyClient, ConnecpyClientSync
-from connecpy.errors import Errors
+from connecpy.client import ConnecpyClient, ConnecpyClientSync, RequestHeaders
+from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
 from connecpy.server import (
     ConnecpyASGIApplication,
@@ -16,7 +16,6 @@ from connecpy.server import (
     ServerInterceptor,
     ServiceContext,
 )
-from connecpy.types import Headers
 import example.haberdasher_pb2 as example_dot_haberdasher__pb2
 import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
@@ -26,14 +25,14 @@ class Haberdasher(Protocol):
         self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     async def DoNothing(
         self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
 
@@ -84,7 +83,7 @@ class HaberdasherClient(ConnecpyClient):
         self,
         request: example_dot_haberdasher__pb2.Size,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -105,7 +104,7 @@ class HaberdasherClient(ConnecpyClient):
         self,
         request: google_dot_protobuf_dot_empty__pb2.Empty,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -127,14 +126,14 @@ class HaberdasherSync(Protocol):
         self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     def DoNothing(
         self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
 
@@ -177,7 +176,7 @@ class HaberdasherClientSync(ConnecpyClientSync):
         self,
         request: example_dot_haberdasher__pb2.Size,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         use_get: bool = False,
@@ -196,7 +195,7 @@ class HaberdasherClientSync(ConnecpyClientSync):
         self,
         request: google_dot_protobuf_dot_empty__pb2.Empty,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:

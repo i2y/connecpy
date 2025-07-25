@@ -3,14 +3,14 @@ from typing import Iterable, Optional, TypeVar
 
 import httpx
 from google.protobuf.message import Message
-from httpx import Headers as HttpxHeaders, Timeout
+from httpx import Headers, Timeout
 
 from . import _client_shared
-from . import exceptions
-from . import errors
+from ._client_shared import RequestHeaders
 from ._codec import get_proto_binary_codec, get_proto_json_codec
 from ._protocol import ConnectWireError
-from .types import Headers
+from .code import Code
+from .exceptions import ConnecpyServerException
 
 _RES = TypeVar("_RES", bound=Message)
 
@@ -70,7 +70,7 @@ class ConnecpyClient:
         request: Message,
         response_class: type[_RES],
         method="POST",
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         session: Optional[httpx.AsyncClient] = None,
     ) -> _RES:
@@ -83,7 +83,7 @@ class ConnecpyClient:
             timeout = _convert_connect_timeout(timeout_ms)
             request_args["timeout"] = timeout
 
-        user_headers = HttpxHeaders(headers) if headers else HttpxHeaders()
+        user_headers = Headers(headers) if headers else Headers()
         request_headers = _client_shared.prepare_headers(
             self._codec,
             user_headers,
@@ -143,20 +143,20 @@ class ConnecpyClient:
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError):
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.DeadlineExceeded,
+            raise ConnecpyServerException(
+                code=Code.DEADLINE_EXCEEDED,
                 message="Request timed out",
             )
-        except exceptions.ConnecpyException:
+        except ConnecpyServerException:
             raise
         except CancelledError as e:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Canceled,
+            raise ConnecpyServerException(
+                code=Code.CANCELED,
                 message="Request was cancelled",
             ) from e
         except Exception as e:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Unavailable,
+            raise ConnecpyServerException(
+                code=Code.UNAVAILABLE,
                 message=str(e),
             )
 
