@@ -5,12 +5,16 @@ from typing import Literal
 
 import httpx
 from connecpy.client import ResponseMetadata
-from connecpy.errors import Errors
+from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
-from connectrpc.conformance.v1.config_pb2 import Code
 from connectrpc.conformance.v1.client_compat_pb2 import (
     ClientCompatRequest,
     ClientCompatResponse,
+)
+from connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
+from connectrpc.conformance.v1.service_connecpy import (
+    ConformanceServiceClient,
+    ConformanceServiceClientSync,
 )
 from connectrpc.conformance.v1.service_pb2 import (
     IdempotentUnaryRequest,
@@ -19,46 +23,42 @@ from connectrpc.conformance.v1.service_pb2 import (
     UnaryResponse,
     UnimplementedRequest,
 )
-from connectrpc.conformance.v1.service_connecpy import (
-    ConformanceServiceClientSync,
-    ConformanceServiceClient,
-)
 
 
-def _convert_code(error: Errors) -> Code:
+def _convert_code(error: Code) -> ConformanceCode:
     match error:
-        case Errors.Canceled:
-            return Code.CODE_CANCELED
-        case Errors.Unknown:
-            return Code.CODE_UNKNOWN
-        case Errors.InvalidArgument:
-            return Code.CODE_INVALID_ARGUMENT
-        case Errors.DeadlineExceeded:
-            return Code.CODE_DEADLINE_EXCEEDED
-        case Errors.NotFound:
-            return Code.CODE_NOT_FOUND
-        case Errors.AlreadyExists:
-            return Code.CODE_ALREADY_EXISTS
-        case Errors.PermissionDenied:
-            return Code.CODE_PERMISSION_DENIED
-        case Errors.ResourceExhausted:
-            return Code.CODE_RESOURCE_EXHAUSTED
-        case Errors.FailedPrecondition:
-            return Code.CODE_FAILED_PRECONDITION
-        case Errors.Aborted:
-            return Code.CODE_ABORTED
-        case Errors.OutOfRange:
-            return Code.CODE_OUT_OF_RANGE
-        case Errors.Unimplemented:
-            return Code.CODE_UNIMPLEMENTED
-        case Errors.Internal:
-            return Code.CODE_INTERNAL
-        case Errors.Unavailable:
-            return Code.CODE_UNAVAILABLE
-        case Errors.DataLoss:
-            return Code.CODE_DATA_LOSS
-        case Errors.Unauthenticated:
-            return Code.CODE_UNAUTHENTICATED
+        case Code.CANCELED:
+            return ConformanceCode.CODE_CANCELED
+        case Code.UNKNOWN:
+            return ConformanceCode.CODE_UNKNOWN
+        case Code.INVALID_ARGUMENT:
+            return ConformanceCode.CODE_INVALID_ARGUMENT
+        case Code.DEADLINE_EXCEEDED:
+            return ConformanceCode.CODE_DEADLINE_EXCEEDED
+        case Code.NOT_FOUND:
+            return ConformanceCode.CODE_NOT_FOUND
+        case Code.ALREADY_EXISTS:
+            return ConformanceCode.CODE_ALREADY_EXISTS
+        case Code.PERMISSION_DENIED:
+            return ConformanceCode.CODE_PERMISSION_DENIED
+        case Code.RESOURCE_EXHAUSTED:
+            return ConformanceCode.CODE_RESOURCE_EXHAUSTED
+        case Code.FAILED_PRECONDITION:
+            return ConformanceCode.CODE_FAILED_PRECONDITION
+        case Code.ABORTED:
+            return ConformanceCode.CODE_ABORTED
+        case Code.OUT_OF_RANGE:
+            return ConformanceCode.CODE_OUT_OF_RANGE
+        case Code.UNIMPLEMENTED:
+            return ConformanceCode.CODE_UNIMPLEMENTED
+        case Code.INTERNAL:
+            return ConformanceCode.CODE_INTERNAL
+        case Code.UNAVAILABLE:
+            return ConformanceCode.CODE_UNAVAILABLE
+        case Code.DATA_LOSS:
+            return ConformanceCode.CODE_DATA_LOSS
+        case Code.UNAUTHENTICATED:
+            return ConformanceCode.CODE_UNAUTHENTICATED
 
 
 async def _run_test(

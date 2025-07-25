@@ -6,8 +6,8 @@ from typing import Iterable, Optional, Protocol, Union
 
 import httpx
 
-from connecpy.client import ConnecpyClient, ConnecpyClientSync
-from connecpy.errors import Errors
+from connecpy.client import ConnecpyClient, ConnecpyClientSync, RequestHeaders
+from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
 from connecpy.server import (
     ConnecpyASGIApplication,
@@ -16,7 +16,6 @@ from connecpy.server import (
     ServerInterceptor,
     ServiceContext,
 )
-from connecpy.types import Headers
 import connectrpc.conformance.v1.service_pb2 as connectrpc_dot_conformance_dot_v1_dot_service__pb2
 
 
@@ -27,7 +26,7 @@ class ConformanceService(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     async def ServerStream(
@@ -36,7 +35,7 @@ class ConformanceService(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     async def ClientStream(
@@ -45,7 +44,7 @@ class ConformanceService(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     async def BidiStream(
@@ -54,7 +53,7 @@ class ConformanceService(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     async def Unimplemented(
@@ -63,7 +62,7 @@ class ConformanceService(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     async def IdempotentUnary(
@@ -72,7 +71,7 @@ class ConformanceService(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
 
@@ -168,7 +167,7 @@ class ConformanceServiceClient(ConnecpyClient):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -188,7 +187,7 @@ class ConformanceServiceClient(ConnecpyClient):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -208,7 +207,7 @@ class ConformanceServiceClient(ConnecpyClient):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -228,7 +227,7 @@ class ConformanceServiceClient(ConnecpyClient):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -248,7 +247,7 @@ class ConformanceServiceClient(ConnecpyClient):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -268,7 +267,7 @@ class ConformanceServiceClient(ConnecpyClient):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -293,7 +292,7 @@ class ConformanceServiceSync(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     def ServerStream(
@@ -302,7 +301,7 @@ class ConformanceServiceSync(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     def ClientStream(
@@ -311,7 +310,7 @@ class ConformanceServiceSync(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     def BidiStream(
@@ -320,7 +319,7 @@ class ConformanceServiceSync(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     def Unimplemented(
@@ -329,7 +328,7 @@ class ConformanceServiceSync(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
     def IdempotentUnary(
@@ -338,7 +337,7 @@ class ConformanceServiceSync(Protocol):
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
         raise ConnecpyServerException(
-            code=Errors.Unimplemented, message="Not implemented"
+            code=Code.UNIMPLEMENTED, message="Not implemented"
         )
 
 
@@ -426,7 +425,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
@@ -444,7 +443,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
@@ -462,7 +461,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
@@ -480,7 +479,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
@@ -498,7 +497,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
@@ -516,7 +515,7 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         use_get: bool = False,

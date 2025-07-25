@@ -1,11 +1,14 @@
+import pytest
+from google.protobuf.any import pack
+from google.protobuf.struct_pb2 import Struct, Value
 from httpx import (
     ASGITransport,
     AsyncClient,
     Client,
     WSGITransport,
 )
-import pytest
-from connecpy.errors import Errors
+
+from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
 from example.haberdasher_connecpy import (
     Haberdasher,
@@ -16,15 +19,13 @@ from example.haberdasher_connecpy import (
     HaberdasherWSGIApplication,
 )
 from example.haberdasher_pb2 import Size
-from google.protobuf.any import pack
-from google.protobuf.struct_pb2 import Struct, Value
 
 
 def test_details_sync():
     class DetailsHaberdasherSync(HaberdasherSync):
         def MakeHat(self, req, ctx):
             raise ConnecpyServerException(
-                code=Errors.ResourceExhausted,
+                code=Code.RESOURCE_EXHAUSTED,
                 message="Resource exhausted",
                 details=[
                     Struct(fields={"animal": Value(string_value="bear")}),
@@ -40,7 +41,7 @@ def test_details_sync():
         pytest.raises(ConnecpyServerException) as exc_info,
     ):
         client.MakeHat(request=Size(inches=10))
-    assert exc_info.value.code == Errors.ResourceExhausted
+    assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
     assert exc_info.value.message == "Resource exhausted"
     assert len(exc_info.value.details) == 2
     s0 = Struct()
@@ -56,7 +57,7 @@ async def test_details_async():
     class DetailsHaberdasher(Haberdasher):
         async def MakeHat(self, req, ctx):
             raise ConnecpyServerException(
-                code=Errors.ResourceExhausted,
+                code=Code.RESOURCE_EXHAUSTED,
                 message="Resource exhausted",
                 details=[
                     Struct(fields={"animal": Value(string_value="bear")}),
@@ -71,7 +72,7 @@ async def test_details_async():
     ) as client:
         with pytest.raises(ConnecpyServerException) as exc_info:
             await client.MakeHat(request=Size(inches=10))
-    assert exc_info.value.code == Errors.ResourceExhausted
+    assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
     assert exc_info.value.message == "Resource exhausted"
     assert len(exc_info.value.details) == 2
     s0 = Struct()

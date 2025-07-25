@@ -40,11 +40,10 @@ from typing import Iterable, Optional, Protocol, Union
 
 import httpx
 
-from connecpy.client import ConnecpyClient, ConnecpyClientSync
-from connecpy.errors import Errors
+from connecpy.client import ConnecpyClient, ConnecpyClientSync, RequestHeaders
+from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
 from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, ServerInterceptor, ServiceContext
-from connecpy.types import Headers
 
 {{- range .Imports }}
 import {{.Name}} as {{.Alias}}
@@ -55,7 +54,7 @@ import {{.Name}} as {{.Alias}}
 
 class {{.Name}}(Protocol):{{- range .Methods }}
     async def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
-        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+        raise ConnecpyServerException(code=Code.UNIMPLEMENTED, message="Not implemented")
 {{ end }}
 
 class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
@@ -86,7 +85,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
         self,
         request: {{.InputType}},
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
@@ -106,7 +105,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
     def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
-        raise ConnecpyServerException(code=Errors.Unimplemented, message="Not implemented")
+        raise ConnecpyServerException(code=Code.UNIMPLEMENTED, message="Not implemented")
 {{- end }}
 
 
@@ -136,7 +135,7 @@ class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
         self,
         request: {{.InputType}},
         *,
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         {{if .NoSideEffects}}use_get: bool = False,{{end}}

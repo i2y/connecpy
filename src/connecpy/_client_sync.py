@@ -1,17 +1,15 @@
 from typing import Iterable, Optional, TypeVar
 
 import httpx
-
 from google.protobuf.message import Message
-from httpx import Headers as HttpxHeaders, Timeout
+from httpx import Headers, Timeout
 
-from . import exceptions
-from . import errors
 from . import _client_shared
+from ._client_shared import RequestHeaders
 from ._codec import get_proto_binary_codec, get_proto_json_codec
 from ._protocol import ConnectWireError
-from .types import Headers
-
+from .code import Code
+from .exceptions import ConnecpyServerException
 
 _RES = TypeVar("_RES", bound=Message)
 
@@ -70,7 +68,7 @@ class ConnecpyClientSync:
         request: Message,
         response_class: type[_RES],
         method="POST",
-        headers: Optional[Headers] = None,
+        headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
     ) -> _RES:
         """Make an HTTP request to the server."""
@@ -82,7 +80,7 @@ class ConnecpyClientSync:
             timeout = _convert_connect_timeout(timeout_ms)
             request_args["timeout"] = timeout
 
-        user_headers = HttpxHeaders(headers) if headers else HttpxHeaders()
+        user_headers = Headers(headers) if headers else Headers()
         request_headers = _client_shared.prepare_headers(
             self._codec,
             user_headers,
@@ -128,26 +126,19 @@ class ConnecpyClientSync:
 
             if resp.status_code == 200:
                 response = response_class()
-                try:
-                    self._codec.decode(resp.content, response)
-                except Exception as e:
-                    raise exceptions.ConnecpyException(
-                        f"Failed to parse response message: {str(e)}"
-                    )
+                self._codec.decode(resp.content, response)
                 return response
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
         except httpx.TimeoutException:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.DeadlineExceeded,
+            raise ConnecpyServerException(
+                code=Code.DEADLINE_EXCEEDED,
                 message="Request timed out",
             )
-        except exceptions.ConnecpyException:
+        except ConnecpyServerException:
             raise
         except Exception as e:
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.Unavailable, message=str(e)
-            )
+            raise ConnecpyServerException(code=Code.UNAVAILABLE, message=str(e))
 
 
 # Convert a timeout with connect semantics to a httpx.Timeout. Connect timeouts
