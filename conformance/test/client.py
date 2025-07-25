@@ -260,7 +260,7 @@ async def _create_standard_streams():
 
 
 class Args(argparse.Namespace):
-    mode: Literal["sync"] | Literal["async"]
+    mode: Literal["sync", "async"]
 
 
 async def main():
