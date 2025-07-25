@@ -15,7 +15,8 @@ from typing import (
     Union,
 )
 
-from connecpy import _server_shared, errors, exceptions
+from .code import Code
+from .exceptions import ConnecpyServerException
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -51,8 +52,8 @@ class ServiceContext:
             "connect-protocol-version", ["1"]
         )[0]
         if connect_protocol_version != "1":
-            raise exceptions.ConnecpyServerException(
-                code=errors.Errors.InvalidArgument,
+            raise ConnecpyServerException(
+                code=Code.INVALID_ARGUMENT,
                 message=f"connect-protocol-version must be '1': got '{connect_protocol_version}'",
             )
         self._connect_protocol_version = connect_protocol_version
@@ -150,7 +151,7 @@ class ServerInterceptor(Protocol):
         self,
         method: Callable,
         request: Any,
-        ctx: _server_shared.ServiceContext,
+        ctx: ServiceContext,
         method_name: str,
     ) -> Any: ...
 
@@ -279,7 +280,7 @@ def asynchronize(func) -> Callable:
 def _apply_interceptor(
     interceptor: ServerInterceptor, method: Callable, method_name: str
 ):
-    async def run_interceptor(request: Any, ctx: _server_shared.ServiceContext) -> Any:
+    async def run_interceptor(request: Any, ctx: ServiceContext) -> Any:
         return await interceptor.intercept(method, request, ctx, method_name)
 
     return run_interceptor

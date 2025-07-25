@@ -1,8 +1,6 @@
-from connecpy.exceptions import ConnecpyException, ConnecpyServerException
+from connecpy.exceptions import ConnecpyServerException
 
-from . import haberdasher_connecpy
-from . import haberdasher_pb2
-
+from . import haberdasher_connecpy, haberdasher_pb2
 
 server_url = "http://localhost:3000"
 timeout_ms = 5000
@@ -30,7 +28,7 @@ def main():
                 request=create_large_request(),
             )
             print("POST with gzip compression successful:", response)
-        except (ConnecpyException, ConnecpyServerException) as e:
+        except ConnecpyServerException as e:
             print("POST with gzip compression failed:", str(e))
 
     # Example 2: POST request with brotli compression (large request)
@@ -46,7 +44,7 @@ def main():
                 request=create_large_request(),
             )
             print("POST with brotli compression successful:", response)
-        except (ConnecpyException, ConnecpyServerException) as e:
+        except ConnecpyServerException as e:
             print("POST with brotli compression failed:", str(e))
 
     # Example 3: GET request without compression
@@ -60,7 +58,7 @@ def main():
                 use_get=True,
             )
             print("GET without compression successful:", response)
-        except (ConnecpyException, ConnecpyServerException) as e:
+        except ConnecpyServerException as e:
             print("GET without compression failed:", str(e))
 
     # Example 4: GET request with ztstd compression (large request)
@@ -77,7 +75,7 @@ def main():
                 use_get=True,
             )
             print("GET with zstd compression successful:", response)
-        except (ConnecpyException, ConnecpyServerException) as e:
+        except ConnecpyServerException as e:
             print("GET with zstd compression failed:", str(e))
 
     # Example 5: Test multiple accepted encodings
@@ -92,7 +90,7 @@ def main():
                 request=create_large_request(),
             )
             print("POST with multiple encodings successful:", response)
-        except (ConnecpyException, ConnecpyServerException) as e:
+        except ConnecpyServerException as e:
             print("POST with multiple encodings failed:", str(e))
 
 

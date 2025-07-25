@@ -1,13 +1,11 @@
 import base64
 from contextvars import ContextVar, Token
 from http import HTTPStatus
-from typing import Iterable, Optional
+from typing import Iterable, Mapping, Optional, Sequence
 
 from httpx import Headers
 
 from . import _compression
-from .errors import Errors
-from .exceptions import ConnecpyServerException
 from ._codec import CODEC_NAME_JSON, CODEC_NAME_JSON_CHARSET_UTF8, Codec
 from ._protocol import (
     CONNECT_PROTOCOL_VERSION,
@@ -15,10 +13,21 @@ from ._protocol import (
     ConnectWireError,
     codec_name_from_content_type,
 )
-
+from .code import Code
+from .exceptions import ConnecpyServerException
 
 # TODO: Embed package version correctly
 _DEFAULT_CONNECT_USER_AGENT = "connecpy/0.0.0"
+
+
+# Redefined from httpx since not exported
+type RequestHeaders = (
+    Headers
+    | Mapping[str, str]
+    | Mapping[bytes, bytes]
+    | Sequence[tuple[str, str]]
+    | Sequence[tuple[bytes, bytes]]
+)
 
 
 def prepare_headers(
@@ -81,7 +90,7 @@ def validate_response_content_encoding(
         return
     if encoding.lower() not in _compression.get_available_compressions():
         raise ConnecpyServerException(
-            code=Errors.Internal,
+            code=Code.INTERNAL,
             message=f"unknown encoding '{encoding}'; accepted encodings are {', '.join(_compression.get_available_compressions())}",
         )
 
@@ -102,7 +111,7 @@ def validate_response_content_type(
 
     if not response_content_type.startswith(CONNECT_UNARY_CONTENT_TYPE_PREFIX):
         raise ConnecpyServerException(
-            code=Errors.Unknown,
+            code=Code.UNKNOWN,
             message=f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
         )
 
@@ -121,7 +130,7 @@ def validate_response_content_type(
         return
 
     raise ConnecpyServerException(
-        code=Errors.Internal,
+        code=Code.INTERNAL,
         message=f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
     )
 

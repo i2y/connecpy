@@ -1,9 +1,10 @@
-from http import HTTPMethod, HTTPStatus
 import threading
 import time
+from http import HTTPMethod, HTTPStatus
 from typing import Optional
-from wsgiref.simple_server import make_server, WSGIServer
+from wsgiref.simple_server import WSGIServer, make_server
 
+import pytest
 from httpx import (
     ASGITransport,
     AsyncClient,
@@ -14,44 +15,43 @@ from httpx import (
     Timeout,
     WSGITransport,
 )
-import pytest
 from pytest import param as p
-from connecpy.errors import Errors
+
+from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
 from example.haberdasher_connecpy import (
-    HaberdasherClient,
     Haberdasher,
     HaberdasherASGIApplication,
+    HaberdasherClient,
     HaberdasherClientSync,
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
 from example.haberdasher_pb2 import Hat, Size
 
-
 _errors = [
-    (Errors.Canceled, "Operation was cancelled", 499),
-    (Errors.Unknown, "An unknown error occurred", 500),
-    (Errors.InvalidArgument, "That's not right", 400),
-    (Errors.DeadlineExceeded, "Deadline exceeded", 504),
-    (Errors.NotFound, "Resource not found", 404),
-    (Errors.AlreadyExists, "Resource already exists", 409),
-    (Errors.PermissionDenied, "Permission denied", 403),
-    (Errors.ResourceExhausted, "Resource exhausted", 429),
-    (Errors.FailedPrecondition, "Failed precondition", 400),
-    (Errors.Aborted, "Operation aborted", 409),
-    (Errors.OutOfRange, "Out of range", 400),
-    (Errors.Unimplemented, "Method not implemented", 501),
-    (Errors.Internal, "Internal server error", 500),
-    (Errors.Unavailable, "Service unavailable", 503),
-    (Errors.DataLoss, "Data loss occurred", 500),
-    (Errors.Unauthenticated, "Unauthenticated access", 401),
+    (Code.CANCELED, "Operation was cancelled", 499),
+    (Code.UNKNOWN, "An unknown error occurred", 500),
+    (Code.INVALID_ARGUMENT, "That's not right", 400),
+    (Code.DEADLINE_EXCEEDED, "Deadline exceeded", 504),
+    (Code.NOT_FOUND, "Resource not found", 404),
+    (Code.ALREADY_EXISTS, "Resource already exists", 409),
+    (Code.PERMISSION_DENIED, "Permission denied", 403),
+    (Code.RESOURCE_EXHAUSTED, "Resource exhausted", 429),
+    (Code.FAILED_PRECONDITION, "Failed precondition", 400),
+    (Code.ABORTED, "Operation aborted", 409),
+    (Code.OUT_OF_RANGE, "Out of range", 400),
+    (Code.UNIMPLEMENTED, "Method not implemented", 501),
+    (Code.INTERNAL, "Internal server error", 500),
+    (Code.UNAVAILABLE, "Service unavailable", 503),
+    (Code.DATA_LOSS, "Data loss occurred", 500),
+    (Code.UNAUTHENTICATED, "Unauthenticated access", 401),
 ]
 
 
 @pytest.mark.parametrize("error,message,http_status", _errors)
 def test_sync_errors(
-    error: Errors,
+    error: Code,
     message: str,
     http_status: int,
 ):
@@ -94,7 +94,7 @@ def test_sync_errors(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("error,message,http_status", _errors)
 async def test_async_errors(
-    error: Errors,
+    error: Code,
     message: str,
     http_status: int,
 ):
@@ -136,47 +136,47 @@ async def test_async_errors(
 
 
 _http_errors = [
-    p(400, {}, Errors.Internal, "Bad Request", id="400"),
-    p(401, {}, Errors.Unauthenticated, "Unauthorized", id="401"),
-    p(403, {}, Errors.PermissionDenied, "Forbidden", id="403"),
-    p(404, {}, Errors.Unimplemented, "Not Found", id="404"),
-    p(429, {}, Errors.Unavailable, "Too Many Requests", id="429"),
-    p(499, {}, Errors.Unknown, "Client Closed Request", id="499"),
-    p(502, {}, Errors.Unavailable, "Bad Gateway", id="502"),
-    p(503, {}, Errors.Unavailable, "Service Unavailable", id="503"),
-    p(504, {}, Errors.Unavailable, "Gateway Timeout", id="504"),
+    p(400, {}, Code.INTERNAL, "Bad Request", id="400"),
+    p(401, {}, Code.UNAUTHENTICATED, "Unauthorized", id="401"),
+    p(403, {}, Code.PERMISSION_DENIED, "Forbidden", id="403"),
+    p(404, {}, Code.UNIMPLEMENTED, "Not Found", id="404"),
+    p(429, {}, Code.UNAVAILABLE, "Too Many Requests", id="429"),
+    p(499, {}, Code.UNKNOWN, "Client Closed Request", id="499"),
+    p(502, {}, Code.UNAVAILABLE, "Bad Gateway", id="502"),
+    p(503, {}, Code.UNAVAILABLE, "Service Unavailable", id="503"),
+    p(504, {}, Code.UNAVAILABLE, "Gateway Timeout", id="504"),
     p(
         400,
         {"json": {"code": "invalid_argument", "message": "Bad parameter"}},
-        Errors.InvalidArgument,
+        Code.INVALID_ARGUMENT,
         "Bad parameter",
         id="connect error",
     ),
     p(
         400,
         {"json": {"message": "Bad parameter"}},
-        Errors.Internal,
+        Code.INTERNAL,
         "Bad parameter",
         id="connect error without code",
     ),
     p(
         404,
         {"json": {"code": "not_found"}},
-        Errors.NotFound,
+        Code.NOT_FOUND,
         "",
         id="connect error without message",
     ),
     p(
         502,
         {"text": '"{bad_json'},
-        Errors.Unavailable,
+        Code.UNAVAILABLE,
         "Bad Gateway",
         id="bad json",
     ),
     p(
         200,
         {"text": "weird encoding", "headers": {"content-encoding": "weird"}},
-        Errors.Internal,
+        Code.INTERNAL,
         "unknown encoding 'weird'; accepted encodings are gzip, br, zstd, identity",
         id="bad encoding",
     ),
@@ -379,7 +379,7 @@ def test_sync_client_timeout(
     ):
         client.MakeHat(request=Size(inches=10), timeout_ms=call_timeout_ms)
 
-    assert exc_info.value.code == Errors.DeadlineExceeded
+    assert exc_info.value.code == Code.DEADLINE_EXCEEDED
     assert exc_info.value.message == "Request timed out"
     assert recorded_timeout_header == "1"
 
@@ -416,6 +416,6 @@ async def test_async_client_timeout(
         with pytest.raises(ConnecpyServerException) as exc_info:
             await client.MakeHat(request=Size(inches=10), timeout_ms=call_timeout_ms)
 
-    assert exc_info.value.code == Errors.DeadlineExceeded
+    assert exc_info.value.code == Code.DEADLINE_EXCEEDED
     assert exc_info.value.message == "Request timed out"
     assert recorded_timeout_header == "1"
