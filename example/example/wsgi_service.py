@@ -9,7 +9,7 @@ from .haberdasher_pb2 import Hat, Size
 
 class HaberdasherService(HaberdasherSync):
     def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
-        print("remaining_time: ", ctx.time_remaining())
+        print("remaining_time: ", ctx.timeout_ms())
         if req.inches <= 0:
             raise InvalidArgument(
                 argument="inches", error="I can't make a hat that small!"

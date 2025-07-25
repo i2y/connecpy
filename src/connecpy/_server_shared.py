@@ -2,23 +2,20 @@ import asyncio
 import time
 from dataclasses import dataclass
 from functools import reduce
-from http import HTTPStatus
 from typing import (
     Any,
     Callable,
     Generic,
     Iterable,
-    List,
     Mapping,
     Optional,
     Protocol,
+    Sequence,
     TypeVar,
     Union,
 )
 
 from connecpy import _server_shared, errors, exceptions
-from connecpy._protocol import HTTPException
-
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -41,26 +38,16 @@ class ServiceContext:
     _response_headers: Optional[list[tuple[str, str]]] = None
     _response_trailers: Optional[list[tuple[str, str]]] = None
 
-    def __init__(self, peer: str, invocation_metadata: Mapping[str, List[str]]):
+    def __init__(self, request_headers: Mapping[str, Sequence[str]]):
         """
         Initialize a Context object.
-
-        Args:
-            peer (str): The peer information.
-            invocation_metadata (Mapping[str, List[str]]): The invocation metadata.
-
-        Returns:
-            None
         """
-        self._peer = peer
-        self._invocation_metadata = invocation_metadata
-        self._code = 200
-        self._details = ""
+        self._request_headers = request_headers
         self._trailing_metadata = {}
 
         # We don't require connect-protocol-version header. connect-go provides an option
         # to require it but it's almost never used in practice.
-        connect_protocol_version = self._invocation_metadata.get(
+        connect_protocol_version = self._request_headers.get(
             "connect-protocol-version", ["1"]
         )[0]
         if connect_protocol_version != "1":
@@ -70,105 +57,35 @@ class ServiceContext:
             )
         self._connect_protocol_version = connect_protocol_version
 
-        ctype = self._invocation_metadata.get("content-type", ["application/proto"])[0]
-        if ctype not in ("application/proto", "application/json"):
-            raise HTTPException(
-                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                [("Accept-Post", "application/json, application/proto")],
-            )
-        self._content_type = ctype
-
-        timeout_ms: Union[str, None] = invocation_metadata.get(
+        timeout_ms: Union[str, None] = request_headers.get(
             "connect-timeout-ms", [None]
         )[0]
         if timeout_ms is None:
-            self._timeout_sec = None
+            self._end_time = None
         else:
-            self._timeout_sec = float(timeout_ms) / 1000.0
-            self._start_time = time.time()
+            self._end_time = time.monotonic() + float(timeout_ms) / 1000.0
 
-    async def abort(self, code, message):
+    def request_headers(self) -> Mapping[str, Sequence[str]]:
         """
-        Abort the current request with the given code and message.
+        Returns the request headers associated with the context.
 
-        :param code: The HTTP status code to return.
-        :param message: The error message to include in the response.
-        :raises: exceptions.ConnecpyServerException
+        :return: A mapping of header keys to lists of header values.
         """
-        raise exceptions.ConnecpyServerException(code=code, message=message)
+        return self._request_headers
 
-    def code(self) -> int:
-        """
-        Get the status code associated with the context.
-
-        Returns:
-            int: The status code associated with the context.
-        """
-        return self._code
-
-    def details(self) -> str:
-        """
-        Returns the details of the context.
-
-        :return: The details of the context.
-        :rtype: str
-        """
-        return self._details
-
-    def invocation_metadata(self) -> Mapping[str, List[str]]:
-        """
-        Returns the invocation metadata associated with the context.
-
-        :return: A mapping of metadata keys to lists of metadata values.
-        """
-        return self._invocation_metadata
-
-    def content_type(self) -> str:
-        """
-        Returns the content type associated with the context.
-
-        :return: The content type associated with the context.
-        :rtype: str
-        """
-        return self._content_type
-
-    def peer(self):
-        """
-        Returns the peer associated with the context.
-        """
-        return self._peer
-
-    def set_code(self, code: int) -> None:
-        """
-        Set the status code for the context.
-
-        Args:
-            code (int): The code to set.
-
-        Returns:
-            None
-        """
-        self._code = code
-
-    def set_details(self, details: str) -> None:
-        """
-        Set the details of the context.
-
-        Args:
-            details (str): The details to be set.
-
-        Returns:
-            None
-        """
-        self._details = details
-
-    def response_headers(self) -> Iterable[tuple[str, str]]:
+    def response_headers(self) -> Sequence[tuple[str, str]]:
         """
         Returns the response headers that will be sent before the response.
         """
         if self._response_headers is None:
             return ()
         return self._response_headers
+
+    def clear_response_headers(self) -> None:
+        """
+        Clears the response headers that will be sent before the response.
+        """
+        self._response_headers = None
 
     def add_response_header(self, key: str, value: str) -> None:
         """
@@ -185,13 +102,19 @@ class ServiceContext:
             self._response_headers = []
         self._response_headers.append((key, value))
 
-    def response_trailers(self) -> Iterable[tuple[str, str]]:
+    def response_trailers(self) -> Sequence[tuple[str, str]]:
         """
         Returns the response trailers that will be sent after the response.
         """
         if self._response_trailers is None:
             return ()
         return self._response_trailers
+
+    def clear_response_trailers(self) -> None:
+        """
+        Clears the response trailers that will be sent after the response.
+        """
+        self._response_trailers = None
 
     def add_response_trailer(self, key: str, value: str) -> None:
         """
@@ -208,16 +131,16 @@ class ServiceContext:
             self._response_trailers = []
         self._response_trailers.append((key, value))
 
-    def time_remaining(self) -> Union[float, None]:
+    def timeout_ms(self) -> float | None:
         """
         Calculate the remaining time until the timeout.
 
         Returns:
-            float | None: The remaining time in seconds, or None if no timeout is set.
+            float | None: The remaining time in milliseconds, or None if no timeout is set.
         """
-        if self._timeout_sec is None:
+        if self._end_time is None:
             return None
-        return self._timeout_sec - (time.time() - self._start_time)
+        return (self._end_time - time.monotonic()) * 1000.0
 
 
 class ServerInterceptor(Protocol):

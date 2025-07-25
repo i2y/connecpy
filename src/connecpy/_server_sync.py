@@ -1,21 +1,19 @@
+import base64
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Iterable, List, Mapping, Optional
-import base64
 from urllib.parse import parse_qs
-from wsgiref.types import WSGIEnvironment, StartResponse
+from wsgiref.types import StartResponse, WSGIEnvironment
 
-from . import _server_shared
-from . import errors
-from . import exceptions
+from . import _compression, _server_shared, errors, exceptions
 from ._codec import Codec, get_codec
-from . import _compression
 from ._protocol import (
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
     ConnectWireError,
     HTTPException,
     codec_name_from_content_type,
 )
+from ._server_shared import ServiceContext
 
 
 def _normalize_wsgi_headers(environ: WSGIEnvironment) -> dict:
@@ -147,17 +145,13 @@ class ConnecpyWSGIApplication:
             request_headers = _normalize_wsgi_headers(environ)
             request_method = environ.get("REQUEST_METHOD")
             if request_method == "POST":
-                ctx = _server_shared.ServiceContext(
-                    environ.get("REMOTE_ADDR", ""), convert_to_mapping(request_headers)
-                )
+                ctx = ServiceContext(convert_to_mapping(request_headers))
             else:
                 metadata = {}
                 metadata.update(
                     extract_metadata_from_query_params(environ.get("QUERY_STRING", ""))
                 )
-                ctx = _server_shared.ServiceContext(
-                    environ.get("REMOTE_ADDR", ""), convert_to_mapping(metadata)
-                )
+                ctx = ServiceContext(convert_to_mapping(metadata))
 
             path = environ["PATH_INFO"]
             if not path:
@@ -276,17 +270,6 @@ class ConnecpyWSGIApplication:
                         code=errors.Errors.InvalidArgument,
                         message=f"Failed to decompress request body: {str(e)}",
                     )
-
-            # Get decoder based on content type
-            content_type = ctx.content_type()
-
-            # Default to proto if not specified
-            if content_type not in ["application/json", "application/proto"]:
-                content_type = "application/proto"
-                ctx = _server_shared.ServiceContext(
-                    environ.get("REMOTE_ADDR", ""),
-                    convert_to_mapping({"content-type": ["application/proto"]}),
-                )
 
             try:
                 return codec.decode(req_body, endpoint.input()), codec
