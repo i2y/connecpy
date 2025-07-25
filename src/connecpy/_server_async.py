@@ -12,6 +12,7 @@ from ._protocol import (
     HTTPException,
     codec_name_from_content_type,
 )
+from ._server_shared import ServiceContext
 from .code import Code
 
 if TYPE_CHECKING:
@@ -82,9 +83,7 @@ class ConnecpyASGIApplication:
             accept_encoding = _get_header_value(headers, "accept-encoding")
             selected_encoding = _compression.select_encoding(accept_encoding)
 
-            client = scope["client"]
-            peer = f"{client[0]}:{client[1]}" if client else ""
-            ctx = _server_shared.ServiceContext(peer, headers)
+            ctx = ServiceContext(headers)
 
             if http_method == "GET":
                 request, codec = await self._handle_get_request(endpoint, scope, ctx)

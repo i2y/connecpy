@@ -13,6 +13,7 @@ from ._protocol import (
     HTTPException,
     codec_name_from_content_type,
 )
+from ._server_shared import ServiceContext
 from .code import Code
 
 
@@ -145,17 +146,13 @@ class ConnecpyWSGIApplication:
             request_headers = _normalize_wsgi_headers(environ)
             request_method = environ.get("REQUEST_METHOD")
             if request_method == "POST":
-                ctx = _server_shared.ServiceContext(
-                    environ.get("REMOTE_ADDR", ""), convert_to_mapping(request_headers)
-                )
+                ctx = ServiceContext(convert_to_mapping(request_headers))
             else:
                 metadata = {}
                 metadata.update(
                     extract_metadata_from_query_params(environ.get("QUERY_STRING", ""))
                 )
-                ctx = _server_shared.ServiceContext(
-                    environ.get("REMOTE_ADDR", ""), convert_to_mapping(metadata)
-                )
+                ctx = ServiceContext(convert_to_mapping(metadata))
 
             path = environ["PATH_INFO"]
             if not path:
@@ -274,17 +271,6 @@ class ConnecpyWSGIApplication:
                         code=Code.INVALID_ARGUMENT,
                         message=f"Failed to decompress request body: {str(e)}",
                     )
-
-            # Get decoder based on content type
-            content_type = ctx.content_type()
-
-            # Default to proto if not specified
-            if content_type not in ["application/json", "application/proto"]:
-                content_type = "application/proto"
-                ctx = _server_shared.ServiceContext(
-                    environ.get("REMOTE_ADDR", ""),
-                    convert_to_mapping({"content-type": ["application/proto"]}),
-                )
 
             try:
                 return codec.decode(req_body, endpoint.input()), codec

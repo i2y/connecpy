@@ -2,14 +2,9 @@
 name = "connecpy"
 version = "1.5.0"
 description = "Code generator, server library and client library for the Connect Protocol"
-authors = [
-    { name = "Yasushi Itoh" }
-]
+authors = [{ name = "Yasushi Itoh" }]
 requires-python = ">= 3.10"
-dependencies = [
-    "httpx",
-    "protobuf",
-]
+dependencies = ["httpx", "protobuf"]
 readme = "README.md"
 license-files = ["LICENSE"]
 
@@ -19,8 +14,6 @@ dev-dependencies = [
     "brotli",
     "connecpy-example",
     "flask",
-    "grpcio",
-    "grpcio-tools",
     "pip>=24.0",
     "pyright[nodejs]",
     "pytest>=8.3.4",
@@ -34,13 +27,11 @@ requires = ["uv_build>=0.7.21,<0.8.0"]
 build-backend = "uv_build"
 
 [tool.pytest.ini_options]
-testpaths = [
-    "test",
-]
+testpaths = ["test"]
 
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.
-extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py"]
+extend-exclude = ["*_pb2.py", "*_pb2.pyi"]
 
 [tool.pyright]
 exclude = [
@@ -55,11 +46,7 @@ exclude = [
 ]
 
 [tool.uv.workspace]
-members = [
-    "conformance",
-    "example", 
-    "noextras",
-]
+members = ["conformance", "example", "noextras"]
 
 [tool.uv.sources]
 connecpy = { workspace = true }
