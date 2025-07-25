@@ -26,7 +26,7 @@ def maybe_patch_args_with_debug(args: list[str]) -> list[str]:
 _skipped_tests_sync = [
     # Need to use async APIs for proper cancellation support in Python.
     "--skip",
-    "Client Cancellation/HTTPVersion:1/Protocol:PROTOCOL_CONNECT/Codec:CODEC_PROTO/Compression:COMPRESSION_IDENTITY/TLS:false/unary/cancel-after-close-send",
+    "**/cancel-after-close-send",
 ]
 
 

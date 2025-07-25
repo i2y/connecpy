@@ -1,13 +1,17 @@
 features:
   versions:
-  - HTTP_VERSION_1
-  supports_tls: false
+    - HTTP_VERSION_1
+    - HTTP_VERSION_2
   supports_trailers: false
   protocols:
-  - PROTOCOL_CONNECT
+    - PROTOCOL_CONNECT
   codecs:
-  - CODEC_PROTO
+    - CODEC_PROTO
+    - CODEC_JSON
   compressions:
-  - COMPRESSION_IDENTITY
+    - COMPRESSION_IDENTITY
+    - COMPRESSION_GZIP
+    - COMPRESSION_BR
+    - COMPRESSION_ZSTD
   stream_types:
-  - STREAM_TYPE_UNARY
+    - STREAM_TYPE_UNARY
