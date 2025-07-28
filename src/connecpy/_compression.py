@@ -44,16 +44,13 @@ try:
     import zstandard
 
     class ZstdCompression(Compression):
-        _compressor = zstandard.ZstdCompressor()
-        _decompressor = zstandard.ZstdDecompressor()
-
         def compress(self, data: bytes) -> bytes:
-            return self._compressor.compress(data)
+            return zstandard.ZstdCompressor().compress(data)
 
         def decompress(self, data: bytes) -> bytes:
             # Support clients sending frames without length by using
             # stream API.
-            with self._decompressor.stream_reader(data) as reader:
+            with zstandard.ZstdDecompressor().stream_reader(data) as reader:
                 return reader.read()
 
     _compressions["zstd"] = ZstdCompression()

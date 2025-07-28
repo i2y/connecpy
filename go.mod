@@ -118,3 +118,5 @@ require (
 	nhooyr.io/websocket v1.8.6 // indirect
 	pluginrpc.com/pluginrpc v0.5.0 // indirect
 )
+
+replace connectrpc.com/conformance => ../connectrpc-conformance
