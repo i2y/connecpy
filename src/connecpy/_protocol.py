@@ -158,7 +158,8 @@ class ConnectWireError:
                 details.append(
                     {
                         "type": detail_type,
-                        "value": b64encode(detail.value).decode("utf-8"),
+                        # Connect requires unpadded base64
+                        "value": b64encode(detail.value).decode("utf-8").rstrip("="),
                     }
                 )
             data["details"] = details

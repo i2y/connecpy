@@ -6,6 +6,7 @@ dependencies = [
     "brotli",
     "connecpy",
     "httpx[http2]",
+    "hypercorn",
     "pytest",
     "pytest-asyncio",
     "zstandard",

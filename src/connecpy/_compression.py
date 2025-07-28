@@ -1,6 +1,6 @@
+import gzip
 from collections.abc import KeysView
 from typing import Optional, Protocol
-import gzip
 
 
 class Compression(Protocol):
@@ -45,12 +45,13 @@ try:
 
     class ZstdCompression(Compression):
         def compress(self, data: bytes) -> bytes:
-            cctx = zstandard.ZstdCompressor()
-            return cctx.compress(data)
+            return zstandard.ZstdCompressor().compress(data)
 
         def decompress(self, data: bytes) -> bytes:
-            dctx = zstandard.ZstdDecompressor()
-            return dctx.decompress(data)
+            # Support clients sending frames without length by using
+            # stream API.
+            with zstandard.ZstdDecompressor().stream_reader(data) as reader:
+                return reader.read()
 
     _compressions["zstd"] = ZstdCompression()
 except ImportError:

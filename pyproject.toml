@@ -43,6 +43,9 @@ exclude = [
     # GRPC python files don't typecheck on their own.
     # See https://github.com/grpc/grpc/issues/39555
     "**/*_pb2_grpc.py",
+
+    # TODO: Work out the import issues to allow it to work.
+    "conformance/**",
 ]
 
 [tool.uv.workspace]

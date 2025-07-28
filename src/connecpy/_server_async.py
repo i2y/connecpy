@@ -1,7 +1,7 @@
 import base64
 from collections import defaultdict
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Tuple
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Tuple
 from urllib.parse import parse_qs
 
 from . import _compression, _server_shared, exceptions
@@ -60,6 +60,8 @@ class ConnecpyASGIApplication:
             send (callable): The ASGI send function.
         """
         assert scope["type"] == "http"
+
+        ctx: Optional[ServiceContext] = None
         try:
             http_method = scope["method"]
 
@@ -112,14 +114,7 @@ class ConnecpyASGIApplication:
             for key, values in headers.items():
                 for value in values:
                     final_headers.append((key.lower().encode(), value.encode()))
-            final_headers.extend(
-                (key.lower().encode(), value.encode())
-                for key, value in ctx.response_headers()
-            )
-            final_headers.extend(
-                (f"trailer-{key.lower()}".encode(), value.encode())
-                for key, value in ctx.response_trailers()
-            )
+            _add_context_headers(final_headers, ctx)
 
             await send(
                 {
@@ -138,7 +133,7 @@ class ConnecpyASGIApplication:
             )
 
         except Exception as e:
-            await self._handle_error(e, scope, receive, send)
+            await self._handle_error(e, ctx, scope, receive, send)
 
     async def _handle_get_request(
         self,
@@ -163,7 +158,7 @@ class ConnecpyASGIApplication:
 
         if is_base64:
             try:
-                message = base64.urlsafe_b64decode(message)
+                message = base64.urlsafe_b64decode(message + "===")
             except Exception:
                 raise exceptions.ConnecpyServerException(
                     code=Code.INVALID_ARGUMENT,
@@ -270,41 +265,34 @@ class ConnecpyASGIApplication:
     async def _handle_error(
         self,
         exc,
+        ctx: Optional[ServiceContext],
         scope: HTTPScope,
         receive: ASGIReceiveCallable,
         send: ASGISendCallable,
     ) -> None:
         """Handle errors that occur during request processing."""
+        headers: list[tuple[bytes, bytes]]
+        body: bytes
+        status: int
         if isinstance(exc, HTTPException):
-            http_status = exc.status.value
+            status = exc.status.value
             headers = [(k.encode("utf-8"), v.encode("utf-8")) for k, v in exc.headers]
-            await send(
-                {
-                    "type": "http.response.start",
-                    "status": http_status,
-                    "headers": headers,
-                    "trailers": False,
-                }
-            )
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": b"",
-                    "more_body": False,
-                }
-            )
-            return
-        wire_error = ConnectWireError.from_exception(exc)
-        http_status = wire_error.to_http_status()
+            body = b""
+        else:
+            wire_error = ConnectWireError.from_exception(exc)
+            status = wire_error.to_http_status().code
+            headers = [
+                (b"content-type", b"application/json"),
+            ]
+            body = wire_error.to_json_bytes()
 
-        headers = [
-            (b"content-type", b"application/json"),
-        ]
+        if ctx:
+            _add_context_headers(headers, ctx)
 
         await send(
             {
                 "type": "http.response.start",
-                "status": http_status.code,
+                "status": status,
                 "headers": headers,
                 "trailers": False,
             }
@@ -312,7 +300,7 @@ class ConnecpyASGIApplication:
         await send(
             {
                 "type": "http.response.body",
-                "body": wire_error.to_json_bytes(),
+                "body": body,
                 "more_body": False,
             }
         )
@@ -332,3 +320,15 @@ def _get_header_value(headers: Mapping[str, list[str]], name: str) -> str:
     if not values:
         return ""
     return values[0]
+
+
+def _add_context_headers(
+    headers: list[tuple[bytes, bytes]], ctx: ServiceContext
+) -> None:
+    headers.extend(
+        (key.lower().encode(), value.encode()) for key, value in ctx.response_headers()
+    )
+    headers.extend(
+        (f"trailer-{key.lower()}".encode(), value.encode())
+        for key, value in ctx.response_trailers()
+    )
