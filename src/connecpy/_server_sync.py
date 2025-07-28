@@ -142,17 +142,12 @@ class ConnecpyWSGIApplication:
         self, environ: WSGIEnvironment, start_response: StartResponse
     ) -> Iterable[bytes]:
         """Handle incoming WSGI requests."""
+        ctx: Optional[ServiceContext] = None
         try:
             request_headers = _normalize_wsgi_headers(environ)
             request_method = environ.get("REQUEST_METHOD")
-            if request_method == "POST":
-                ctx = ServiceContext(convert_to_mapping(request_headers))
-            else:
-                metadata = {}
-                metadata.update(
-                    extract_metadata_from_query_params(environ.get("QUERY_STRING", ""))
-                )
-                ctx = ServiceContext(convert_to_mapping(metadata))
+            # TODO: Read metadata from query params for GET requests.
+            ctx = ServiceContext(convert_to_mapping(request_headers))
 
             path = environ["PATH_INFO"]
             if not path:
@@ -210,11 +205,7 @@ class ConnecpyWSGIApplication:
             for key, values in response_headers.items():
                 for value in values:
                     wsgi_headers.append((key.lower(), value))
-            wsgi_headers.extend(
-                (key.lower(), value) for key, value in ctx.response_headers()
-            )
-            for key, value in ctx.response_trailers():
-                wsgi_headers.append((f"trailer-{key.lower()}", value))
+            _add_context_headers(wsgi_headers, ctx)
 
             start_response("200 OK", wsgi_headers)
             final_response = (
@@ -222,7 +213,7 @@ class ConnecpyWSGIApplication:
             )
             return [final_response]
         except Exception as e:
-            return self._handle_error(e, environ, start_response)
+            return self._handle_error(e, ctx, environ, start_response)
 
     def _handle_post_request(
         self,
@@ -304,7 +295,7 @@ class ConnecpyWSGIApplication:
 
             if "base64" in params and params["base64"][0] == "1":
                 try:
-                    message = base64.urlsafe_b64decode(message.encode("ascii"))
+                    message = base64.urlsafe_b64decode(message + "===")
                 except Exception as e:
                     raise exceptions.ConnecpyServerException(
                         code=Code.INVALID_ARGUMENT,
@@ -350,17 +341,33 @@ class ConnecpyWSGIApplication:
                 )
             raise
 
-    def _handle_error(self, exc, _environ, start_response):
+    def _handle_error(
+        self, exc, ctx: Optional[ServiceContext], _environ, start_response
+    ):
         """Handle and log errors with detailed information."""
+        headers: list[tuple[str, str]]
+        body: list[bytes]
+        status: str
         if isinstance(exc, HTTPException):
-            start_response(
-                f"{exc.status.value} {exc.status.phrase}",
-                exc.headers,
-            )
-            return []
-        wire_error = ConnectWireError.from_exception(exc)
-        http_status = wire_error.to_http_status()
-        status = f"{http_status.code} {http_status.reason}"
-        headers = [("Content-Type", "application/json")]
+            headers = exc.headers
+            body = []
+            status = f"{exc.status.value} {exc.status.phrase}"
+        else:
+            wire_error = ConnectWireError.from_exception(exc)
+            http_status = wire_error.to_http_status()
+            headers = [("Content-Type", "application/json")]
+            body = [wire_error.to_json_bytes()]
+            status = f"{http_status.code} {http_status.reason}"
+
+        if ctx:
+            _add_context_headers(headers, ctx)
+
         start_response(status, headers)
-        return [wire_error.to_json_bytes()]
+        return body
+
+
+def _add_context_headers(headers: list[tuple[str, str]], ctx: ServiceContext) -> None:
+    headers.extend((key.lower(), value) for key, value in ctx.response_headers())
+    headers.extend(
+        (f"trailer-{key.lower()}", value) for key, value in ctx.response_trailers()
+    )

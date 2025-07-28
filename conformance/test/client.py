@@ -1,11 +1,11 @@
 import argparse
 import asyncio
 import ssl
-import sys
 from tempfile import TemporaryFile
 from typing import Literal
 
 import httpx
+from _util import create_standard_streams
 from connecpy.client import ResponseMetadata
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
@@ -248,18 +248,6 @@ async def _run_test(
     return test_response
 
 
-async def _create_standard_streams():
-    loop = asyncio.get_event_loop()
-    stdin = asyncio.StreamReader()
-    protocol = asyncio.StreamReaderProtocol(stdin)
-    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
-    w_transport, w_protocol = await loop.connect_write_pipe(
-        asyncio.streams.FlowControlMixin, sys.stdout
-    )
-    stdout = asyncio.StreamWriter(w_transport, w_protocol, stdin, loop)
-    return stdin, stdout
-
-
 class Args(argparse.Namespace):
     mode: Literal["sync", "async"]
 
@@ -269,7 +257,7 @@ async def main():
     parser.add_argument("--mode", choices=["sync", "async"])
     args = parser.parse_args(namespace=Args())
 
-    stdin, stdout = await _create_standard_streams()
+    stdin, stdout = await create_standard_streams()
     while True:
         try:
             size_buf = await stdin.readexactly(4)

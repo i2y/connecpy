@@ -6,20 +6,13 @@ import pytest
 from _util import maybe_patch_args_with_debug
 
 _current_dir = Path(__file__).parent
-_client_py_path = str(_current_dir / "client.py")
+_server_py_path = str(_current_dir / "server.py")
 _config_path = str(_current_dir / "config.yaml")
 
 
-_skipped_tests_sync = [
-    # Need to use async APIs for proper cancellation support in Python.
-    "--skip",
-    "**/cancel-after-close-send",
-]
-
-
-def test_client_sync():
+def test_server_sync():
     args = maybe_patch_args_with_debug(
-        [sys.executable, _client_py_path, "--mode", "sync"]
+        [sys.executable, _server_py_path, "--mode", "sync"]
     )
     result = subprocess.run(
         [
@@ -29,8 +22,9 @@ def test_client_sync():
             "--conf",
             _config_path,
             "--mode",
-            "client",
-            *_skipped_tests_sync,
+            "server",
+            "--parallel",
+            "1",
             "--",
             *args,
         ],
@@ -41,9 +35,9 @@ def test_client_sync():
         pytest.fail(f"\n{result.stdout}\n{result.stderr}")
 
 
-def test_client_async():
+def test_server_async():
     args = maybe_patch_args_with_debug(
-        [sys.executable, _client_py_path, "--mode", "async"]
+        [sys.executable, _server_py_path, "--mode", "async"]
     )
     result = subprocess.run(
         [
@@ -53,7 +47,9 @@ def test_client_async():
             "--conf",
             _config_path,
             "--mode",
-            "client",
+            "server",
+            "--parallel",
+            "1",
             "--",
             *args,
         ],

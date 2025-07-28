@@ -3,6 +3,7 @@ features:
     - HTTP_VERSION_1
     - HTTP_VERSION_2
   supports_trailers: false
+  supports_message_receive_limit: false
   protocols:
     - PROTOCOL_CONNECT
   codecs:
