@@ -146,7 +146,6 @@ class ConnecpyWSGIApplication:
         try:
             request_headers = _normalize_wsgi_headers(environ)
             request_method = environ.get("REQUEST_METHOD")
-            # TODO: Read metadata from query params for GET requests.
             ctx = ServiceContext(convert_to_mapping(request_headers))
 
             path = environ["PATH_INFO"]
