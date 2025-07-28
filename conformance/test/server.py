@@ -187,7 +187,6 @@ async def serve(
     def _signal_handler(*_) -> None:
         cleanup.close()
         shutdown_event.set()
-        serve_task.cancel()
 
     loop = asyncio.get_event_loop()
     loop.add_signal_handler(signal.SIGTERM, _signal_handler)
