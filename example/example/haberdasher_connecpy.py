@@ -8,7 +8,7 @@ import httpx
 
 from connecpy.client import ConnecpyClient, ConnecpyClientSync, RequestHeaders
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
@@ -24,16 +24,12 @@ class Haberdasher(Protocol):
     async def MakeHat(
         self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
     ) -> example_dot_haberdasher__pb2.Hat:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def DoNothing(
         self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class HaberdasherASGIApplication(ConnecpyASGIApplication):
@@ -125,16 +121,12 @@ class HaberdasherSync(Protocol):
     def MakeHat(
         self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
     ) -> example_dot_haberdasher__pb2.Hat:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def DoNothing(
         self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class HaberdasherWSGIApplication(ConnecpyWSGIApplication):

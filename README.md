@@ -14,7 +14,6 @@ go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
 
 Additionally, please add the connecpy package to your project using your preferred package manager. For instance, with [uv](https://docs.astral.sh/uv/), use the command:
 
-
 ```sh
 uv add connecpy
 ```
@@ -25,9 +24,7 @@ or
 pip install connecpy
 ```
 
-
 To run the server, you'll need one of the following: [Uvicorn](https://www.uvicorn.org/), [Daphne](https://github.com/django/daphne), or [Hypercorn](https://gitlab.com/pgjones/hypercorn). If your goal is to support both HTTP/1.1 and HTTP/2, you should opt for either Daphne or Hypercorn. Additionally, to test the server, you might need a client command, such as [buf](https://buf.build/docs/installation).
-
 
 ## Generate and run
 
@@ -81,9 +78,11 @@ app = haberdasher_connecpy.HaberdasherWSGIApplication(
 ```
 
 Run the server with
+
 ```sh
 uvicorn --port=3000 server:app
 ```
+
 or
 
 ```sh
@@ -104,7 +103,7 @@ import asyncio
 
 import httpx
 
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 
 import haberdasher_connecpy, haberdasher_pb2
 
@@ -129,7 +128,7 @@ async def main():
         if not response.HasField("name"):
             print("We didn't get a name!")
         print(response)
-    except ConnecpyServerException as e:
+    except ConnecpyException as e:
         print(e.code, e.message, e.to_dict())
     finally:
         # Close the session (could also use a context manager)
@@ -142,6 +141,7 @@ if __name__ == "__main__":
 ```
 
 Example output :
+
 ```
 size: 12
 color: "black"
@@ -152,7 +152,7 @@ name: "bowler"
 
 ```python
 # client.py
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 
 import haberdasher_connecpy, haberdasher_pb2
 
@@ -170,7 +170,7 @@ def main():
             if not response.HasField("name"):
                 print("We didn't get a name!")
             print(response)
-        except ConnecpyServerException as e:
+        except ConnecpyException as e:
             print(e.code, e.message, e.to_dict())
 
 
@@ -183,42 +183,49 @@ if __name__ == "__main__":
 Of course, you can use any HTTP client to make requests to a Connecpy server. For example, commands like `curl` or `buf curl` can be used, as well as HTTP client libraries such as `requests`, `httpx`, `aiohttp`, and others. The examples below use `curl` and `buf curl`.
 
 Content-Type: application/proto, HTTP/1.1
+
 ```sh
 buf curl --data '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --schema ./haberdasher.proto
 ```
 
 On Windows, Content-Type: application/proto, HTTP/1.1
+
 ```sh
 buf curl --data '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --schema .\haberdasher.proto
 ```
 
 Content-Type: application/proto, HTTP/2
+
 ```sh
 buf curl --data '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --http2-prior-knowledge --schema ./haberdasher.proto
 ```
 
 On Windows, Content-Type: application/proto, HTTP/2
+
 ```sh
 buf curl --data '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat --http2-prior-knowledge --schema .\haberdasher.proto
 ```
 
-
 Content-Type: application/json, HTTP/1.1
+
 ```sh
 curl -X POST -H "Content-Type: application/json" -d '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
 
 On Windows, Content-Type: application/json, HTTP/1.1
+
 ```sh
 curl -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
 
 Content-Type: application/json, HTTP/2
+
 ```sh
 curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{"inches": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
 
 On Windows, Content-Type: application/json, HTTP/2
+
 ```sh
 curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
@@ -239,11 +246,13 @@ Connecpy supports various compression methods for both GET and POST requests/res
 - identity (no compression)
 
 For GET requests, specify the compression method using the `compression` query parameter:
+
 ```sh
 curl "http://localhost:3000/service/method?compression=gzip&message=..."
 ```
 
 For POST requests, use the `Content-Encoding` header:
+
 ```sh
 curl -H "Content-Encoding: br" -d '{"data": "..."}' http://localhost:3000/service/method
 ```
@@ -259,6 +268,7 @@ The compression handling is built into both ASGI and WSGI applications. You don'
 ### Client-side
 
 For synchronous clients:
+
 ```python
 
 with HaberdasherClient(server_url) as client:
@@ -270,6 +280,7 @@ with HaberdasherClient(server_url) as client:
 ```
 
 For async clients:
+
 ```python
 async with HaberdasherClientSync(server_url) as client:
     response = client.MakeHat(
@@ -280,6 +291,7 @@ async with HaberdasherClientSync(server_url) as client:
 ```
 
 Using GET requests with compression:
+
 ```python
 response = client.MakeHat(
     request=request_obj,
@@ -345,11 +357,10 @@ service = haberdasher_connecpy.HaberdasherASGIApplication(HaberdasherService())
 
 Btw, `ServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
 
-
 ### gRPC Compatibility
+
 In Connecpy, unlike connect-go, it is not possible to simultaneously support both gRPC and Connect RPC on the same server and port. In addition to it, Connecpy itself doesn't support gRPC. However, implementing a gRPC server using the same service code used for Connecpy server is feasible, as shown below. This is possible because the type signature of the service class in Connecpy is compatible with type signature gRPC framework requires.
 The example below uses [grpc.aio](https://grpc.github.io/grpc/python/grpc_asyncio.html) and there are in [example directory](example/README.md).
-
 
 ```python
 # grpc_server.py

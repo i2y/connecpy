@@ -10,7 +10,7 @@ from ._client_shared import RequestHeaders
 from ._codec import get_proto_binary_codec, get_proto_json_codec
 from ._protocol import ConnectWireError
 from .code import Code
-from .exceptions import ConnecpyServerException
+from .exceptions import ConnecpyException
 
 _RES = TypeVar("_RES", bound=Message)
 
@@ -143,22 +143,13 @@ class ConnecpyClient:
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError):
-            raise ConnecpyServerException(
-                code=Code.DEADLINE_EXCEEDED,
-                message="Request timed out",
-            )
-        except ConnecpyServerException:
+            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out")
+        except ConnecpyException:
             raise
         except CancelledError as e:
-            raise ConnecpyServerException(
-                code=Code.CANCELED,
-                message="Request was cancelled",
-            ) from e
+            raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
         except Exception as e:
-            raise ConnecpyServerException(
-                code=Code.UNAVAILABLE,
-                message=str(e),
-            )
+            raise ConnecpyException(Code.UNAVAILABLE, str(e))
 
 
 def _convert_connect_timeout(timeout_ms: Optional[int]) -> Timeout:

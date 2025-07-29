@@ -1,7 +1,7 @@
 import asyncio
 
 import httpx
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 
 from . import haberdasher_connecpy, haberdasher_pb2
 
@@ -29,7 +29,7 @@ async def main():
                     },
                 )
                 print("POST with Zstandard and Brotli compression:", response)
-            except ConnecpyServerException as e:
+            except ConnecpyException as e:
                 print(e.code, e.message)
 
         # Example 2: GET request, receiving Zstandard compressed response
@@ -44,7 +44,7 @@ async def main():
                     use_get=True,  # Enable GET request
                 )
                 print("\nGET with Zstandard compression:", response)
-            except ConnecpyServerException as e:
+            except ConnecpyException as e:
                 print(e.code, e.message)
 
 

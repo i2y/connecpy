@@ -1,14 +1,14 @@
-from typing import Sequence
+from typing import Iterable, Sequence
 
 from google.protobuf.any import Any, pack
 from google.protobuf.message import Message
 
 from .code import Code
 
-__all__ = ["ConnecpyServerException"]
+__all__ = ["ConnecpyException"]
 
 
-class ConnecpyServerException(Exception):
+class ConnecpyException(Exception):
     """
     Exception class for Connecpy server errors.
 
@@ -17,15 +17,15 @@ class ConnecpyServerException(Exception):
         message (str): The error message associated with the exception.
     """
 
-    def __init__(self, *, code, message, details: Sequence[Message] = ()):
+    def __init__(self, code: Code, message: str, details: Iterable[Message] = ()):
         """
-        Initializes a new instance of the ConnecpyServerException class.
+        Initializes a new instance of the ConnecpyException class.
 
         Args:
             code (int): The error code.
             message (str): The error message.
         """
-        super(ConnecpyServerException, self).__init__(message)
+        super(ConnecpyException, self).__init__(message)
         try:
             self._code = Code(code)
         except ValueError:

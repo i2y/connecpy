@@ -8,7 +8,7 @@ import httpx
 from _util import create_standard_streams
 from connecpy.client import ResponseMetadata
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 from connectrpc.conformance.v1.client_compat_pb2 import (
     ClientCompatRequest,
     ClientCompatResponse,
@@ -229,7 +229,7 @@ async def _run_test(
                                 task.cancel()
                             client_response = await task
                 test_response.response.payloads.add().MergeFrom(client_response.payload)
-            except ConnecpyServerException as e:
+            except ConnecpyException as e:
                 test_response.response.error.code = _convert_code(e.code)
                 test_response.response.error.message = e.message
                 test_response.response.error.details.extend(e.details)
