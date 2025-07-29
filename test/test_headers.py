@@ -12,7 +12,7 @@ def test_headers_no_duplicates():
     assert "foo" not in h
     with pytest.raises(KeyError):
         _ = h["missing"]
-    assert h.getall("missing") == []
+    assert h.getall("missing") == ()
 
     h["Content-Type"] = "application/json"
     h["X-Test"] = "foo"
@@ -26,11 +26,16 @@ def test_headers_no_duplicates():
     assert "x-test" in h
     assert len(h) == 2
     assert list(h.items()) == [("content-type", "application/json"), ("x-test", "foo")]
+    assert list(h.allitems()) == [
+        ("content-type", "application/json"),
+        ("x-test", "foo"),
+    ]
     assert list(h.keys()) == ["content-type", "x-test"]
     assert list(h.values()) == ["application/json", "foo"]
     h["content-type"] = "text/plain"
     assert h["Content-Type"] == "text/plain"
     assert list(h.items()) == [("content-type", "text/plain"), ("x-test", "foo")]
+    assert list(h.allitems()) == [("content-type", "text/plain"), ("x-test", "foo")]
     assert list(h.keys()) == ["content-type", "x-test"]
     assert list(h.values()) == ["text/plain", "foo"]
     del h["CONTENT-TYPE"]

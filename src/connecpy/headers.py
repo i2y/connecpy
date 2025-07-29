@@ -81,6 +81,8 @@ class Headers(MutableMapping[str, str]):
 
     def allitems(self) -> ItemsView[str, str]:
         """Return an iterable view of all header items, including duplicates."""
+        if self._extra is None:
+            return self._store.items()
         return _AllItemsView(self)
 
     # Commonly used functions that delegate to _store for performance vs the base class
