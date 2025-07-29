@@ -89,7 +89,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         server_path_prefix: str = "",
-        session: httpx.AsyncClient|None = None,
+        session: httpx.AsyncClient | None = None,
         {{if .NoSideEffects}}use_get: bool = False,{{end}}
     ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
