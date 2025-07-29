@@ -18,7 +18,7 @@ from httpx import (
 from pytest import param as p
 
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 from example.haberdasher_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
@@ -49,25 +49,20 @@ _errors = [
 ]
 
 
-@pytest.mark.parametrize("error,message,http_status", _errors)
+@pytest.mark.parametrize("code,message,http_status", _errors)
 def test_sync_errors(
-    error: Code,
+    code: Code,
     message: str,
     http_status: int,
 ):
     class ErrorHaberdasherSync(HaberdasherSync):
-        def __init__(self, exception: ConnecpyServerException):
+        def __init__(self, exception: ConnecpyException):
             self._exception = exception
 
         def MakeHat(self, req, ctx):
             raise self._exception
 
-    haberdasher = ErrorHaberdasherSync(
-        ConnecpyServerException(
-            code=error,
-            message=message,
-        )
-    )
+    haberdasher = ErrorHaberdasherSync(ConnecpyException(code, message))
     app = HaberdasherWSGIApplication(haberdasher)
     transport = WSGITransport(app)
 
@@ -81,36 +76,31 @@ def test_sync_errors(
 
     with (
         HaberdasherClientSync("http://localhost", session=session) as client,
-        pytest.raises(ConnecpyServerException) as exc_info,
+        pytest.raises(ConnecpyException) as exc_info,
     ):
         client.MakeHat(request=Size(inches=10))
 
-    assert exc_info.value.code == error
+    assert exc_info.value.code == code
     assert exc_info.value.message == message
     assert recorded_response is not None
     assert recorded_response.status_code == http_status
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("error,message,http_status", _errors)
+@pytest.mark.parametrize("code,message,http_status", _errors)
 async def test_async_errors(
-    error: Code,
+    code: Code,
     message: str,
     http_status: int,
 ):
     class ErrorHaberdasher(Haberdasher):
-        def __init__(self, exception: ConnecpyServerException):
+        def __init__(self, exception: ConnecpyException):
             self._exception = exception
 
         async def MakeHat(self, req, ctx):
             raise self._exception
 
-    haberdasher = ErrorHaberdasher(
-        ConnecpyServerException(
-            code=error,
-            message=message,
-        )
-    )
+    haberdasher = ErrorHaberdasher(ConnecpyException(code, message))
     app = HaberdasherASGIApplication(haberdasher)
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
@@ -126,10 +116,10 @@ async def test_async_errors(
         ) as session,
         HaberdasherClient("http://localhost", session=session) as client,
     ):
-        with pytest.raises(ConnecpyServerException) as exc_info:
+        with pytest.raises(ConnecpyException) as exc_info:
             await client.MakeHat(request=Size(inches=10))
 
-    assert exc_info.value.code == error
+    assert exc_info.value.code == code
     assert exc_info.value.message == message
     assert recorded_response is not None
     assert recorded_response.status_code == http_status
@@ -183,30 +173,30 @@ _http_errors = [
 ]
 
 
-@pytest.mark.parametrize("response_status,response_kwargs,error,message", _http_errors)
-def test_sync_http_errors(response_status, response_kwargs, error, message):
+@pytest.mark.parametrize("response_status,response_kwargs,code,message", _http_errors)
+def test_sync_http_errors(response_status, response_kwargs, code, message):
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
     with (
         HaberdasherClientSync(
             "http://localhost", session=Client(transport=transport)
         ) as client,
-        pytest.raises(ConnecpyServerException) as exc_info,
+        pytest.raises(ConnecpyException) as exc_info,
     ):
         client.MakeHat(request=Size(inches=10))
-    assert exc_info.value.code == error
+    assert exc_info.value.code == code
     assert exc_info.value.message == message
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("response_status,response_kwargs,error,message", _http_errors)
-async def test_async_http_errors(response_status, response_kwargs, error, message):
+@pytest.mark.parametrize("response_status,response_kwargs,code,message", _http_errors)
+async def test_async_http_errors(response_status, response_kwargs, code, message):
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
     async with HaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)
     ) as client:
-        with pytest.raises(ConnecpyServerException) as exc_info:
+        with pytest.raises(ConnecpyException) as exc_info:
             await client.MakeHat(request=Size(inches=10))
-    assert exc_info.value.code == error
+    assert exc_info.value.code == code
     assert exc_info.value.message == message
 
 
@@ -375,7 +365,7 @@ def test_sync_client_timeout(
             timeout_ms=client_timeout_ms,
             session=session,
         ) as client,
-        pytest.raises(ConnecpyServerException) as exc_info,
+        pytest.raises(ConnecpyException) as exc_info,
     ):
         client.MakeHat(request=Size(inches=10), timeout_ms=call_timeout_ms)
 
@@ -413,7 +403,7 @@ async def test_async_client_timeout(
             session=session,
         ) as client,
     ):
-        with pytest.raises(ConnecpyServerException) as exc_info:
+        with pytest.raises(ConnecpyException) as exc_info:
             await client.MakeHat(request=Size(inches=10), timeout_ms=call_timeout_ms)
 
     assert exc_info.value.code == Code.DEADLINE_EXCEEDED

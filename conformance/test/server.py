@@ -7,7 +7,7 @@ from typing import Literal, TypeVar
 
 from _util import create_standard_streams
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 from connecpy.server import ServiceContext
 from connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
 from connectrpc.conformance.v1.server_compat_pb2 import (
@@ -102,7 +102,7 @@ async def _handle_unary_response(
     request_info = _create_request_info(ctx, reqs)
 
     if definition.WhichOneof("response") == "error":
-        raise ConnecpyServerException(
+        raise ConnecpyException(
             code=_convert_code(definition.error.code),
             message=definition.error.message,
             details=[*definition.error.details, request_info],

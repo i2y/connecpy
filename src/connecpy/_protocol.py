@@ -8,7 +8,7 @@ import httpx
 from google.protobuf.any_pb2 import Any
 
 from .code import Code
-from .exceptions import ConnecpyServerException
+from .exceptions import ConnecpyException
 
 CONNECT_PROTOCOL_VERSION = "1"
 CONNECT_UNARY_CONTENT_TYPE_PREFIX = "application/"
@@ -70,7 +70,7 @@ _http_status_code_to_error = {
 }
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class ConnectWireError:
     code: Code
     message: str
@@ -78,11 +78,9 @@ class ConnectWireError:
 
     @staticmethod
     def from_exception(exc: Exception) -> "ConnectWireError":
-        if isinstance(exc, ConnecpyServerException):
-            return ConnectWireError(
-                code=exc.code, message=exc.message, details=exc.details
-            )
-        return ConnectWireError(code=Code.UNKNOWN, message=str(exc), details=())
+        if isinstance(exc, ConnecpyException):
+            return ConnectWireError(exc.code, exc.message, exc.details)
+        return ConnectWireError(Code.UNKNOWN, str(exc), details=())
 
     @staticmethod
     def from_response(response: httpx.Response) -> "ConnectWireError":
@@ -118,7 +116,7 @@ class ConnectWireError:
                             value=b64decode(detail_value + "==="),
                         )
                     )
-            return ConnectWireError(code=code, message=message, details=details)
+            return ConnectWireError(code, message, details)
         else:
             return ConnectWireError.from_http_status(response.status_code)
 
@@ -133,12 +131,10 @@ class ConnectWireError:
                 message = "Client Closed Request"
             else:
                 message = ""
-        return ConnectWireError(code=code, message=message, details=())
+        return ConnectWireError(code, message, details=())
 
-    def to_exception(self) -> ConnecpyServerException:
-        return ConnecpyServerException(
-            code=self.code, message=self.message, details=self.details
-        )
+    def to_exception(self) -> ConnecpyException:
+        return ConnecpyException(self.code, self.message, details=self.details)
 
     def to_http_status(self) -> ExtendedHTTPStatus:
         return _error_to_http_status.get(self.code, _INTERNAL_SERVER_ERROR)
