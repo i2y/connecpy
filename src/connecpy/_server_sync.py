@@ -1,7 +1,6 @@
 import base64
-from collections import defaultdict
 from http import HTTPStatus
-from typing import Any, Iterable, List, Mapping, Optional
+from typing import Any, Iterable, Mapping, Optional
 from urllib.parse import parse_qs
 from wsgiref.types import StartResponse, WSGIEnvironment
 
@@ -15,6 +14,7 @@ from ._protocol import (
 )
 from ._server_shared import ServiceContext
 from .code import Code
+from .headers import Headers
 
 
 def _normalize_wsgi_headers(environ: WSGIEnvironment) -> dict:
@@ -27,20 +27,20 @@ def _normalize_wsgi_headers(environ: WSGIEnvironment) -> dict:
 
     for key, value in environ.items():
         if key.startswith("HTTP_"):
-            header = key[5:].replace("_", "-").lower()
+            header = key[5:].replace("_", "-")
             headers[header] = value
     return headers
 
 
-def convert_to_mapping(headers: dict) -> Mapping[str, List[str]]:
-    """Convert headers dictionary to the expected mapping format."""
-    result = defaultdict(list)
+def _process_headers(headers: dict) -> Headers:
+    """Convert headers dictionary to connecpy format."""
+    result = Headers()
     for key, value in headers.items():
-        key = key.lower()
         if isinstance(value, (list, tuple)):
-            result[key].extend(str(v) for v in value)
+            for v in value:
+                result.add(key, v)
         else:
-            result[key] = [str(value)]
+            result.add(key, str(value))
     return result
 
 
@@ -144,9 +144,9 @@ class ConnecpyWSGIApplication:
         """Handle incoming WSGI requests."""
         ctx: Optional[ServiceContext] = None
         try:
-            request_headers = _normalize_wsgi_headers(environ)
             request_method = environ.get("REQUEST_METHOD")
-            ctx = ServiceContext(convert_to_mapping(request_headers))
+            request_headers = _process_headers(_normalize_wsgi_headers(environ))
+            ctx = ServiceContext(request_headers)
 
             path = environ["PATH_INFO"]
             if not path:
@@ -219,7 +219,7 @@ class ConnecpyWSGIApplication:
         environ: WSGIEnvironment,
         endpoint: _server_shared.Endpoint,
         ctx: _server_shared.ServiceContext,
-        request_headers: dict[str, str],
+        request_headers: Headers,
     ) -> tuple[Any, Codec]:
         """Handle POST request with body."""
 
@@ -366,7 +366,7 @@ class ConnecpyWSGIApplication:
 
 
 def _add_context_headers(headers: list[tuple[str, str]], ctx: ServiceContext) -> None:
-    headers.extend((key.lower(), value) for key, value in ctx.response_headers())
+    headers.extend((key, value) for key, value in ctx.response_headers().allitems())
     headers.extend(
-        (f"trailer-{key.lower()}", value) for key, value in ctx.response_trailers()
+        (f"trailer-{key}", value) for key, value in ctx.response_trailers().allitems()
     )

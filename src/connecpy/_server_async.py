@@ -1,5 +1,4 @@
 import base64
-from collections import defaultdict
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Tuple
 from urllib.parse import parse_qs
@@ -14,6 +13,7 @@ from ._protocol import (
 )
 from ._server_shared import ServiceContext
 from .code import Code
+from .headers import Headers
 
 if TYPE_CHECKING:
     # We don't use asgiref code so only import from it for type checking
@@ -82,7 +82,7 @@ class ConnecpyASGIApplication:
                 )
 
             headers = _process_headers(scope.get("headers", ()))
-            accept_encoding = _get_header_value(headers, "accept-encoding")
+            accept_encoding = headers.get("accept-encoding", "")
             selected_encoding = _compression.select_encoding(accept_encoding)
 
             ctx = ServiceContext(headers)
@@ -198,13 +198,11 @@ class ConnecpyASGIApplication:
         scope: HTTPScope,
         receive,
         ctx: _server_shared.ServiceContext,
-        headers: Mapping[str, list[str]],
+        headers: Headers,
     ) -> tuple[Any, Codec]:
         """Handle POST request with body."""
 
-        codec_name = codec_name_from_content_type(
-            _get_header_value(headers, "content-type")
-        )
+        codec_name = codec_name_from_content_type(headers.get("content-type", ""))
         codec = get_codec(codec_name)
         if not codec:
             raise HTTPException(
@@ -308,27 +306,21 @@ class ConnecpyASGIApplication:
 
 def _process_headers(
     iterable: Iterable[Tuple[bytes, bytes]],
-) -> Mapping[str, list[str]]:
-    result = defaultdict(list)
+) -> Headers:
+    result = Headers()
     for key, value in iterable:
-        result[key.decode("utf-8").lower()].append(value.decode("utf-8"))
+        result.add(key.decode(), value.decode())
     return result
-
-
-def _get_header_value(headers: Mapping[str, list[str]], name: str) -> str:
-    values = headers.get(name, ())
-    if not values:
-        return ""
-    return values[0]
 
 
 def _add_context_headers(
     headers: list[tuple[bytes, bytes]], ctx: ServiceContext
 ) -> None:
     headers.extend(
-        (key.lower().encode(), value.encode()) for key, value in ctx.response_headers()
+        (key.encode(), value.encode())
+        for key, value in ctx.response_headers().allitems()
     )
     headers.extend(
-        (f"trailer-{key.lower()}".encode(), value.encode())
-        for key, value in ctx.response_trailers()
+        (f"trailer-{key}".encode(), value.encode())
+        for key, value in ctx.response_trailers().allitems()
     )

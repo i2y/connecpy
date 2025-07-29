@@ -9,6 +9,7 @@ from _util import create_standard_streams
 from connecpy.client import ResponseMetadata
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyServerException
+from connecpy.headers import Headers
 from connectrpc.conformance.v1.client_compat_pb2 import (
     ClientCompatRequest,
     ClientCompatResponse,
@@ -93,10 +94,10 @@ async def _run_test(
     if test_request.timeout_ms:
         timeout_ms = test_request.timeout_ms
 
-    request_headers = []
+    request_headers = Headers()
     for header in test_request.request_headers:
         for value in header.value:
-            request_headers.append((header.name, value))
+            request_headers.add(header.name, value)
     for message_any in test_request.request_messages:
         match test_request.method:
             case "IdempotentUnary":
@@ -238,11 +239,11 @@ async def _run_test(
 
             for name in meta.headers().keys():
                 test_response.response.response_headers.add(
-                    name=name, value=meta.headers().get_list(name)
+                    name=name, value=meta.headers().getall(name)
                 )
             for name in meta.trailers().keys():
                 test_response.response.response_trailers.add(
-                    name=name, value=meta.trailers().get_list(name)
+                    name=name, value=meta.trailers().getall(name)
                 )
 
     return test_response
