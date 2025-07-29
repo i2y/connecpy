@@ -1,0 +1,67 @@
+// Test various Edition 2023 features
+edition = "2023";
+
+package test.editions;
+
+// Test explicit field presence (default in Edition 2023)
+message ExplicitFieldTest {
+  string name = 1;  // EXPLICIT by default in Edition 2023
+  int32 value = 2;
+}
+
+// Test implicit field presence (proto3 behavior) 
+message ImplicitFieldTest {
+  string name = 1 [features.field_presence = IMPLICIT];
+  int32 value = 2 [features.field_presence = IMPLICIT];
+}
+
+// Test field-level feature override
+message MixedFieldTest {
+  string explicit_field = 1;  // EXPLICIT (default)
+  string implicit_field = 2 [features.field_presence = IMPLICIT];
+}
+
+// Test enum features
+enum OpenEnum {
+  option features.enum_type = OPEN;  // Like proto3
+  UNKNOWN = 0;
+  FIRST = 1;
+  SECOND = 2;
+}
+
+enum ClosedEnum {
+  option features.enum_type = CLOSED;  // Like proto2
+  ZERO = 0;
+  ONE = 1;
+  TWO = 2;
+}
+
+// Test repeated field encoding
+message EncodingTest {
+  repeated int32 packed_ints = 1;  // PACKED by default
+  repeated int32 expanded_ints = 2 [features.repeated_field_encoding = EXPANDED];
+}
+
+// Test message with various features
+message FeatureTestRequest {
+  ExplicitFieldTest explicit_test = 1;
+  ImplicitFieldTest implicit_test = 2;
+  MixedFieldTest mixed_test = 3;
+  OpenEnum open_enum = 4;
+  ClosedEnum closed_enum = 5;
+  EncodingTest encoding_test = 6;
+}
+
+message FeatureTestResponse {
+  string result = 1;
+}
+
+// Service to test Edition 2023 features
+service EditionTestService {
+  rpc TestFeatures(FeatureTestRequest) returns (FeatureTestResponse);
+  
+  // Test idempotency level with Edition 2023
+  rpc GetFeatures(FeatureTestRequest) returns (FeatureTestResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+}
