@@ -9,24 +9,47 @@ import httpx
 from connecpy.client import ConnecpyClient, ConnecpyClientSync, RequestHeaders
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, ServerInterceptor, ServiceContext
+from connecpy.server import (
+    ConnecpyASGIApplication,
+    ConnecpyWSGIApplication,
+    Endpoint,
+    ServerInterceptor,
+    ServiceContext,
+)
 import example.edition_features_test_pb2 as example_dot_edition__features__test__pb2
 
 
 class EditionTestService(Protocol):
-    async def TestFeatures(self, req: example_dot_edition__features__test__pb2.FeatureTestRequest, ctx: ServiceContext) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
+    async def TestFeatures(
+        self,
+        req: example_dot_edition__features__test__pb2.FeatureTestRequest,
+        ctx: ServiceContext,
+    ) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
-    async def GetFeatures(self, req: example_dot_edition__features__test__pb2.FeatureTestRequest, ctx: ServiceContext) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
+    async def GetFeatures(
+        self,
+        req: example_dot_edition__features__test__pb2.FeatureTestRequest,
+        ctx: ServiceContext,
+    ) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class EditionTestServiceASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: EditionTestService, *, interceptors: Iterable[ServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
+    def __init__(
+        self,
+        service: EditionTestService,
+        *,
+        interceptors: Iterable[ServerInterceptor] = (),
+        max_receive_message_length=1024 * 100 * 100,
+    ):
         super().__init__(
             path="/test.editions.EditionTestService",
             endpoints={
-                "/test.editions.EditionTestService/TestFeatures": Endpoint[example_dot_edition__features__test__pb2.FeatureTestRequest, example_dot_edition__features__test__pb2.FeatureTestResponse](
+                "/test.editions.EditionTestService/TestFeatures": Endpoint[
+                    example_dot_edition__features__test__pb2.FeatureTestRequest,
+                    example_dot_edition__features__test__pb2.FeatureTestResponse,
+                ](
                     service_name="EditionTestService",
                     name="TestFeatures",
                     function=getattr(service, "TestFeatures"),
@@ -34,7 +57,10 @@ class EditionTestServiceASGIApplication(ConnecpyASGIApplication):
                     output=example_dot_edition__features__test__pb2.FeatureTestResponse,
                     allowed_methods=("POST",),
                 ),
-                "/test.editions.EditionTestService/GetFeatures": Endpoint[example_dot_edition__features__test__pb2.FeatureTestRequest, example_dot_edition__features__test__pb2.FeatureTestResponse](
+                "/test.editions.EditionTestService/GetFeatures": Endpoint[
+                    example_dot_edition__features__test__pb2.FeatureTestRequest,
+                    example_dot_edition__features__test__pb2.FeatureTestResponse,
+                ](
                     service_name="EditionTestService",
                     name="GetFeatures",
                     function=getattr(service, "GetFeatures"),
@@ -44,7 +70,7 @@ class EditionTestServiceASGIApplication(ConnecpyASGIApplication):
                 ),
             },
             interceptors=interceptors,
-             max_receive_message_length=max_receive_message_length
+            max_receive_message_length=max_receive_message_length,
         )
 
     @property
@@ -61,7 +87,6 @@ class EditionTestServiceClient(ConnecpyClient):
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
         session: Union[httpx.AsyncClient, None] = None,
-        
     ) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
         method = "POST"
         return await self._make_request(
@@ -97,9 +122,18 @@ class EditionTestServiceClient(ConnecpyClient):
 
 
 class EditionTestServiceSync(Protocol):
-    def TestFeatures(self, req: example_dot_edition__features__test__pb2.FeatureTestRequest, ctx: ServiceContext) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
+    def TestFeatures(
+        self,
+        req: example_dot_edition__features__test__pb2.FeatureTestRequest,
+        ctx: ServiceContext,
+    ) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
-    def GetFeatures(self, req: example_dot_edition__features__test__pb2.FeatureTestRequest, ctx: ServiceContext) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
+
+    def GetFeatures(
+        self,
+        req: example_dot_edition__features__test__pb2.FeatureTestRequest,
+        ctx: ServiceContext,
+    ) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
@@ -108,7 +142,10 @@ class EditionTestServiceWSGIApplication(ConnecpyWSGIApplication):
         super().__init__(
             path="/test.editions.EditionTestService",
             endpoints={
-                "/test.editions.EditionTestService/TestFeatures": Endpoint[example_dot_edition__features__test__pb2.FeatureTestRequest, example_dot_edition__features__test__pb2.FeatureTestResponse](
+                "/test.editions.EditionTestService/TestFeatures": Endpoint[
+                    example_dot_edition__features__test__pb2.FeatureTestRequest,
+                    example_dot_edition__features__test__pb2.FeatureTestResponse,
+                ](
                     service_name="EditionTestService",
                     name="TestFeatures",
                     function=getattr(service, "TestFeatures"),
@@ -116,7 +153,10 @@ class EditionTestServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=example_dot_edition__features__test__pb2.FeatureTestResponse,
                     allowed_methods=("POST",),
                 ),
-                "/test.editions.EditionTestService/GetFeatures": Endpoint[example_dot_edition__features__test__pb2.FeatureTestRequest, example_dot_edition__features__test__pb2.FeatureTestResponse](
+                "/test.editions.EditionTestService/GetFeatures": Endpoint[
+                    example_dot_edition__features__test__pb2.FeatureTestRequest,
+                    example_dot_edition__features__test__pb2.FeatureTestResponse,
+                ](
                     service_name="EditionTestService",
                     name="GetFeatures",
                     function=getattr(service, "GetFeatures"),
@@ -124,7 +164,7 @@ class EditionTestServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=example_dot_edition__features__test__pb2.FeatureTestResponse,
                     allowed_methods=("GET", "POST"),
                 ),
-            }
+            },
         )
 
     @property
@@ -140,7 +180,6 @@ class EditionTestServiceClientSync(ConnecpyClientSync):
         headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
         server_path_prefix: str = "",
-        
     ) -> example_dot_edition__features__test__pb2.FeatureTestResponse:
         method = "POST"
         return self._make_request(
