@@ -1,10 +1,11 @@
+import pytest
 from httpx import (
     ASGITransport,
     AsyncClient,
     Client,
     WSGITransport,
 )
-import pytest
+
 from connecpy.client import ResponseMetadata
 from example.haberdasher_connecpy import (
     Haberdasher,
@@ -59,9 +60,9 @@ def test_sync_headers(headers, trailers, response_headers, response_trailers):
 
         def MakeHat(self, req, ctx):
             for key, value in self.headers:
-                ctx.add_response_header(key, value)
+                ctx.response_headers().add(key, value)
             for key, value in self.trailers:
-                ctx.add_response_trailer(key, value)
+                ctx.response_trailers().add(key, value)
             return Hat()
 
     transport = WSGITransport(
@@ -75,8 +76,8 @@ def test_sync_headers(headers, trailers, response_headers, response_trailers):
     with ResponseMetadata() as resp:
         client.MakeHat(Size(inches=10))
 
-    assert resp.headers().multi_items() == response_headers
-    assert resp.trailers().multi_items() == response_trailers
+    assert list(resp.headers().allitems()) == response_headers
+    assert list(resp.trailers().allitems()) == response_trailers
 
 
 @pytest.mark.asyncio
@@ -93,9 +94,9 @@ async def test_async_headers(headers, trailers, response_headers, response_trail
 
         async def MakeHat(self, req, ctx):
             for key, value in self.headers:
-                ctx.add_response_header(key, value)
+                ctx.response_headers().add(key, value)
             for key, value in self.trailers:
-                ctx.add_response_trailer(key, value)
+                ctx.response_trailers().add(key, value)
             return Hat()
 
     transport = ASGITransport(
@@ -109,5 +110,5 @@ async def test_async_headers(headers, trailers, response_headers, response_trail
     with ResponseMetadata() as resp:
         await client.MakeHat(Size(inches=10))
 
-    assert resp.headers().multi_items() == response_headers
-    assert resp.trailers().multi_items() == response_trailers
+    assert list(resp.headers().allitems()) == response_headers
+    assert list(resp.trailers().allitems()) == response_trailers

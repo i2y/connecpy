@@ -7,16 +7,14 @@ from typing import (
     Callable,
     Generic,
     Iterable,
-    Mapping,
-    Optional,
     Protocol,
-    Sequence,
     TypeVar,
     Union,
 )
 
 from .code import Code
 from .exceptions import ConnecpyException
+from .headers import Headers
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -36,21 +34,22 @@ class ServiceContext:
         _start_time: The start time of the service.
     """
 
-    _response_headers: Optional[list[tuple[str, str]]] = None
-    _response_trailers: Optional[list[tuple[str, str]]] = None
+    _response_headers: Headers | None
+    _response_trailers: Headers | None
 
-    def __init__(self, request_headers: Mapping[str, Sequence[str]]):
+    def __init__(self, request_headers: Headers):
         """
         Initialize a Context object.
         """
         self._request_headers = request_headers
-        self._trailing_metadata = {}
+        self._response_headers = None
+        self._response_trailers = None
 
         # We don't require connect-protocol-version header. connect-go provides an option
         # to require it but it's almost never used in practice.
         connect_protocol_version = self._request_headers.get(
-            "connect-protocol-version", ["1"]
-        )[0]
+            "connect-protocol-version", "1"
+        )
         if connect_protocol_version != "1":
             raise ConnecpyException(
                 Code.INVALID_ARGUMENT,
@@ -58,15 +57,13 @@ class ServiceContext:
             )
         self._connect_protocol_version = connect_protocol_version
 
-        timeout_ms: Union[str, None] = request_headers.get(
-            "connect-timeout-ms", [None]
-        )[0]
+        timeout_ms: Union[str, None] = request_headers.get("connect-timeout-ms", None)
         if timeout_ms is None:
             self._end_time = None
         else:
             self._end_time = time.monotonic() + float(timeout_ms) / 1000.0
 
-    def request_headers(self) -> Mapping[str, Sequence[str]]:
+    def request_headers(self) -> Headers:
         """
         Returns the request headers associated with the context.
 
@@ -74,12 +71,12 @@ class ServiceContext:
         """
         return self._request_headers
 
-    def response_headers(self) -> Sequence[tuple[str, str]]:
+    def response_headers(self) -> Headers:
         """
         Returns the response headers that will be sent before the response.
         """
         if self._response_headers is None:
-            return ()
+            self._response_headers = Headers()
         return self._response_headers
 
     def clear_response_headers(self) -> None:
@@ -88,49 +85,13 @@ class ServiceContext:
         """
         self._response_headers = None
 
-    def add_response_header(self, key: str, value: str) -> None:
-        """
-        Add a response header to send before the response.
-
-        Args:
-            key (str): The header key.
-            value (str): The header value.
-
-        Returns:
-            None
-        """
-        if self._response_headers is None:
-            self._response_headers = []
-        self._response_headers.append((key, value))
-
-    def response_trailers(self) -> Sequence[tuple[str, str]]:
+    def response_trailers(self) -> Headers:
         """
         Returns the response trailers that will be sent after the response.
         """
         if self._response_trailers is None:
-            return ()
+            self._response_trailers = Headers()
         return self._response_trailers
-
-    def clear_response_trailers(self) -> None:
-        """
-        Clears the response trailers that will be sent after the response.
-        """
-        self._response_trailers = None
-
-    def add_response_trailer(self, key: str, value: str) -> None:
-        """
-        Add a response trailer to send after the response.
-
-        Args:
-            key (str): The header key.
-            value (str): The header value.
-
-        Returns:
-            None
-        """
-        if self._response_trailers is None:
-            self._response_trailers = []
-        self._response_trailers.append((key, value))
 
     def timeout_ms(self) -> float | None:
         """
