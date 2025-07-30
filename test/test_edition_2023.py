@@ -16,7 +16,7 @@ from connecpy.server import ServiceContext
 
 
 def test_edition_2023_service_generation():
-    """Test that protoc-gen-connecpy doesn't crash on Edition 2023 files and generates working code."""
+    """Test that Edition 2023 generated code can be imported and instantiated correctly."""
 
     # Create a simple service implementation
     class TestHaberdasher(Haberdasher):
