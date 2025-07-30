@@ -10,21 +10,38 @@ from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
-from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, ServerInterceptor, ServiceContext
+from connecpy.server import (
+    ConnecpyASGIApplication,
+    ConnecpyWSGIApplication,
+    Endpoint,
+    ServerInterceptor,
+    ServiceContext,
+)
 import example.haberdasher_edition_2023_pb2 as example_dot_haberdasher__edition__2023__pb2
 
 
 class Haberdasher(Protocol):
-    async def MakeHat(self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: ServiceContext) -> example_dot_haberdasher__edition__2023__pb2.Hat:
+    async def MakeHat(
+        self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: ServiceContext
+    ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class HaberdasherASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: Haberdasher, *, interceptors: Iterable[ServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
+    def __init__(
+        self,
+        service: Haberdasher,
+        *,
+        interceptors: Iterable[ServerInterceptor] = (),
+        max_receive_message_length=1024 * 100 * 100,
+    ):
         super().__init__(
             path="/i2y.connecpy.example2023.Haberdasher",
             endpoints={
-                "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[example_dot_haberdasher__edition__2023__pb2.Size, example_dot_haberdasher__edition__2023__pb2.Hat](
+                "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[
+                    example_dot_haberdasher__edition__2023__pb2.Size,
+                    example_dot_haberdasher__edition__2023__pb2.Hat,
+                ](
                     service_name="Haberdasher",
                     name="MakeHat",
                     function=getattr(service, "MakeHat"),
@@ -34,7 +51,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 ),
             },
             interceptors=interceptors,
-             max_receive_message_length=max_receive_message_length
+            max_receive_message_length=max_receive_message_length,
         )
 
     @property
@@ -66,7 +83,9 @@ class HaberdasherClient(ConnecpyClient):
 
 
 class HaberdasherSync(Protocol):
-    def MakeHat(self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: ServiceContext) -> example_dot_haberdasher__edition__2023__pb2.Hat:
+    def MakeHat(
+        self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: ServiceContext
+    ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
@@ -75,7 +94,10 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
         super().__init__(
             path="/i2y.connecpy.example2023.Haberdasher",
             endpoints={
-                "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[example_dot_haberdasher__edition__2023__pb2.Size, example_dot_haberdasher__edition__2023__pb2.Hat](
+                "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[
+                    example_dot_haberdasher__edition__2023__pb2.Size,
+                    example_dot_haberdasher__edition__2023__pb2.Hat,
+                ](
                     service_name="Haberdasher",
                     name="MakeHat",
                     function=getattr(service, "MakeHat"),
@@ -83,7 +105,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                     output=example_dot_haberdasher__edition__2023__pb2.Hat,
                     allowed_methods=("GET", "POST"),
                 ),
-            }
+            },
         )
 
     @property
