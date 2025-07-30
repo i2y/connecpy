@@ -4,28 +4,28 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 func TestGenerateConnecpyFile(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    *descriptor.FileDescriptorProto
+		input    *descriptorpb.FileDescriptorProto
 		wantFile string
 		wantErr  bool
 	}{
 		{
 			name: "simple service",
-			input: &descriptor.FileDescriptorProto{
+			input: &descriptorpb.FileDescriptorProto{
 				Name:    proto.String("test.proto"),
 				Package: proto.String("test"),
-				Service: []*descriptor.ServiceDescriptorProto{
+				Service: []*descriptorpb.ServiceDescriptorProto{
 					{
 						Name: proto.String("TestService"),
-						Method: []*descriptor.MethodDescriptorProto{
+						Method: []*descriptorpb.MethodDescriptorProto{
 							{
 								Name:       proto.String("TestMethod"),
 								InputType:  proto.String(".test.TestRequest"),
@@ -34,7 +34,7 @@ func TestGenerateConnecpyFile(t *testing.T) {
 						},
 					},
 				},
-				MessageType: []*descriptor.DescriptorProto{
+				MessageType: []*descriptorpb.DescriptorProto{
 					{
 						Name: proto.String("TestRequest"),
 					},
@@ -48,13 +48,13 @@ func TestGenerateConnecpyFile(t *testing.T) {
 		},
 		{
 			name: "service with multiple methods",
-			input: &descriptor.FileDescriptorProto{
+			input: &descriptorpb.FileDescriptorProto{
 				Name:    proto.String("multi.proto"),
 				Package: proto.String("test"),
-				Service: []*descriptor.ServiceDescriptorProto{
+				Service: []*descriptorpb.ServiceDescriptorProto{
 					{
 						Name: proto.String("MultiService"),
-						Method: []*descriptor.MethodDescriptorProto{
+						Method: []*descriptorpb.MethodDescriptorProto{
 							{
 								Name:       proto.String("Method1"),
 								InputType:  proto.String(".test.Request1"),
@@ -68,7 +68,7 @@ func TestGenerateConnecpyFile(t *testing.T) {
 						},
 					},
 				},
-				MessageType: []*descriptor.DescriptorProto{
+				MessageType: []*descriptorpb.DescriptorProto{
 					{
 						Name: proto.String("Request1"),
 					},
@@ -120,29 +120,29 @@ func TestGenerateConnecpyFile(t *testing.T) {
 func TestGenerate(t *testing.T) {
 	tests := []struct {
 		name    string
-		req     *plugin.CodeGeneratorRequest
+		req     *pluginpb.CodeGeneratorRequest
 		wantErr bool
 	}{
 		{
 			name: "empty request",
-			req: &plugin.CodeGeneratorRequest{
+			req: &pluginpb.CodeGeneratorRequest{
 				FileToGenerate: []string{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "valid request",
-			req: &plugin.CodeGeneratorRequest{
+			req: &pluginpb.CodeGeneratorRequest{
 				FileToGenerate: []string{"test.proto"},
-				ProtoFile: []*descriptor.FileDescriptorProto{
+				ProtoFile: []*descriptorpb.FileDescriptorProto{
 					{
 						Name:       proto.String("test.proto"),
 						Package:    proto.String("test"),
 						Dependency: []string{"other.proto"},
-						Service: []*descriptor.ServiceDescriptorProto{
+						Service: []*descriptorpb.ServiceDescriptorProto{
 							{
 								Name: proto.String("TestService"),
-								Method: []*descriptor.MethodDescriptorProto{
+								Method: []*descriptorpb.MethodDescriptorProto{
 									{
 										Name:       proto.String("TestMethod"),
 										InputType:  proto.String(".test.TestRequest"),
@@ -156,7 +156,7 @@ func TestGenerate(t *testing.T) {
 								},
 							},
 						},
-						MessageType: []*descriptor.DescriptorProto{
+						MessageType: []*descriptorpb.DescriptorProto{
 							{
 								Name: proto.String("TestRequest"),
 							},
@@ -168,7 +168,7 @@ func TestGenerate(t *testing.T) {
 					{
 						Name:    proto.String("other.proto"),
 						Package: proto.String("otherpackage"),
-						MessageType: []*descriptor.DescriptorProto{
+						MessageType: []*descriptorpb.DescriptorProto{
 							{
 								Name: proto.String("OtherRequest"),
 							},
@@ -199,5 +199,101 @@ func TestGenerate(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEdition2023Support(t *testing.T) {
+	// Create a request with an Edition 2023 proto file
+	edition2023 := descriptorpb.Edition_EDITION_2023
+	
+	req := &pluginpb.CodeGeneratorRequest{
+		FileToGenerate: []string{"test_edition2023.proto"},
+		ProtoFile: []*descriptorpb.FileDescriptorProto{
+			{
+				Name:    proto.String("test_edition2023.proto"),
+				Package: proto.String("test.edition2023"),
+				Edition: edition2023.Enum(),
+				// Edition 2023 default: field_presence = EXPLICIT
+				Options: &descriptorpb.FileOptions{
+					Features: &descriptorpb.FeatureSet{
+						FieldPresence: descriptorpb.FeatureSet_EXPLICIT.Enum(),
+					},
+				},
+				Service: []*descriptorpb.ServiceDescriptorProto{
+					{
+						Name: proto.String("Edition2023Service"),
+						Method: []*descriptorpb.MethodDescriptorProto{
+							{
+								Name:       proto.String("TestMethod"),
+								InputType:  proto.String(".test.edition2023.TestRequest"),
+								OutputType: proto.String(".test.edition2023.TestResponse"),
+							},
+						},
+					},
+				},
+				MessageType: []*descriptorpb.DescriptorProto{
+					{
+						Name: proto.String("TestRequest"),
+						Field: []*descriptorpb.FieldDescriptorProto{
+							{
+								Name:   proto.String("message"),
+								Number: proto.Int32(1),
+								Label:  descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+								Type:   descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+								// In Edition 2023, field presence is controlled by features
+							},
+						},
+					},
+					{
+						Name: proto.String("TestResponse"),
+						Field: []*descriptorpb.FieldDescriptorProto{
+							{
+								Name:   proto.String("result"),
+								Number: proto.Int32(1),
+								Label:  descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+								Type:   descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Call Generate
+	resp := Generate(req)
+
+	// Verify no error occurred
+	if resp.GetError() != "" {
+		t.Fatalf("Generate() failed for Edition 2023 proto: %v", resp.GetError())
+	}
+
+	// Verify the generator declared Edition support
+	if resp.GetSupportedFeatures()&uint64(pluginpb.CodeGeneratorResponse_FEATURE_SUPPORTS_EDITIONS) == 0 {
+		t.Error("Generator should declare FEATURE_SUPPORTS_EDITIONS")
+	}
+
+	// Verify minimum and maximum editions are set
+	if resp.GetMinimumEdition() != int32(descriptorpb.Edition_EDITION_PROTO3) {
+		t.Errorf("Expected minimum edition PROTO3, got %v", resp.GetMinimumEdition())
+	}
+	if resp.GetMaximumEdition() != int32(descriptorpb.Edition_EDITION_2023) {
+		t.Errorf("Expected maximum edition 2023, got %v", resp.GetMaximumEdition())
+	}
+
+	// Verify a file was generated
+	if len(resp.GetFile()) == 0 {
+		t.Error("No files generated for Edition 2023 proto")
+	} else {
+		generatedFile := resp.GetFile()[0]
+		if generatedFile.GetName() != "test_edition2023_connecpy.py" {
+			t.Errorf("Expected filename test_edition2023_connecpy.py, got %v", generatedFile.GetName())
+		}
+		
+		// Verify the generated content includes the service
+		content := generatedFile.GetContent()
+		if !strings.Contains(content, "class Edition2023Service") {
+			t.Error("Generated code missing Edition2023Service class")
+		}
 	}
 }
