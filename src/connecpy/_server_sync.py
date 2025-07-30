@@ -1,4 +1,5 @@
 import base64
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Iterable, List, Mapping, Optional
@@ -123,8 +124,13 @@ def read_chunked(input_stream):
     return b"".join(chunks)
 
 
-class ConnecpyWSGIApplication:
+class ConnecpyWSGIApplication(ABC):
     """WSGI application for Connecpy."""
+
+    @property
+    @abstractmethod
+    def path(self) -> str:
+        raise NotImplementedError()
 
     def __init__(self, *, endpoints: Mapping[str, _server_shared.Endpoint]):
         """Initialize the WSGI application."""
@@ -146,10 +152,10 @@ class ConnecpyWSGIApplication:
                 path = "/"
 
             endpoint = self._endpoints.get(path)
-            if not endpoint and environ["SCRIPT_NAME"] == self._path:
+            if not endpoint and environ["SCRIPT_NAME"] == self.path:
                 # The application was mounted at the service's path so we reconstruct
                 # the full URL.
-                endpoint = self._endpoints.get(self._path + path)
+                endpoint = self._endpoints.get(self.path + path)
 
             if not endpoint:
                 raise HTTPException(HTTPStatus.NOT_FOUND, [])

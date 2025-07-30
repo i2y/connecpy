@@ -1,4 +1,5 @@
 import base64
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Tuple
@@ -26,8 +27,13 @@ else:
     Scope = "asgiref.typing.Scope"
 
 
-class ConnecpyASGIApplication:
+class ConnecpyASGIApplication(ABC):
     """ASGI application for Connecpy."""
+
+    @property
+    @abstractmethod
+    def path(self) -> str:
+        raise NotImplementedError()
 
     def __init__(
         self,
