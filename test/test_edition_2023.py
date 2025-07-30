@@ -39,7 +39,7 @@ def test_edition_2023_service_generation():
 
 
 def test_edition_2023_client_generation():
-    """Test that Edition 2023 proto generates working client code."""
+    """Test that Edition 2023 generated client code can be instantiated correctly."""
     # Verify clients can be instantiated
     client = HaberdasherClient("http://localhost:3000")
     assert client is not None
