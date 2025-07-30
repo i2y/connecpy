@@ -13,7 +13,7 @@ from typing import (
 )
 
 from .code import Code
-from .exceptions import ConnecpyServerException
+from .exceptions import ConnecpyException
 from .headers import Headers
 
 T = TypeVar("T")
@@ -51,9 +51,9 @@ class ServiceContext:
             "connect-protocol-version", "1"
         )
         if connect_protocol_version != "1":
-            raise ConnecpyServerException(
-                code=Code.INVALID_ARGUMENT,
-                message=f"connect-protocol-version must be '1': got '{connect_protocol_version}'",
+            raise ConnecpyException(
+                Code.INVALID_ARGUMENT,
+                f"connect-protocol-version must be '1': got '{connect_protocol_version}'",
             )
         self._connect_protocol_version = connect_protocol_version
 

@@ -8,7 +8,7 @@ from . import _client_shared
 from ._codec import get_proto_binary_codec, get_proto_json_codec
 from ._protocol import ConnectWireError
 from .code import Code
-from .exceptions import ConnecpyServerException
+from .exceptions import ConnecpyException
 from .headers import Headers
 
 _RES = TypeVar("_RES", bound=Message)
@@ -130,14 +130,11 @@ class ConnecpyClientSync:
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
         except httpx.TimeoutException:
-            raise ConnecpyServerException(
-                code=Code.DEADLINE_EXCEEDED,
-                message="Request timed out",
-            )
-        except ConnecpyServerException:
+            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out")
+        except ConnecpyException:
             raise
         except Exception as e:
-            raise ConnecpyServerException(code=Code.UNAVAILABLE, message=str(e))
+            raise ConnecpyException(Code.UNAVAILABLE, str(e))
 
 
 # Convert a timeout with connect semantics to a httpx.Timeout. Connect timeouts

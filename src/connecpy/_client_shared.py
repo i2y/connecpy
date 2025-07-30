@@ -14,7 +14,7 @@ from ._protocol import (
     codec_name_from_content_type,
 )
 from .code import Code
-from .exceptions import ConnecpyServerException
+from .exceptions import ConnecpyException
 from .headers import Headers
 
 # TODO: Embed package version correctly
@@ -85,9 +85,9 @@ def validate_response_content_encoding(
     if not encoding:
         return
     if encoding.lower() not in _compression.get_available_compressions():
-        raise ConnecpyServerException(
-            code=Code.INTERNAL,
-            message=f"unknown encoding '{encoding}'; accepted encodings are {', '.join(_compression.get_available_compressions())}",
+        raise ConnecpyException(
+            Code.INTERNAL,
+            f"unknown encoding '{encoding}'; accepted encodings are {', '.join(_compression.get_available_compressions())}",
         )
 
 
@@ -106,9 +106,9 @@ def validate_response_content_type(
         raise ConnectWireError.from_http_status(status_code).to_exception()
 
     if not response_content_type.startswith(CONNECT_UNARY_CONTENT_TYPE_PREFIX):
-        raise ConnecpyServerException(
-            code=Code.UNKNOWN,
-            message=f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
+        raise ConnecpyException(
+            Code.UNKNOWN,
+            f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
         )
 
     response_codec_name = codec_name_from_content_type(response_content_type)
@@ -125,9 +125,9 @@ def validate_response_content_type(
         # Both are JSON
         return
 
-    raise ConnecpyServerException(
-        code=Code.INTERNAL,
-        message=f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
+    raise ConnecpyException(
+        Code.INTERNAL,
+        f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
     )
 
 

@@ -42,7 +42,7 @@ import httpx
 
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
 from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, ServerInterceptor, ServiceContext
 
@@ -55,7 +55,7 @@ import {{.Name}} as {{.Alias}}
 
 class {{.Name}}(Protocol):{{- range .Methods }}
     async def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
-        raise ConnecpyServerException(code=Code.UNIMPLEMENTED, message="Not implemented")
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{ end }}
 
 class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
@@ -106,7 +106,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
     def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
-        raise ConnecpyServerException(code=Code.UNIMPLEMENTED, message="Not implemented")
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{- end }}
 
 

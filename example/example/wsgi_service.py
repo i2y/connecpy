@@ -1,7 +1,7 @@
 import random
 
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 from connecpy.server import ServiceContext
 
 from .haberdasher_connecpy import HaberdasherSync
@@ -12,9 +12,8 @@ class HaberdasherService(HaberdasherSync):
     def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
         print("remaining_time: ", ctx.timeout_ms())
         if req.inches <= 0:
-            raise ConnecpyServerException(
-                code=Code.INVALID_ARGUMENT,
-                message="inches I can't make a hat that small!",
+            raise ConnecpyException(
+                Code.INVALID_ARGUMENT, "inches I can't make a hat that small!"
             )
         response = Hat(
             size=req.inches,

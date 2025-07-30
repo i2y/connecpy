@@ -3,7 +3,7 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Tuple
 from urllib.parse import parse_qs
 
-from . import _compression, _server_shared, exceptions
+from . import _compression, _server_shared
 from ._codec import Codec, get_codec
 from ._protocol import (
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
@@ -13,6 +13,7 @@ from ._protocol import (
 )
 from ._server_shared import ServiceContext
 from .code import Code
+from .exceptions import ConnecpyException
 from .headers import Headers
 
 if TYPE_CHECKING:
@@ -147,9 +148,9 @@ class ConnecpyASGIApplication:
 
         # Validation
         if "message" not in params:
-            raise exceptions.ConnecpyServerException(
-                code=Code.INVALID_ARGUMENT,
-                message="'message' parameter is required for GET requests",
+            raise ConnecpyException(
+                Code.INVALID_ARGUMENT,
+                "'message' parameter is required for GET requests",
             )
 
         # Get and decode message
@@ -160,9 +161,8 @@ class ConnecpyASGIApplication:
             try:
                 message = base64.urlsafe_b64decode(message + "===")
             except Exception:
-                raise exceptions.ConnecpyServerException(
-                    code=Code.INVALID_ARGUMENT,
-                    message="Invalid base64 encoding",
+                raise ConnecpyException(
+                    Code.INVALID_ARGUMENT, "Invalid base64 encoding"
                 )
         else:
             message = message.encode("utf-8")
@@ -171,18 +171,17 @@ class ConnecpyASGIApplication:
         codec_name = params.get("encoding", ("",))[0]
         codec = get_codec(codec_name)
         if not codec:
-            raise exceptions.ConnecpyServerException(
-                code=Code.UNIMPLEMENTED,
-                message=f"invalid message encoding: '{codec_name}'",
+            raise ConnecpyException(
+                Code.UNIMPLEMENTED, f"invalid message encoding: '{codec_name}'"
             )
 
         # Handle compression
         compression_name = params.get("compression", ["identity"])[0]
         compression = _compression.get_compression(compression_name)
         if not compression:
-            raise exceptions.ConnecpyServerException(
-                code=Code.UNIMPLEMENTED,
-                message=f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
+            raise ConnecpyException(
+                Code.UNIMPLEMENTED,
+                f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
             )
 
         # Decompress and decode message
@@ -214,9 +213,9 @@ class ConnecpyASGIApplication:
         req_body = await self._read_body(receive)
 
         if len(req_body) > self._max_receive_message_length:
-            raise exceptions.ConnecpyServerException(
-                code=Code.INVALID_ARGUMENT,
-                message=f"Request body exceeds maximum size of {self._max_receive_message_length} bytes",
+            raise ConnecpyException(
+                Code.INVALID_ARGUMENT,
+                f"Request body exceeds maximum size of {self._max_receive_message_length} bytes",
             )
 
         # Handle compression if specified
@@ -228,9 +227,9 @@ class ConnecpyASGIApplication:
         )
         compression = _compression.get_compression(compression_name)
         if not compression:
-            raise exceptions.ConnecpyServerException(
-                code=Code.UNIMPLEMENTED,
-                message=f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
+            raise ConnecpyException(
+                Code.UNIMPLEMENTED,
+                f"unknown compression: '{compression_name}': supported encodings are {', '.join(_compression.get_available_compressions())}",
             )
 
         if req_body:  # Don't decompress empty body
@@ -249,14 +248,14 @@ class ConnecpyASGIApplication:
                     if not message.get("more_body", False):
                         break
                 case "http.disconnect":
-                    raise exceptions.ConnecpyServerException(
-                        code=Code.CANCELED,
-                        message="Client disconnected before request completion",
+                    raise ConnecpyException(
+                        Code.CANCELED,
+                        "Client disconnected before request completion",
                     )
                 case _:
-                    raise exceptions.ConnecpyServerException(
-                        code=Code.UNKNOWN,
-                        message="Unexpected message type",
+                    raise ConnecpyException(
+                        Code.UNKNOWN,
+                        "Unexpected message type",
                     )
         return b"".join(chunks)
 

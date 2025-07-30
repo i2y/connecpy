@@ -8,7 +8,7 @@ import httpx
 
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
 from connecpy.server import (
     ConnecpyASGIApplication,
@@ -26,54 +26,42 @@ class ConformanceService(Protocol):
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def ServerStream(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def ClientStream(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def BidiStream(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def Unimplemented(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def IdempotentUnary(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
@@ -292,54 +280,42 @@ class ConformanceServiceSync(Protocol):
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def ServerStream(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def ClientStream(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def BidiStream(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def Unimplemented(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def IdempotentUnary(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
-        raise ConnecpyServerException(
-            code=Code.UNIMPLEMENTED, message="Not implemented"
-        )
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):

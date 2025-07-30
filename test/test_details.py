@@ -9,7 +9,7 @@ from httpx import (
 )
 
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyServerException
+from connecpy.exceptions import ConnecpyException
 from example.haberdasher_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
@@ -24,9 +24,9 @@ from example.haberdasher_pb2 import Size
 def test_details_sync():
     class DetailsHaberdasherSync(HaberdasherSync):
         def MakeHat(self, req, ctx):
-            raise ConnecpyServerException(
-                code=Code.RESOURCE_EXHAUSTED,
-                message="Resource exhausted",
+            raise ConnecpyException(
+                Code.RESOURCE_EXHAUSTED,
+                "Resource exhausted",
                 details=[
                     Struct(fields={"animal": Value(string_value="bear")}),
                     pack(Struct(fields={"color": Value(string_value="red")})),
@@ -38,7 +38,7 @@ def test_details_sync():
         HaberdasherClientSync(
             "http://localhost", session=Client(transport=WSGITransport(app=app))
         ) as client,
-        pytest.raises(ConnecpyServerException) as exc_info,
+        pytest.raises(ConnecpyException) as exc_info,
     ):
         client.MakeHat(request=Size(inches=10))
     assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
@@ -56,9 +56,9 @@ def test_details_sync():
 async def test_details_async():
     class DetailsHaberdasher(Haberdasher):
         async def MakeHat(self, req, ctx):
-            raise ConnecpyServerException(
-                code=Code.RESOURCE_EXHAUSTED,
-                message="Resource exhausted",
+            raise ConnecpyException(
+                Code.RESOURCE_EXHAUSTED,
+                "Resource exhausted",
                 details=[
                     Struct(fields={"animal": Value(string_value="bear")}),
                     pack(Struct(fields={"color": Value(string_value="red")})),
@@ -70,7 +70,7 @@ async def test_details_async():
     async with HaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)
     ) as client:
-        with pytest.raises(ConnecpyServerException) as exc_info:
+        with pytest.raises(ConnecpyException) as exc_info:
             await client.MakeHat(request=Size(inches=10))
     assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
     assert exc_info.value.message == "Resource exhausted"
