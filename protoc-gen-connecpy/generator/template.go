@@ -38,8 +38,6 @@ var ConnecpyTemplate = template.Must(template.New("ConnecpyTemplate").Parse(`# -
 {{if .Services}}
 from typing import Iterable, Optional, Protocol, Union
 
-import httpx
-
 from connecpy.client import ConnecpyClient, ConnecpyClientSync, RequestHeaders
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -60,7 +58,6 @@ class {{.Name}}(Protocol):{{- range .Methods }}
 class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
     def __init__(self, service: {{.Name}}, *, interceptors: Iterable[ServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
         super().__init__(
-            path="/{{.Package}}.{{.Name}}",
             endpoints={ {{- range .Methods }}
                 "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}](
                     service_name="{{.ServiceName}}",
@@ -76,8 +73,9 @@ class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
         )
 
     @property
-    def service_name(self):
-        return "{{.Package}}.{{.Name}}"
+    def path(self):
+        """Returns the URL path to mount the application to when serving multiple applications."""
+        return "/{{.Package}}.{{.Name}}"
 
 
 class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
@@ -87,19 +85,16 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
         *,
         headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
-        server_path_prefix: str = "",
-        session: Union[httpx.AsyncClient, None] = None,
         {{if .NoSideEffects}}use_get: bool = False,{{end}}
     ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
         return await self._make_request(
-            url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
+            url=f"/{{.Package}}.{{.ServiceName}}/{{.Name}}",
             method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
             response_class={{.OutputType}},
-            session=session,
         )
 {{end}}{{- end }}
 {{range .Services}}
@@ -112,7 +107,6 @@ class {{.Name}}Sync(Protocol):{{- range .Methods }}
 class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: {{.Name}}Sync):
         super().__init__(
-            path="/{{.Package}}.{{.Name}}",
             endpoints={ {{- range .Methods }}
                 "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}](
                     service_name="{{.ServiceName}}",
@@ -126,8 +120,9 @@ class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
         )
 
     @property
-    def service_name(self):
-        return "{{.Package}}.{{.Name}}"
+    def path(self):
+        """Returns the URL path to mount the application to when serving multiple applications."""
+        return "/{{.Package}}.{{.Name}}"
 
 
 class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
@@ -137,12 +132,11 @@ class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
         *,
         headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
-        server_path_prefix: str = "",
         {{if .NoSideEffects}}use_get: bool = False,{{end}}
     ) -> {{.OutputType}}:
         {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
         return self._make_request(
-            url=f"{server_path_prefix}/{{.Package}}.{{.ServiceName}}/{{.Name}}",
+            url=f"/{{.Package}}.{{.ServiceName}}/{{.Name}}",
             method=method,
             headers=headers,
             timeout_ms=timeout_ms,

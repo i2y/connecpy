@@ -126,16 +126,10 @@ def read_chunked(input_stream):
 class ConnecpyWSGIApplication:
     """WSGI application for Connecpy."""
 
-    def __init__(self, *, path: str, endpoints: Mapping[str, _server_shared.Endpoint]):
+    def __init__(self, *, endpoints: Mapping[str, _server_shared.Endpoint]):
         """Initialize the WSGI application."""
         super().__init__()
-        self._path = path
         self._endpoints = endpoints
-
-    @property
-    def path(self) -> str:
-        """Get the path to mount the application to."""
-        return self._path
 
     def __call__(
         self, environ: WSGIEnvironment, start_response: StartResponse

@@ -72,7 +72,6 @@ class ConnecpyClient:
         method="POST",
         headers: Optional[RequestHeaders] = None,
         timeout_ms: Optional[int] = None,
-        session: Optional[httpx.AsyncClient] = None,
     ) -> _RES:
         """Make an HTTP request to the server."""
         # Prepare headers and request args using shared logic
@@ -95,7 +94,7 @@ class ConnecpyClient:
 
         try:
             request_data = self._codec.encode(request)
-            client = session or self._session
+            client = self._session
 
             request_data = _client_shared.maybe_compress_request(
                 request_data, request_headers
