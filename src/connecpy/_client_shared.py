@@ -1,9 +1,9 @@
 import base64
 from contextvars import ContextVar, Token
 from http import HTTPStatus
-from typing import Iterable, Mapping, Optional, Sequence
+from typing import Iterable, Mapping, Optional
 
-from httpx import Headers
+from httpx import Headers as HttpxHeaders
 
 from . import _compression
 from ._codec import CODEC_NAME_JSON, CODEC_NAME_JSON_CHARSET_UTF8, Codec
@@ -15,28 +15,24 @@ from ._protocol import (
 )
 from .code import Code
 from .exceptions import ConnecpyException
+from .headers import Headers
 
 # TODO: Embed package version correctly
 _DEFAULT_CONNECT_USER_AGENT = "connecpy/0.0.0"
 
 
-# Redefined from httpx since not exported
-type RequestHeaders = (
-    Headers
-    | Mapping[str, str]
-    | Mapping[bytes, bytes]
-    | Sequence[tuple[str, str]]
-    | Sequence[tuple[bytes, bytes]]
-)
-
-
 def prepare_headers(
     codec: Codec,
-    headers: Headers,
+    user_headers: Headers | Mapping[str, str] | None,
     timeout_ms: Optional[int],
     accept_compression: Optional[Iterable[str]],
     send_compression: Optional[str],
-) -> Headers:
+) -> HttpxHeaders:
+    headers = HttpxHeaders(
+        list(user_headers.allitems())
+        if isinstance(user_headers, Headers)
+        else user_headers
+    )
     if "user-agent" not in headers:
         headers["user-agent"] = _DEFAULT_CONNECT_USER_AGENT
     headers["connect-protocol-version"] = CONNECT_PROTOCOL_VERSION
@@ -54,7 +50,7 @@ def prepare_headers(
     return headers
 
 
-def maybe_compress_request(request_data: bytes, headers: Headers) -> bytes:
+def maybe_compress_request(request_data: bytes, headers: HttpxHeaders) -> bytes:
     if "content-encoding" not in headers:
         return request_data
 
@@ -135,24 +131,24 @@ def validate_response_content_type(
     )
 
 
-def handle_response_headers(headers: Headers):
+def handle_response_headers(headers: HttpxHeaders):
     response = _current_response.get(None)
     if not response:
         return
 
-    response_headers: list[tuple[str, str]] = []
-    response_trailers: list[tuple[str, str]] = []
+    response_headers: Headers = Headers()
+    response_trailers: Headers = Headers()
     for key, value in headers.multi_items():
-        if key.lower().startswith("trailer-"):
+        if key.startswith("trailer-"):
             key = key[len("trailer-") :]
             obj = response_trailers
         else:
             obj = response_headers
-        obj.append((key, value))
+        obj.add(key, value)
     if response_headers:
-        response._headers = Headers(response_headers)
+        response._headers = response_headers
     if response_trailers:
-        response._trailers = Headers(response_trailers)
+        response._trailers = response_trailers
 
 
 class ResponseMetadata:
@@ -193,7 +189,9 @@ class ResponseMetadata:
 
     def headers(self) -> Headers:
         """Returns the response headers."""
-        return self._headers or Headers()
+        if self._headers is None:
+            return Headers()
+        return self._headers
 
     def trailers(self) -> Headers:
         """Returns the response trailers."""

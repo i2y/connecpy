@@ -41,8 +41,10 @@ def _create_request_info(
     timeout_ms = ctx.timeout_ms()
     if timeout_ms is not None:
         request_info.timeout_ms = int(timeout_ms)
-    for key, values in ctx.request_headers().items():
-        request_info.request_headers.add(name=key, value=values)
+    for key in ctx.request_headers():
+        request_info.request_headers.add(
+            name=key, value=ctx.request_headers().getall(key)
+        )
     return request_info
 
 
@@ -94,10 +96,10 @@ async def _handle_unary_response(
 ) -> RES:
     for header in definition.response_headers:
         for value in header.value:
-            ctx.add_response_header(header.name, value)
+            ctx.response_headers().add(header.name, value)
     for trailer in definition.response_trailers:
         for value in trailer.value:
-            ctx.add_response_trailer(trailer.name, value)
+            ctx.response_trailers().add(trailer.name, value)
 
     request_info = _create_request_info(ctx, reqs)
 

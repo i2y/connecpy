@@ -1,15 +1,15 @@
-from typing import Iterable, Optional, TypeVar
+from typing import Iterable, Mapping, Optional, TypeVar
 
 import httpx
 from google.protobuf.message import Message
-from httpx import Headers, Timeout
+from httpx import Timeout
 
 from . import _client_shared
-from ._client_shared import RequestHeaders
 from ._codec import get_proto_binary_codec, get_proto_json_codec
 from ._protocol import ConnectWireError
 from .code import Code
 from .exceptions import ConnecpyException
+from .headers import Headers
 
 _RES = TypeVar("_RES", bound=Message)
 
@@ -68,7 +68,7 @@ class ConnecpyClientSync:
         request: Message,
         response_class: type[_RES],
         method="POST",
-        headers: Optional[RequestHeaders] = None,
+        headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: Optional[int] = None,
     ) -> _RES:
         """Make an HTTP request to the server."""
@@ -80,10 +80,9 @@ class ConnecpyClientSync:
             timeout = _convert_connect_timeout(timeout_ms)
             request_args["timeout"] = timeout
 
-        user_headers = Headers(headers) if headers else Headers()
         request_headers = _client_shared.prepare_headers(
             self._codec,
-            user_headers,
+            headers,
             timeout_ms,
             self._accept_compression,
             self._send_compression,

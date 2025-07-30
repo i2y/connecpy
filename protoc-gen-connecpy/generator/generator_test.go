@@ -106,7 +106,7 @@ func TestGenerateConnecpyFile(t *testing.T) {
 				}
 
 				content := got.GetContent()
-				if !strings.Contains(content, "from typing import Iterable, Optional, Protocol, Union") {
+				if !strings.Contains(content, "from typing import Iterable, Mapping, Protocol") {
 					t.Error("Generated code missing required imports")
 				}
 				if !strings.Contains(content, "class "+strings.Split(tt.input.GetService()[0].GetName(), ".")[0]) {
