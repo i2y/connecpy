@@ -4,8 +4,6 @@
 
 from typing import Iterable, Mapping, Protocol
 
-import httpx
-
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -73,7 +71,6 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
         max_receive_message_length=1024 * 100 * 100,
     ):
         super().__init__(
-            path="/connectrpc.conformance.v1.ConformanceService",
             endpoints={
                 "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint[
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
@@ -147,8 +144,9 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
         )
 
     @property
-    def service_name(self):
-        return "connectrpc.conformance.v1.ConformanceService"
+    def path(self):
+        """Returns the URL path to mount the application to when serving multiple applications."""
+        return "/connectrpc.conformance.v1.ConformanceService"
 
 
 class ConformanceServiceClient(ConnecpyClient):
@@ -158,18 +156,15 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
-        session: httpx.AsyncClient | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
         method = "POST"
         return await self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/Unary",
+            url="/connectrpc.conformance.v1.ConformanceService/Unary",
             method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
             response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
-            session=session,
         )
 
     async def ServerStream(
@@ -178,18 +173,15 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
-        session: httpx.AsyncClient | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
         method = "POST"
         return await self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/ServerStream",
+            url="/connectrpc.conformance.v1.ConformanceService/ServerStream",
             method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
             response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
-            session=session,
         )
 
     async def ClientStream(
@@ -198,18 +190,15 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
-        session: httpx.AsyncClient | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         method = "POST"
         return await self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/ClientStream",
+            url="/connectrpc.conformance.v1.ConformanceService/ClientStream",
             method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
             response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
-            session=session,
         )
 
     async def BidiStream(
@@ -218,18 +207,15 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
-        session: httpx.AsyncClient | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
         method = "POST"
         return await self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/BidiStream",
+            url="/connectrpc.conformance.v1.ConformanceService/BidiStream",
             method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
             response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
-            session=session,
         )
 
     async def Unimplemented(
@@ -238,18 +224,15 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
-        session: httpx.AsyncClient | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
         method = "POST"
         return await self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/Unimplemented",
+            url="/connectrpc.conformance.v1.ConformanceService/Unimplemented",
             method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
             response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
-            session=session,
         )
 
     async def IdempotentUnary(
@@ -258,19 +241,16 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
-        session: httpx.AsyncClient | None = None,
         use_get: bool = False,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
         method = "GET" if use_get else "POST"
         return await self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/IdempotentUnary",
+            url="/connectrpc.conformance.v1.ConformanceService/IdempotentUnary",
             method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
             response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
-            session=session,
         )
 
 
@@ -321,7 +301,6 @@ class ConformanceServiceSync(Protocol):
 class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: ConformanceServiceSync):
         super().__init__(
-            path="/connectrpc.conformance.v1.ConformanceService",
             endpoints={
                 "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint[
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
@@ -389,12 +368,13 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
                     allowed_methods=("GET", "POST"),
                 ),
-            },
+            }
         )
 
     @property
-    def service_name(self):
-        return "connectrpc.conformance.v1.ConformanceService"
+    def path(self):
+        """Returns the URL path to mount the application to when serving multiple applications."""
+        return "/connectrpc.conformance.v1.ConformanceService"
 
 
 class ConformanceServiceClientSync(ConnecpyClientSync):
@@ -404,11 +384,10 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
         method = "POST"
         return self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/Unary",
+            url="/connectrpc.conformance.v1.ConformanceService/Unary",
             method=method,
             headers=headers,
             timeout_ms=timeout_ms,
@@ -422,11 +401,10 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
         method = "POST"
         return self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/ServerStream",
+            url="/connectrpc.conformance.v1.ConformanceService/ServerStream",
             method=method,
             headers=headers,
             timeout_ms=timeout_ms,
@@ -440,11 +418,10 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         method = "POST"
         return self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/ClientStream",
+            url="/connectrpc.conformance.v1.ConformanceService/ClientStream",
             method=method,
             headers=headers,
             timeout_ms=timeout_ms,
@@ -458,11 +435,10 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
         method = "POST"
         return self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/BidiStream",
+            url="/connectrpc.conformance.v1.ConformanceService/BidiStream",
             method=method,
             headers=headers,
             timeout_ms=timeout_ms,
@@ -476,11 +452,10 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
         method = "POST"
         return self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/Unimplemented",
+            url="/connectrpc.conformance.v1.ConformanceService/Unimplemented",
             method=method,
             headers=headers,
             timeout_ms=timeout_ms,
@@ -494,12 +469,11 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
         use_get: bool = False,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
         method = "GET" if use_get else "POST"
         return self._make_request(
-            url=f"{server_path_prefix}/connectrpc.conformance.v1.ConformanceService/IdempotentUnary",
+            url="/connectrpc.conformance.v1.ConformanceService/IdempotentUnary",
             method=method,
             headers=headers,
             timeout_ms=timeout_ms,

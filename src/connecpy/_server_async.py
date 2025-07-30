@@ -1,4 +1,5 @@
 import base64
+from abc import ABC, abstractmethod
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Tuple
 from urllib.parse import parse_qs
@@ -26,28 +27,26 @@ else:
     Scope = "asgiref.typing.Scope"
 
 
-class ConnecpyASGIApplication:
+class ConnecpyASGIApplication(ABC):
     """ASGI application for Connecpy."""
+
+    @property
+    @abstractmethod
+    def path(self) -> str:
+        raise NotImplementedError()
 
     def __init__(
         self,
         *,
-        path: str,
         endpoints: Mapping[str, _server_shared.Endpoint],
         interceptors: Iterable[_server_shared.ServerInterceptor] = (),
         max_receive_message_length=1024 * 100 * 100,
     ):
         """Initialize the ASGI application."""
         super().__init__()
-        self._path = path
         self._endpoints = endpoints
         self._interceptors = interceptors
         self._max_receive_message_length = max_receive_message_length
-
-    @property
-    def path(self) -> str:
-        """Get the path to mount the application to."""
-        return self._path
 
     async def __call__(
         self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
