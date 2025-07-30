@@ -4,8 +4,6 @@
 
 from typing import Iterable, Mapping, Protocol
 
-import httpx
-
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -36,7 +34,6 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         max_receive_message_length=1024 * 100 * 100,
     ):
         super().__init__(
-            path="/i2y.connecpy.example2023.Haberdasher",
             endpoints={
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[
                     example_dot_haberdasher__edition__2023__pb2.Size,
@@ -55,8 +52,9 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         )
 
     @property
-    def service_name(self):
-        return "i2y.connecpy.example2023.Haberdasher"
+    def path(self):
+        """Returns the URL path to mount the application to when serving multiple applications."""
+        return "/i2y.connecpy.example2023.Haberdasher"
 
 
 class HaberdasherClient(ConnecpyClient):
@@ -66,19 +64,16 @@ class HaberdasherClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
-        session: httpx.AsyncClient | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
         method = "GET" if use_get else "POST"
         return await self._make_request(
-            url=f"{server_path_prefix}/i2y.connecpy.example2023.Haberdasher/MakeHat",
+            url="/i2y.connecpy.example2023.Haberdasher/MakeHat",
             method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
             response_class=example_dot_haberdasher__edition__2023__pb2.Hat,
-            session=session,
         )
 
 
@@ -92,7 +87,6 @@ class HaberdasherSync(Protocol):
 class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: HaberdasherSync):
         super().__init__(
-            path="/i2y.connecpy.example2023.Haberdasher",
             endpoints={
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[
                     example_dot_haberdasher__edition__2023__pb2.Size,
@@ -105,12 +99,13 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                     output=example_dot_haberdasher__edition__2023__pb2.Hat,
                     allowed_methods=("GET", "POST"),
                 ),
-            },
+            }
         )
 
     @property
-    def service_name(self):
-        return "i2y.connecpy.example2023.Haberdasher"
+    def path(self):
+        """Returns the URL path to mount the application to when serving multiple applications."""
+        return "/i2y.connecpy.example2023.Haberdasher"
 
 
 class HaberdasherClientSync(ConnecpyClientSync):
@@ -120,12 +115,11 @@ class HaberdasherClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        server_path_prefix: str = "",
         use_get: bool = False,
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
         method = "GET" if use_get else "POST"
         return self._make_request(
-            url=f"{server_path_prefix}/i2y.connecpy.example2023.Haberdasher/MakeHat",
+            url="/i2y.connecpy.example2023.Haberdasher/MakeHat",
             method=method,
             headers=headers,
             timeout_ms=timeout_ms,
