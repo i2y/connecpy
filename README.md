@@ -6,11 +6,20 @@ This repo contains a protoc plugin that generates sever and client code and a py
 
 ## Installation
 
+### Requirements
+
+- Python 3.10 or later
+- Go (for installing protoc-gen-connecpy)
+
+### Install the protoc plugin
+
 You can install the protoc plugin to generate files by running the command:
 
 ```sh
 go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
 ```
+
+### Install the Python package
 
 Additionally, please add the connecpy package to your project using your preferred package manager. For instance, with [uv](https://docs.astral.sh/uv/), use the command:
 
@@ -23,6 +32,8 @@ or
 ```sh
 pip install connecpy
 ```
+
+### Server runtime dependencies
 
 To run the server, you'll need one of the following: [Uvicorn](https://www.uvicorn.org/), [Daphne](https://github.com/django/daphne), or [Hypercorn](https://gitlab.com/pgjones/hypercorn). If your goal is to support both HTTP/1.1 and HTTP/2, you should opt for either Daphne or Hypercorn. Additionally, to test the server, you might need a client command, such as [buf](https://buf.build/docs/installation).
 
@@ -40,7 +51,8 @@ protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 # service.py
 import random
 
-from connecpy.exceptions import InvalidArgument
+from connecpy.code import Code
+from connecpy.exceptions import ConnecpyException
 from connecpy.server import ServiceContext
 
 from haberdasher_pb2 import Hat, Size
@@ -48,10 +60,10 @@ from haberdasher_pb2 import Hat, Size
 
 class HaberdasherService:
     async def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
-        print("remaining_time: ", ctx.time_remaining())
+        print("remaining_time: ", ctx.timeout_ms())
         if req.inches <= 0:
-            raise InvalidArgument(
-                argument="inches", error="I can't make a hat that small!"
+            raise ConnecpyException(
+                Code.INVALID_ARGUMENT, "inches: I can't make a hat that small!"
             )
         response = Hat(
             size=req.inches,
@@ -111,11 +123,11 @@ timeout_s = 5
 
 
 async def main():
-    session = httpx.AsyncClient(
+    async with httpx.AsyncClient(
         base_url=server_url,
         timeout=timeout_s,
-    )
-    client = haberdasher_connecpy.HaberdasherClient(server_url, session=session)
+    ) as session:
+        async with haberdasher_connecpy.HaberdasherClient(server_url, session=session) as client:
 
     try:
         response = await client.MakeHat(
@@ -123,13 +135,9 @@ async def main():
         )
         if not response.HasField("name"):
             print("We didn't get a name!")
-        print(response)
-    except ConnecpyException as e:
-        print(e.code, e.message, e.to_dict())
-    finally:
-        # Close the session (could also use a context manager)
-        await session.aclose()
-        await client.close()
+            print(response)
+        except ConnecpyException as e:
+            print(e.code, e.message)
 
 
 if __name__ == "__main__":
@@ -167,7 +175,7 @@ def main():
                 print("We didn't get a name!")
             print(response)
         except ConnecpyException as e:
-            print(e.code, e.message, e.to_dict())
+            print(e.code, e.message)
 
 
 if __name__ == "__main__":
@@ -389,7 +397,10 @@ class MyInterceptor(ServerInterceptor):
 my_interceptor_a = MyInterceptor("A")
 my_interceptor_b = MyInterceptor("B")
 
-service = haberdasher_connecpy.HaberdasherASGIApplication(HaberdasherService())
+service = haberdasher_connecpy.HaberdasherASGIApplication(
+    HaberdasherService(),
+    interceptors=[my_interceptor_a, my_interceptor_b]
+)
 ```
 
 Btw, `ServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
