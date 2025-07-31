@@ -7,7 +7,11 @@ tool (
 	github.com/bufbuild/buf/cmd/buf
 )
 
-require google.golang.org/genproto v0.0.0-20250721164621-a45f3dfb1074
+require (
+	github.com/golang/protobuf v1.5.4
+	google.golang.org/genproto v0.0.0-20250721164621-a45f3dfb1074
+	google.golang.org/protobuf v1.36.6
+)
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.36.6-20250121211742-6d880cc6cc8d.1 // indirect
@@ -113,7 +117,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250715232539-7130f93afb79 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250715232539-7130f93afb79 // indirect
 	google.golang.org/grpc v1.73.0 // indirect
-	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	nhooyr.io/websocket v1.8.6 // indirect
 	pluginrpc.com/pluginrpc v0.5.0 // indirect
