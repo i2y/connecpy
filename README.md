@@ -434,4 +434,4 @@ app = HaberedasherASGIApplication(max_receive_message_length=10)
 
 ## Standing on the shoulders of giants
 
-The initial version (1.0.0) of this software was created by modifying https://github.com/verloop/twirpy at January 4, 2024, so that it supports Connect Protocol. Therefore, this software is also licensed under Unlicense same as twirpy.
+The initial version (1.0.0) of this software was created by modifying https://github.com/verloop/twirpy at January 4, 2024, so that it supports Connect Protocol.

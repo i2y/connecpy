@@ -13,12 +13,12 @@ from ._protocol import (
     ConnectWireError,
     codec_name_from_content_type,
 )
+from ._version import __version__
 from .code import Code
 from .exceptions import ConnecpyException
 from .headers import Headers
 
-# TODO: Embed package version correctly
-_DEFAULT_CONNECT_USER_AGENT = "connecpy/0.0.0"
+_DEFAULT_CONNECT_USER_AGENT = f"connecpy/{__version__}"
 
 
 def prepare_headers(
