@@ -361,8 +361,8 @@ you can use a routing framework such as [werkzeug](./example/example/flask_mount
 The generated application classes now expose a `path` property that returns the service's URL path, making it easier to mount multiple services:
 
 ```python
-app = haberdasher_connecpy.HaberdasherASGIApplication(service)
-print(app.path)  # "/package.ServiceName"
+haberdasher_app = haberdasher_connecpy.HaberdasherASGIApplication(service)
+print(haberdasher_app.path)  # "/package.ServiceName"
 
 # Use with routing frameworks
 app.wsgi_app = DispatcherMiddleware(
