@@ -1,6 +1,8 @@
 import argparse
 import asyncio
+import os
 import ssl
+import sys
 from tempfile import TemporaryFile
 from typing import Literal
 
@@ -280,4 +282,11 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    if os.environ.get("CI") and sys.platform == "darwin":
+        # Use uvloop on macOS in CI because the asyncio implementation seems to
+        # cause some flakiness with timing-related tests.
+        import uvloop
+
+        uvloop.run(main())
+    else:
+        asyncio.run(main())

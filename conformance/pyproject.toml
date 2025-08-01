@@ -9,6 +9,7 @@ dependencies = [
     "hypercorn",
     "pytest",
     "pytest-asyncio",
+    "uvloop",
     "zstandard",
 ]
 
