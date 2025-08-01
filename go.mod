@@ -1,4 +1,4 @@
-module github.com/i2y/connecpy
+module github.com/i2y/connecpy/v2
 
 go 1.24.0
 

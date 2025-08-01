@@ -205,7 +205,7 @@ func TestGenerate(t *testing.T) {
 func TestEdition2023Support(t *testing.T) {
 	// Create a request with an Edition 2023 proto file
 	edition2023 := descriptorpb.Edition_EDITION_2023
-	
+
 	req := &pluginpb.CodeGeneratorRequest{
 		FileToGenerate: []string{"test_edition2023.proto"},
 		ProtoFile: []*descriptorpb.FileDescriptorProto{
@@ -289,7 +289,7 @@ func TestEdition2023Support(t *testing.T) {
 		if generatedFile.GetName() != "test_edition2023_connecpy.py" {
 			t.Errorf("Expected filename test_edition2023_connecpy.py, got %v", generatedFile.GetName())
 		}
-		
+
 		// Verify the generated content includes the service
 		content := generatedFile.GetContent()
 		if !strings.Contains(content, "class Edition2023Service") {

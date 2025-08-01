@@ -6,7 +6,7 @@ import (
 	"os"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	"github.com/i2y/connecpy/protoc-gen-connecpy/generator"
+	"github.com/i2y/connecpy/v2/protoc-gen-connecpy/generator"
 	"google.golang.org/protobuf/proto"
 )
 
