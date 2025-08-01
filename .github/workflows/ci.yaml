@@ -58,3 +58,6 @@ jobs:
       - name: run Go tests
         run: go test ./...
         working-directory: protoc-gen-connecpy
+
+      - name: build Go archives
+        run: go tool goreleaser release --snapshot --clean

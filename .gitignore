@@ -120,3 +120,8 @@ venv.bak/
 
 # generated Go binary
 protoc-gen-connecpy/protoc-gen-connecpy
+
+# goreleaser archives
+out/
+
+go.work.sum
