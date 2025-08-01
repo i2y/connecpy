@@ -9,11 +9,19 @@ This repo contains a protoc plugin that generates sever and client code and a py
 ### Requirements
 
 - Python 3.10 or later
-- Go (for installing protoc-gen-connecpy)
 
 ### Install the protoc plugin
 
-You can install the protoc plugin to generate files by running the command:
+You can install the protoc plugin using one of these methods:
+
+#### Option 1: Download pre-built binary (recommended)
+Download the latest release from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest) page. Pre-built binaries are available for:
+- Linux (amd64, arm64)
+- macOS (amd64, arm64)
+- Windows (amd64, arm64)
+
+#### Option 2: Install with Go
+If you have Go installed, you can install using:
 
 ```sh
 go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
