@@ -1,3 +1,4 @@
+name: Release
 on:
   push:
     tags:
@@ -6,6 +7,8 @@ on:
 
 permissions:
   id-token: write
+  attestations: write
+  contents: write
 
 jobs:
   release:
@@ -19,10 +22,24 @@ jobs:
         with:
           python-version-file: "pyproject.toml"
 
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.work
+          cache-dependency-path: "**/go.mod"
+
       - run: uv sync
 
       - run: uv build
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
         with:
-            password: ${{ secrets.PYPI_TOKEN }}
+          password: ${{ secrets.PYPI_TOKEN }}
+
+      - name: build Go archives
+        run: go tool goreleaser release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-checksums: out/checksums.txt
