@@ -60,4 +60,5 @@ jobs:
         working-directory: protoc-gen-connecpy
 
       - name: build Go archives
+        if: ${{ startsWith(matrix.os, 'ubuntu-') }}
         run: go tool goreleaser release --snapshot --clean
