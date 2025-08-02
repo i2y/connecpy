@@ -24,7 +24,7 @@ Download the latest release from [GitHub Releases](https://github.com/i2y/connec
 If you have Go installed, you can install using:
 
 ```sh
-go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
+go install github.com/i2y/connecpy/v2/protoc-gen-connecpy@latest
 ```
 
 ### Install the Python package
