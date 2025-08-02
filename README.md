@@ -6,11 +6,28 @@ This repo contains a protoc plugin that generates sever and client code and a py
 
 ## Installation
 
-You can install the protoc plugin to generate files by running the command:
+### Requirements
+
+- Python 3.10 or later
+
+### Install the protoc plugin
+
+You can install the protoc plugin using one of these methods:
+
+#### Option 1: Download pre-built binary (recommended)
+Download the latest release from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest) page. Pre-built binaries are available for:
+- Linux (amd64, arm64)
+- macOS (amd64, arm64)
+- Windows (amd64, arm64)
+
+#### Option 2: Install with Go
+If you have Go installed, you can install using:
 
 ```sh
 go install github.com/i2y/connecpy/protoc-gen-connecpy@latest
 ```
+
+### Install the Python package
 
 Additionally, please add the connecpy package to your project using your preferred package manager. For instance, with [uv](https://docs.astral.sh/uv/), use the command:
 
@@ -23,6 +40,8 @@ or
 ```sh
 pip install connecpy
 ```
+
+### Server runtime dependencies
 
 To run the server, you'll need one of the following: [Uvicorn](https://www.uvicorn.org/), [Daphne](https://github.com/django/daphne), or [Hypercorn](https://gitlab.com/pgjones/hypercorn). If your goal is to support both HTTP/1.1 and HTTP/2, you should opt for either Daphne or Hypercorn. Additionally, to test the server, you might need a client command, such as [buf](https://buf.build/docs/installation).
 
@@ -40,18 +59,19 @@ protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 # service.py
 import random
 
-from connecpy.exceptions import InvalidArgument
+from connecpy.code import Code
+from connecpy.exceptions import ConnecpyException
 from connecpy.server import ServiceContext
 
 from haberdasher_pb2 import Hat, Size
 
 
-class HaberdasherService(object):
+class HaberdasherService:
     async def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
-        print("remaining_time: ", ctx.time_remaining())
+        print("remaining_time: ", ctx.timeout_ms())
         if req.inches <= 0:
-            raise InvalidArgument(
-                argument="inches", error="I can't make a hat that small!"
+            raise ConnecpyException(
+                Code.INVALID_ARGUMENT, "inches: I can't make a hat that small!"
             )
         response = Hat(
             size=req.inches,
@@ -67,12 +87,10 @@ class HaberdasherService(object):
 
 ```python
 # server.py
-from connecpy import context
-
 import haberdasher_connecpy
 from service import HaberdasherService
 
-app = haberdasher_connecpy.HaberdasherWSGIApplication(
+app = haberdasher_connecpy.HaberdasherASGIApplication(
     HaberdasherService()
 )
 ```
@@ -113,27 +131,21 @@ timeout_s = 5
 
 
 async def main():
-    session = httpx.AsyncClient(
+    async with httpx.AsyncClient(
         base_url=server_url,
         timeout=timeout_s,
-    )
-    client = haberdasher_connecpy.HaberdasherClient(server_url, session=session)
+    ) as session:
+        async with haberdasher_connecpy.HaberdasherClient(server_url, session=session) as client:
 
     try:
         response = await client.MakeHat(
             haberdasher_pb2.Size(inches=12),
-            # Optionally provide a session per request
-            # session=session,
         )
         if not response.HasField("name"):
             print("We didn't get a name!")
-        print(response)
-    except ConnecpyException as e:
-        print(e.code, e.message, e.to_dict())
-    finally:
-        # Close the session (could also use a context manager)
-        await session.aclose()
-        await client.close()
+            print(response)
+        except ConnecpyException as e:
+            print(e.code, e.message)
 
 
 if __name__ == "__main__":
@@ -162,7 +174,7 @@ timeout_s = 5
 
 
 def main():
-    with haberdasher_connecpy.HaberdasherClientSync(server_url, timeout=timeout_s) as client:
+    with haberdasher_connecpy.HaberdasherClientSync(server_url, timeout_ms=timeout_s * 1000) as client:
         try:
             response = client.MakeHat(
                 haberdasher_pb2.Size(inches=12),
@@ -171,7 +183,7 @@ def main():
                 print("We didn't get a name!")
             print(response)
         except ConnecpyException as e:
-            print(e.code, e.message, e.to_dict())
+            print(e.code, e.message)
 
 
 if __name__ == "__main__":
@@ -234,7 +246,7 @@ curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"
 
 Connecpy now provides WSGI support via the `ConnecpyWSGIApp`. This synchronous application adapts our service endpoints to the WSGI specification. It reads requests from the WSGI `environ`, processes POST requests, and returns responses using `start_response`. This enables integration with legacy WSGI servers and middleware.
 
-Please see the example in the [example directory](example/wsgi_server.py).
+Please see the example in the [example directory](example/example/wsgi_server.py).
 
 ## Compression Support
 
@@ -267,62 +279,103 @@ The compression handling is built into both ASGI and WSGI applications. You don'
 
 ### Client-side
 
-For synchronous clients:
-
-```python
-
-with HaberdasherClient(server_url) as client:
-    response = await client.MakeHat(
-        request_obj,
-        send_compression="br",
-        accept_compression=("gzip,")
-    )
-```
-
 For async clients:
 
 ```python
-async with HaberdasherClientSync(server_url) as client:
+async with haberdasher_connecpy.HaberdasherClient(
+    server_url,
+    send_compression="br",
+    accept_compression=["gzip"]
+) as client:
+    response = await client.MakeHat(
+        haberdasher_pb2.Size(inches=12)
+    )
+```
+
+For synchronous clients:
+
+```python
+with haberdasher_connecpy.HaberdasherClientSync(
+    server_url,
+    send_compression="zstd",  # Use Zstandard compression for request
+    accept_compression=["br"]  # Accept Brotli compressed response
+) as client:
     response = client.MakeHat(
-        request_obj,
-        send_compression="zstd",  # Use Zstandard compression for request
-        accept_compression=("br,")  # Accept Brotli compressed response
+        haberdasher_pb2.Size(inches=12)
     )
 ```
 
 Using GET requests with compression:
 
 ```python
-response = client.MakeHat(
-    request=request_obj,
-    use_get=True,  # Enable GET request (for methods marked with no_side_effects)
-    send_compression="gzip",  # Use gzip compression for the message
+response = await client.MakeHat(
+    haberdasher_pb2.Size(inches=12),
+    use_get=True  # Enable GET request (for methods marked with no_side_effects)
 )
+# Note: Compression for GET requests is handled automatically based on the client's configuration
 ```
 
 ### CORS Support
 
 `ConnecpyASGIApp` is a standard ASGI application meaning any CORS ASGI middleware will work well with it, for example
 `starlette.middleware.cors.CORSMiddleware`. Refer to [Connect Docs](https://connectrpc.com/docs/cors/) for standard
-headers commonly used by Connect clients for CORS negotiation and a full [example using Starlette](./example/starlette_mount.py).
+headers commonly used by Connect clients for CORS negotiation and a full [example using Starlette](./example/example/starlette_mount.py).
 
 ## Connect Protocol
 
-Connecpy protoc plugin generates the code based on [Connect Protocl](https://connectrpc.com/docs/protocol) from the `.proto` files.
+Connecpy protoc plugin generates the code based on [Connect Protocol](https://connectrpc.com/docs/protocol) from the `.proto` files.
 Currently, Connecpy supports only Unary RPCs using the POST HTTP method. Connecpy will support other types of RPCs as well, in the near future.
+
+## Proto Editions Support
+
+Starting from version 2.0.0, protoc-gen-connecpy supports Proto Editions 2023. You can use the new editions syntax in your `.proto` files:
+
+```proto
+edition = "2023";
+
+package example;
+
+service Greeter {
+  rpc SayHello (HelloRequest) returns (HelloReply);
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloReply {
+  string message = 1;
+}
+```
+
+The code generation works the same way as with proto2/proto3 syntax. Note that you'll need protoc version 26.0 or later to use editions syntax.
 
 ## Misc
 
 ### Routing
 
 Connecpy applications are standard WSGI or ASGI applications. For complex routing requirements,
-you can use a routing framework such as [werkzeug](./example/examples/flask_mount.py) or
-[starlette](./examples/examples/routing_asgi.py).
+you can use a routing framework such as [werkzeug](./example/example/flask_mount.py) or
+[starlette](./example/example/routing_asgi.py).
+
+The generated application classes now expose a `path` property that returns the service's URL path, making it easier to mount multiple services:
+
+```python
+haberdasher_app = haberdasher_connecpy.HaberdasherASGIApplication(service)
+print(haberdasher_app.path)  # "/package.ServiceName"
+
+# Use with routing frameworks
+app.wsgi_app = DispatcherMiddleware(
+    app.wsgi_app,
+    {
+        haberdasher_app.path: haberdasher_app,
+    },
+)
+```
 
 ### Interceptor (Server Side)
 
-ConnecpyASGIApplication supports interceptors. You can add interceptors by passing `interceptors` to the application constructor.
-ConnecpyServerInterceptor
+ConnecpyASGIApplication supports interceptors (ASGI only, not available for WSGI). You can add interceptors by passing `interceptors` to the application constructor:
 
 ```python
 # server.py
@@ -352,67 +405,13 @@ class MyInterceptor(ServerInterceptor):
 my_interceptor_a = MyInterceptor("A")
 my_interceptor_b = MyInterceptor("B")
 
-service = haberdasher_connecpy.HaberdasherASGIApplication(HaberdasherService())
+service = haberdasher_connecpy.HaberdasherASGIApplication(
+    HaberdasherService(),
+    interceptors=[my_interceptor_a, my_interceptor_b]
+)
 ```
 
 Btw, `ServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
-
-### gRPC Compatibility
-
-In Connecpy, unlike connect-go, it is not possible to simultaneously support both gRPC and Connect RPC on the same server and port. In addition to it, Connecpy itself doesn't support gRPC. However, implementing a gRPC server using the same service code used for Connecpy server is feasible, as shown below. This is possible because the type signature of the service class in Connecpy is compatible with type signature gRPC framework requires.
-The example below uses [grpc.aio](https://grpc.github.io/grpc/python/grpc_asyncio.html) and there are in [example directory](example/README.md).
-
-```python
-# grpc_server.py
-import asyncio
-
-from grpc.aio import server
-
-import haberdasher_pb2_grpc
-
-# same service.py as the one used in previous server.py
-from service import HaberdasherService
-
-host = "localhost:50051"
-
-
-async def main():
-    s = server()
-    haberdasher_pb2_grpc.add_HaberdasherServicer_to_server(HaberdasherService(), s)
-    bound_port = s.add_insecure_port(host)
-    print(f"localhost:{bound_port}")
-    await s.start()
-    await s.wait_for_termination()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-```python
-# grpc_client.py
-import asyncio
-
-from grpc.aio import insecure_channel
-
-import haberdasher_pb2
-import haberdasher_pb2_grpc
-
-
-target = "localhost:50051"
-
-
-async def main():
-    channel = insecure_channel(target)
-    stub = haberdasher_pb2_grpc.HaberdasherStub(channel)
-    request = haberdasher_pb2.Size(inches=12)
-    response = await stub.MakeHat(request)
-    print(response)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
 
 ### Message Body Length
 
