@@ -27,7 +27,7 @@ jobs:
           go-version-file: go.work
           cache-dependency-path: "**/go.mod"
 
-      - run: uv sync
+      - run: uv sync --frozen
 
       - run: uv build
 

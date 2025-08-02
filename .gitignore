@@ -125,3 +125,6 @@ protoc-gen-connecpy/protoc-gen-connecpy
 out/
 
 go.work.sum
+
+# GitHub Actions temporary files
+.github/.tmp/
