@@ -86,12 +86,13 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 				noSideEffects = mo.GetIdempotencyLevel() == descriptorpb.MethodOptions_NO_SIDE_EFFECTS
 			}
 			connecpyMethod := &ConnecpyMethod{
-				Package:       packageName,
-				ServiceName:   connecpySvc.Name,
-				Name:          string(method.Name()),
-				InputType:     symbolName(method.Input()),
-				OutputType:    symbolName(method.Output()),
-				NoSideEffects: noSideEffects,
+				Package:        packageName,
+				ServiceName:    connecpySvc.Name,
+				Name:           string(method.Name()),
+				InputType:      symbolName(method.Input()),
+				OutputType:     symbolName(method.Output()),
+				ResponseStream: method.IsStreamingServer(),
+				NoSideEffects:  noSideEffects,
 			}
 
 			connecpySvc.Methods = append(connecpySvc.Methods, connecpyMethod)

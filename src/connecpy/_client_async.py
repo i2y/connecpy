@@ -1,13 +1,15 @@
-from asyncio import CancelledError, wait_for
-from typing import Iterable, Mapping, Optional, TypeVar
+from asyncio import CancelledError, sleep, wait_for
+from typing import AsyncIterator, Generic, Iterable, Mapping, Optional, TypeVar
 
 import httpx
 from google.protobuf.message import Message
-from httpx import Timeout
+from httpx import Response, Timeout
 
 from . import _client_shared
-from ._codec import get_proto_binary_codec, get_proto_json_codec
-from ._protocol import ConnectWireError
+from ._codec import Codec, get_proto_binary_codec, get_proto_json_codec
+from ._compression import Compression, get_compression
+from ._envelope import EnvelopeReader
+from ._protocol import CONNECT_STREAMING_HEADER_COMPRESSION, ConnectWireError
 from .code import Code
 from .exceptions import ConnecpyException
 from .headers import Headers
@@ -84,6 +86,7 @@ class ConnecpyClient:
 
         request_headers = _client_shared.prepare_headers(
             self._codec,
+            False,
             headers,
             timeout_ms,
             self._accept_compression,
@@ -95,7 +98,7 @@ class ConnecpyClient:
             request_data = self._codec.encode(request)
             client = self._session
 
-            request_data = _client_shared.maybe_compress_request(
+            request_data, _ = _client_shared.maybe_compress_request(
                 request_data, request_headers
             )
 
@@ -149,6 +152,73 @@ class ConnecpyClient:
         except Exception as e:
             raise ConnecpyException(Code.UNAVAILABLE, str(e))
 
+    async def _make_request_stream(
+        self,
+        *,
+        url: str,
+        request: Message | AsyncIterator[Message],
+        response_class: type[_RES],
+        headers: Headers | Mapping[str, str] | None = None,
+        timeout_ms: Optional[int] = None,
+    ) -> "ResponseStream[_RES]":
+        """Make an HTTP request to the server."""
+        # Prepare headers and request args using shared logic
+        request_args = {}
+        if timeout_ms is None:
+            timeout_ms = self._timeout_ms
+        else:
+            timeout = _convert_connect_timeout(timeout_ms)
+            request_args["timeout"] = timeout
+
+        request_headers = _client_shared.prepare_headers(
+            self._codec,
+            True,
+            headers,
+            timeout_ms,
+            self._accept_compression,
+            self._send_compression,
+        )
+        timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else None
+
+        try:
+            request_data = _streaming_request_content(
+                request, self._codec, self._send_compression
+            )
+
+            client = self._session
+
+            resp = await wait_for(
+                client.post(
+                    url=self._address + url,
+                    headers=request_headers,
+                    content=request_data,
+                    **request_args,
+                ),
+                timeout_s,
+            )
+
+            compression = _client_shared.validate_response_content_encoding(
+                resp.headers.get(CONNECT_STREAMING_HEADER_COMPRESSION, "")
+            )
+            _client_shared.validate_stream_response_content_type(
+                self._codec.name(),
+                resp.headers.get("content-type", ""),
+            )
+            _client_shared.handle_response_headers(resp.headers)
+
+            if resp.status_code == 200:
+                return ResponseStream(resp, response_class, self._codec, compression)
+            else:
+                raise ConnectWireError.from_response(resp).to_exception()
+        except (httpx.TimeoutException, TimeoutError):
+            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out")
+        except ConnecpyException:
+            raise
+        except CancelledError as e:
+            raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
+        except Exception as e:
+            raise ConnecpyException(Code.UNAVAILABLE, str(e))
+
 
 def _convert_connect_timeout(timeout_ms: Optional[int]) -> Timeout:
     if timeout_ms is None:
@@ -158,3 +228,89 @@ def _convert_connect_timeout(timeout_ms: Optional[int]) -> Timeout:
     # We apply the timeout to the entire operation per connect's semantics so don't need
     # HTTP timeout
     return Timeout(None)
+
+
+async def _streaming_request_content(
+    msgs: Message | AsyncIterator[Message],
+    codec: Codec,
+    compression_name: Optional[str],
+) -> AsyncIterator[bytes]:
+    compression = get_compression(compression_name or "identity")
+    not_compressed = compression_name is None or compression_name.lower() == "identity"
+    if not_compressed:
+        prefix = b"\x00"
+    else:
+        prefix = b"\x01"
+
+    if isinstance(msgs, Message):
+        yield prefix
+        content = codec.encode(msgs)
+        if compression:
+            content = compression.compress(content)
+        yield len(content).to_bytes(4, "big")
+        yield content
+        return
+
+    async for msg in msgs:
+        yield prefix
+        content = codec.encode(msg)
+        if compression:
+            content = compression.compress(content)
+        yield len(content).to_bytes(4, "big")
+        yield content
+
+
+class ResponseStream(Generic[_RES]):
+    """A streaming response from the server.
+
+    A stream is associated with resources which must be cleaned up. If doing
+    a simple iteration on all response messages with `async for`, the stream will
+    be cleaned up automatically. If you only partially iterate, using `break` to
+    interrupt it, make sure to use the response as a context manager or call
+    `close()` to release resources.
+    """
+
+    def __init__(
+        self,
+        response: Response,
+        response_class: type[_RES],
+        codec: Codec,
+        compression: Compression,
+    ):
+        self._response = response
+        self._response_class = response_class
+        self._codec = codec
+        self._compression = compression
+        self._closed = False
+
+    async def __aiter__(self) -> AsyncIterator[_RES]:
+        if self._closed:
+            return
+
+        reader = EnvelopeReader(self._response_class, self._codec, self._compression)
+        try:
+            async for chunk in self._response.aiter_bytes():
+                for message in reader.feed(chunk):
+                    yield message
+                    # Check for cancellation each message. While this seems heavyweight,
+                    # conformance tests require it.
+                    await sleep(0)
+            for message in reader.read_messages():
+                yield message
+        except CancelledError as e:
+            raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
+        finally:
+            await self.close()
+
+    async def close(self):
+        """Close the stream and release resources."""
+        if self._closed:
+            return
+        self._closed = True
+        await self._response.aclose()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()

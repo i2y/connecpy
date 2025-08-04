@@ -22,13 +22,14 @@ type ConnecpyService struct {
 }
 
 type ConnecpyMethod struct {
-	Package       string
-	ServiceName   string
-	Name          string
-	Comment       string
-	InputType     string
-	OutputType    string
-	NoSideEffects bool
+	Package        string
+	ServiceName    string
+	Name           string
+	Comment        string
+	InputType      string
+	OutputType     string
+	ResponseStream bool
+	NoSideEffects  bool
 }
 
 // ConnecpyTemplate - Template for connecpy server and client
@@ -38,7 +39,8 @@ var ConnecpyTemplate = template.Must(template.New("ConnecpyTemplate").Parse(`# -
 {{if .Services}}
 from typing import Iterable, Mapping, Protocol
 
-from connecpy.client import ConnecpyClient, ConnecpyClientSync
+from connecpy.client import ConnecpyClient, ConnecpyClientSync, ResponseStream, ResponseStreamSync
+from connecpy._client_shared import ResponseMetadata
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
@@ -87,11 +89,11 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{if .NoSideEffects}}use_get: bool = False,{{end}}
-    ) -> {{.OutputType}}:
-        {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
-        return await self._make_request(
-            url="/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            method=method,
+    ) -> {{if .ResponseStream}}ResponseStream[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:{{if not .ResponseStream}}
+        {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}{{end }}
+        return await self._make_request{{if .ResponseStream}}_stream{{end}}(
+            url="/{{.Package}}.{{.ServiceName}}/{{.Name}}",{{if not .ResponseStream}}
+            method=method,{{end}}
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
@@ -134,11 +136,11 @@ class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{if .NoSideEffects}}use_get: bool = False,{{end}}
-    ) -> {{.OutputType}}:
-        {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}
-        return self._make_request(
-            url="/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            method=method,
+    ) -> {{if .ResponseStream}}ResponseStreamSync[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:{{if not .ResponseStream}}
+        {{if .NoSideEffects}}method = "GET" if use_get else "POST"{{else}}method = "POST"{{end}}{{end}}
+        return self._make_request{{if .ResponseStream}}_stream{{end}}(
+            url="/{{.Package}}.{{.ServiceName}}/{{.Name}}",{{if not .ResponseStream}}
+            method=method,{{end}}
             headers=headers,
             timeout_ms=timeout_ms,
             request=request,

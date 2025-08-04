@@ -16,3 +16,4 @@ features:
     - COMPRESSION_ZSTD
   stream_types:
     - STREAM_TYPE_UNARY
+    - STREAM_TYPE_SERVER_STREAM

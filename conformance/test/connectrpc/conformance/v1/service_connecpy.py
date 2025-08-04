@@ -4,7 +4,12 @@
 
 from typing import Iterable, Mapping, Protocol
 
-from connecpy.client import ConnecpyClient, ConnecpyClientSync
+from connecpy.client import (
+    ConnecpyClient,
+    ConnecpyClientSync,
+    ResponseStream,
+    ResponseStreamSync,
+)
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
@@ -173,11 +178,11 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
-        method = "POST"
-        return await self._make_request(
+    ) -> ResponseStream[
+        connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse
+    ]:
+        return await self._make_request_stream(
             url="/connectrpc.conformance.v1.ConformanceService/ServerStream",
-            method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
@@ -207,11 +212,11 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
-        method = "POST"
-        return await self._make_request(
+    ) -> ResponseStream[
+        connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse
+    ]:
+        return await self._make_request_stream(
             url="/connectrpc.conformance.v1.ConformanceService/BidiStream",
-            method=method,
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
@@ -401,11 +406,11 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse:
-        method = "POST"
-        return self._make_request(
+    ) -> ResponseStreamSync[
+        connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse
+    ]:
+        return self._make_request_stream(
             url="/connectrpc.conformance.v1.ConformanceService/ServerStream",
-            method=method,
             headers=headers,
             timeout_ms=timeout_ms,
             request=request,
@@ -435,11 +440,11 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse:
-        method = "POST"
-        return self._make_request(
+    ) -> ResponseStreamSync[
+        connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse
+    ]:
+        return self._make_request_stream(
             url="/connectrpc.conformance.v1.ConformanceService/BidiStream",
-            method=method,
             headers=headers,
             timeout_ms=timeout_ms,
             request=request,
