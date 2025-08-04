@@ -12,6 +12,12 @@ from .exceptions import ConnecpyException
 
 CONNECT_PROTOCOL_VERSION = "1"
 CONNECT_UNARY_CONTENT_TYPE_PREFIX = "application/"
+CONNECT_STREAMING_CONTENT_TYPE_PREFIX = "application/connect+"
+
+CONNECT_UNARY_HEADER_COMPRESSION = "content-encoding"
+CONNECT_UNARY_HEADER_ACCEPT_COMPRESSION = "accept-encoding"
+CONNECT_STREAMING_HEADER_COMPRESSION = "connect-content-encoding"
+CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION = "connect-accept-encoding"
 
 
 # Define a custom class for HTTP Status to allow adding 499 status code
@@ -88,37 +94,43 @@ class ConnectWireError:
             data = response.json()
         except Exception:
             data = None
-        details: Sequence[Any] = ()
         if isinstance(data, dict):
-            code_str = data.get("code")
-            if code_str:
-                try:
-                    code = Code(code_str)
-                except ValueError:
-                    code = Code.UNAVAILABLE
-            else:
-                code = _http_status_code_to_error.get(
-                    response.status_code, Code.UNKNOWN
-                )
-            message = data.get("message", "")
-            details_json = cast(Optional[list[dict[str, str]]], data.get("details"))
-            if details_json:
-                details = []
-                for detail in details_json:
-                    detail_type = detail.get("type")
-                    detail_value = detail.get("value")
-                    if detail_type is None or detail_value is None:
-                        # Ignore malformed details
-                        continue
-                    details.append(
-                        Any(
-                            type_url="type.googleapis.com/" + detail_type,
-                            value=b64decode(detail_value + "==="),
-                        )
-                    )
-            return ConnectWireError(code, message, details)
+            return ConnectWireError.from_dict(
+                data, response.status_code, Code.UNAVAILABLE
+            )
         else:
             return ConnectWireError.from_http_status(response.status_code)
+
+    @staticmethod
+    def from_dict(
+        data: dict, http_status: int, unexpected_code: Code
+    ) -> "ConnectWireError":
+        code_str = data.get("code")
+        if code_str:
+            try:
+                code = Code(code_str)
+            except ValueError:
+                code = unexpected_code
+        else:
+            code = _http_status_code_to_error.get(http_status, Code.UNKNOWN)
+        message = data.get("message", "")
+        details: Sequence[Any] = ()
+        details_json = cast(Optional[list[dict[str, str]]], data.get("details"))
+        if details_json:
+            details = []
+            for detail in details_json:
+                detail_type = detail.get("type")
+                detail_value = detail.get("value")
+                if detail_type is None or detail_value is None:
+                    # Ignore malformed details
+                    continue
+                details.append(
+                    Any(
+                        type_url="type.googleapis.com/" + detail_type,
+                        value=b64decode(detail_value + "==="),
+                    )
+                )
+        return ConnectWireError(code, message, details)
 
     @staticmethod
     def from_http_status(status_code: int) -> "ConnectWireError":

@@ -1,27 +1,34 @@
 import gzip
 from collections.abc import KeysView
-from typing import Optional, Protocol
+from typing import ByteString, Optional, Protocol
 
 
 class Compression(Protocol):
-    def compress(self, data: bytes) -> bytes:
+    def compress(self, data: ByteString) -> bytes:
         """Compress the given data."""
         ...
 
-    def decompress(self, data: bytes) -> bytes:
+    def decompress(self, data: ByteString) -> bytes:
         """Decompress the given data."""
         ...
+
+    def is_identity(self) -> bool:
+        """Check if this compression is identity (no compression). Needed for stream validation."""
+        return False
 
 
 _compressions: dict[str, Compression] = {}
 
 
 class GZipCompression(Compression):
-    def compress(self, data: bytes) -> bytes:
+    def compress(self, data: ByteString) -> bytes:
         return gzip.compress(data)
 
-    def decompress(self, data: bytes) -> bytes:
+    def decompress(self, data: ByteString) -> bytes:
         return gzip.decompress(data)
+
+    def is_identity(self) -> bool:
+        return False
 
 
 _compressions["gzip"] = GZipCompression()
@@ -30,11 +37,14 @@ try:
     import brotli
 
     class BrotliCompression(Compression):
-        def compress(self, data: bytes) -> bytes:
+        def compress(self, data: ByteString) -> bytes:
             return brotli.compress(data)
 
-        def decompress(self, data: bytes) -> bytes:
+        def decompress(self, data: ByteString) -> bytes:
             return brotli.decompress(data)
+
+        def is_identity(self) -> bool:
+            return False
 
     _compressions["br"] = BrotliCompression()
 except ImportError:
@@ -44,14 +54,17 @@ try:
     import zstandard
 
     class ZstdCompression(Compression):
-        def compress(self, data: bytes) -> bytes:
+        def compress(self, data: ByteString) -> bytes:
             return zstandard.ZstdCompressor().compress(data)
 
-        def decompress(self, data: bytes) -> bytes:
+        def decompress(self, data: ByteString) -> bytes:
             # Support clients sending frames without length by using
             # stream API.
             with zstandard.ZstdDecompressor().stream_reader(data) as reader:
                 return reader.read()
+
+        def is_identity(self) -> bool:
+            return False
 
     _compressions["zstd"] = ZstdCompression()
 except ImportError:
@@ -59,13 +72,16 @@ except ImportError:
 
 
 class IdentityCompression(Compression):
-    def compress(self, data: bytes) -> bytes:
+    def compress(self, data: ByteString) -> bytes:
         """Return data as-is without compression."""
-        return data
+        return bytes(data)
 
-    def decompress(self, data: bytes) -> bytes:
+    def decompress(self, data: ByteString) -> bytes:
         """Return data as-is without decompression."""
-        return data
+        return bytes(data)
+
+    def is_identity(self) -> bool:
+        return True
 
 
 _compressions["identity"] = IdentityCompression()

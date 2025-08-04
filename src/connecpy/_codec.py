@@ -1,7 +1,8 @@
-from typing import Any, Optional, Protocol
+from typing import Any, ByteString, Optional, Protocol
 
+from google.protobuf.json_format import MessageToJson
+from google.protobuf.json_format import Parse as MessageFromJson
 from google.protobuf.message import Message
-from google.protobuf.json_format import MessageToJson, Parse as MessageFromJson
 
 CODEC_NAME_PROTO = "proto"
 CODEC_NAME_JSON = "json"
@@ -19,7 +20,7 @@ class Codec(Protocol):
         """Marshals the given message."""
         ...
 
-    def decode(self, data: bytes, message: Any) -> Any:
+    def decode(self, data: ByteString, message: Any) -> Any:
         """Unmarshals the given message."""
         ...
 
@@ -35,10 +36,10 @@ class ProtoBinaryCodec(Codec):
             raise TypeError("Expected a protobuf Message instance")
         return message.SerializeToString()
 
-    def decode(self, data: bytes, message: Any) -> Any:
+    def decode(self, data: ByteString, message: Any) -> Any:
         if not isinstance(message, Message):
             raise TypeError("Expected a protobuf Message instance")
-        message.ParseFromString(data)
+        message.ParseFromString(data)  # pyright: ignore[reportArgumentType] - type is incorrect
         return message
 
 
@@ -53,10 +54,10 @@ class ProtoJSONCodec(Codec):
             raise TypeError("Expected a protobuf Message instance")
         return MessageToJson(message).encode()
 
-    def decode(self, data: bytes, message: Any) -> Any:
+    def decode(self, data: ByteString, message: Any) -> Any:
         if not isinstance(message, Message):
             raise TypeError("Expected a protobuf Message instance")
-        MessageFromJson(data, message)
+        MessageFromJson(data, message)  # pyright: ignore[reportArgumentType] - type is incorrect
         return message
 
 

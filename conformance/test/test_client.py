@@ -13,7 +13,7 @@ _config_path = str(_current_dir / "config.yaml")
 _skipped_tests_sync = [
     # Need to use async APIs for proper cancellation support in Python.
     "--skip",
-    "**/cancel-after-close-send",
+    "Client Cancellation/**",
 ]
 
 

@@ -1,7 +1,7 @@
 import base64
 from contextvars import ContextVar, Token
 from http import HTTPStatus
-from typing import Iterable, Mapping, Optional
+from typing import Iterable, Mapping, Optional, Sequence
 
 from httpx import Headers as HttpxHeaders
 
@@ -9,7 +9,12 @@ from . import _compression
 from ._codec import CODEC_NAME_JSON, CODEC_NAME_JSON_CHARSET_UTF8, Codec
 from ._protocol import (
     CONNECT_PROTOCOL_VERSION,
+    CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
+    CONNECT_STREAMING_HEADER_COMPRESSION,
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
+    CONNECT_UNARY_HEADER_ACCEPT_COMPRESSION,
+    CONNECT_UNARY_HEADER_COMPRESSION,
+    CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION,
     ConnectWireError,
     codec_name_from_content_type,
 )
@@ -23,6 +28,7 @@ _DEFAULT_CONNECT_USER_AGENT = f"connecpy/{__version__}"
 
 def prepare_headers(
     codec: Codec,
+    stream: bool,
     user_headers: Headers | Mapping[str, str] | None,
     timeout_ms: Optional[int],
     accept_compression: Optional[Iterable[str]],
@@ -36,31 +42,49 @@ def prepare_headers(
     if "user-agent" not in headers:
         headers["user-agent"] = _DEFAULT_CONNECT_USER_AGENT
     headers["connect-protocol-version"] = CONNECT_PROTOCOL_VERSION
+
+    compression_header = (
+        CONNECT_STREAMING_HEADER_COMPRESSION
+        if stream
+        else CONNECT_UNARY_HEADER_COMPRESSION
+    )
+    accept_compression_header = (
+        CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION
+        if stream
+        else CONNECT_UNARY_HEADER_ACCEPT_COMPRESSION
+    )
+
     if accept_compression is not None:
-        headers["accept-encoding"] = ", ".join(accept_compression)
+        headers[accept_compression_header] = ", ".join(accept_compression)
     else:
-        headers["accept-encoding"] = "gzip, br, zstd"
+        headers[accept_compression_header] = "gzip, br, zstd"
     if send_compression is not None:
-        headers["content-encoding"] = send_compression
+        headers[compression_header] = send_compression
     else:
-        headers.pop("content-encoding", None)
-    headers["content-type"] = f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"
+        headers.pop(compression_header, None)
+    headers["content-type"] = (
+        f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX if stream else CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"
+    )
     if timeout_ms is not None:
         headers["connect-timeout-ms"] = str(timeout_ms)
     return headers
 
 
-def maybe_compress_request(request_data: bytes, headers: HttpxHeaders) -> bytes:
+def maybe_compress_request(
+    request_data: bytes, headers: HttpxHeaders
+) -> tuple[bytes, bool]:
     if "content-encoding" not in headers:
-        return request_data
+        return request_data, False
 
     compression_name = headers["content-encoding"].lower()
+    if compression_name == "identity":
+        return request_data, False
     compression = _compression.get_compression(compression_name)
     if not compression:
         # TODO: Validate within client construction instead of request
         raise ValueError(f"Unsupported compression method: {compression_name}")
     try:
-        return compression.compress(request_data)
+        return compression.compress(request_data), True
     except Exception as e:
         raise Exception(f"Failed to compress request with {compression_name}: {str(e)}")
 
@@ -81,14 +105,16 @@ _current_response = ContextVar["ResponseMetadata"]("connecpy_current_response")
 
 def validate_response_content_encoding(
     encoding: str | None,
-):
+) -> _compression.Compression:
     if not encoding:
-        return
-    if encoding.lower() not in _compression.get_available_compressions():
+        return _compression.IdentityCompression()
+    res = _compression.get_compression(encoding.lower())
+    if not res:
         raise ConnecpyException(
             Code.INTERNAL,
             f"unknown encoding '{encoding}'; accepted encodings are {', '.join(_compression.get_available_compressions())}",
         )
+    return res
 
 
 def validate_response_content_type(
@@ -131,6 +157,26 @@ def validate_response_content_type(
     )
 
 
+def validate_stream_response_content_type(
+    request_codec_name: str,
+    response_content_type: str,
+):
+    if not response_content_type.startswith(CONNECT_STREAMING_CONTENT_TYPE_PREFIX):
+        raise ConnecpyException(
+            Code.UNKNOWN,
+            f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_STREAMING_CONTENT_TYPE_PREFIX}{request_codec_name}'",
+        )
+
+    response_codec_name = response_content_type[
+        len(CONNECT_STREAMING_CONTENT_TYPE_PREFIX) :
+    ]
+    if response_codec_name != request_codec_name:
+        raise ConnecpyException(
+            Code.INTERNAL,
+            f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_STREAMING_CONTENT_TYPE_PREFIX}{request_codec_name}'",
+        )
+
+
 def handle_response_headers(headers: HttpxHeaders):
     response = _current_response.get(None)
     if not response:
@@ -147,6 +193,18 @@ def handle_response_headers(headers: HttpxHeaders):
         obj.add(key, value)
     if response_headers:
         response._headers = response_headers
+    if response_trailers:
+        response._trailers = response_trailers
+
+
+def handle_response_trailers(trailers: Mapping[str, Sequence[str]]):
+    response = _current_response.get(None)
+    if not response:
+        return
+    response_trailers = response.trailers()
+    for key, values in trailers.items():
+        for value in values:
+            response_trailers.add(key, value)
     if response_trailers:
         response._trailers = response_trailers
 
