@@ -26,9 +26,9 @@ class EnvelopeReader(Generic[_RES]):
 
     def feed(self, data: bytes) -> Iterator[_RES]:
         self._buffer.extend(data)
-        return self.read_messages()
+        return self._read_messages()
 
-    def read_messages(self) -> Iterator[_RES]:
+    def _read_messages(self) -> Iterator[_RES]:
         while self._buffer:
             if self._next_message_length is not None:
                 if len(self._buffer) < self._next_message_length + 5:

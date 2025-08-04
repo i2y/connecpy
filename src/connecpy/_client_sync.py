@@ -274,8 +274,6 @@ class ResponseStreamSync(Generic[_RES]):
             for chunk in self._response.iter_bytes():
                 for message in reader.feed(chunk):
                     yield message
-            for message in reader.read_messages():
-                yield message
         finally:
             self.close()
 

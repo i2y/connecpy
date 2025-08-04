@@ -295,8 +295,6 @@ class ResponseStream(Generic[_RES]):
                     # Check for cancellation each message. While this seems heavyweight,
                     # conformance tests require it.
                     await sleep(0)
-            for message in reader.read_messages():
-                yield message
         except CancelledError as e:
             raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
         finally:
