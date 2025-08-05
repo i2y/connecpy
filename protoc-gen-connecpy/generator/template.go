@@ -45,7 +45,7 @@ from connecpy.client import ConnecpyClient, ConnecpyClientSync, ResponseStream, 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
-from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, ServerInterceptor, ServiceContext
+from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, EndpointSync, ServerInterceptor, ServiceContext
 
 {{- range .Imports }}
 import {{.Name}} as {{.Alias}}
@@ -66,7 +66,7 @@ class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
                 "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}](
                     service_name="{{.ServiceName}}",
                     name="{{.Name}}",
-                    function=getattr(service, "{{.Name}}"),
+                    function=service.{{.Name}},
                     input={{.InputType}},
                     output={{.OutputType}},
                     allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},
@@ -126,10 +126,10 @@ class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: {{.Name}}Sync):
         super().__init__(
             endpoints={ {{- range .Methods }}
-                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}](
+                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": EndpointSync[{{.InputType}}, {{.OutputType}}](
                     service_name="{{.ServiceName}}",
                     name="{{.Name}}",
-                    function=getattr(service, "{{.Name}}"),
+                    function=service.{{.Name}},
                     input={{.InputType}},
                     output={{.OutputType}},
                     allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},

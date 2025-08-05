@@ -15,6 +15,7 @@ from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
+    EndpointSync,
     ServerInterceptor,
     ServiceContext,
 )
@@ -44,7 +45,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="Haberdasher",
                     name="MakeHat",
-                    function=getattr(service, "MakeHat"),
+                    function=service.MakeHat,
                     input=example_dot_haberdasher__edition__2023__pb2.Size,
                     output=example_dot_haberdasher__edition__2023__pb2.Hat,
                     allowed_methods=("GET", "POST"),
@@ -90,13 +91,13 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: HaberdasherSync):
         super().__init__(
             endpoints={
-                "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[
+                "/i2y.connecpy.example2023.Haberdasher/MakeHat": EndpointSync[
                     example_dot_haberdasher__edition__2023__pb2.Size,
                     example_dot_haberdasher__edition__2023__pb2.Hat,
                 ](
                     service_name="Haberdasher",
                     name="MakeHat",
-                    function=getattr(service, "MakeHat"),
+                    function=service.MakeHat,
                     input=example_dot_haberdasher__edition__2023__pb2.Size,
                     output=example_dot_haberdasher__edition__2023__pb2.Hat,
                     allowed_methods=("GET", "POST"),
