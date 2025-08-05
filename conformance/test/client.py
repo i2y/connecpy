@@ -1,12 +1,12 @@
 import argparse
 import asyncio
-import os
 import ssl
-import sys
+import time
 from tempfile import TemporaryFile
-from typing import Literal
+from typing import AsyncIterator, Iterator, Literal, TypeVar
 
 import httpx
+import uvloop
 from _util import create_standard_streams
 from connecpy.client import ResponseMetadata
 from connecpy.code import Code
@@ -23,12 +23,15 @@ from connectrpc.conformance.v1.service_connecpy import (
     ConformanceServiceClientSync,
 )
 from connectrpc.conformance.v1.service_pb2 import (
+    ClientStreamRequest,
     ConformancePayload,
     IdempotentUnaryRequest,
     ServerStreamRequest,
     UnaryRequest,
     UnimplementedRequest,
 )
+from google.protobuf.any import Any
+from google.protobuf.message import Message
 
 
 def _convert_code(error: Code) -> ConformanceCode:
@@ -85,6 +88,14 @@ def _convert_compression(compression: Compression) -> str:
             raise ValueError(f"Unsupported compression: {compression}")
 
 
+T = TypeVar("T", bound=Message)
+
+
+def _unpack_request(message: Any, request: T) -> T:
+    message.Unpack(request)
+    return request
+
+
 async def _run_test(
     mode: Literal["sync", "async"],
     test_request: ClientCompatRequest,
@@ -100,249 +111,339 @@ async def _run_test(
     for header in test_request.request_headers:
         for value in header.value:
             request_headers.add(header.name, value)
-    for message_any in test_request.request_messages:
-        match test_request.method:
-            case "IdempotentUnary":
-                client_request = IdempotentUnaryRequest()
-            case "ServerStream":
-                client_request = ServerStreamRequest()
-            case "Unary":
-                client_request = UnaryRequest()
-            case "Unimplemented":
-                client_request = UnimplementedRequest()
-            case _:
-                test_response.error.message = "Unrecognized method"
-                return test_response
-        if not message_any.Unpack(client_request):
-            raise ValueError("Failed to unpack message")
-        with ResponseMetadata() as meta:
-            try:
-                payloads: list[ConformancePayload] = []
-                task: asyncio.Task
-                session_kwargs = {}
-                match test_request.http_version:
-                    case HTTPVersion.HTTP_VERSION_1:
-                        session_kwargs["http1"] = True
-                        session_kwargs["http2"] = False
-                    case HTTPVersion.HTTP_VERSION_2:
-                        session_kwargs["http1"] = False
-                        session_kwargs["http2"] = True
-                scheme = "http"
-                if test_request.server_tls_cert:
-                    scheme = "https"
-                    ctx = ssl.create_default_context(
-                        purpose=ssl.Purpose.SERVER_AUTH,
-                        cadata=test_request.server_tls_cert.decode(),
-                    )
-                    if test_request.HasField("client_tls_creds"):
-                        with TemporaryFile() as cert_file, TemporaryFile() as key_file:
-                            cert_file.write(test_request.client_tls_creds.cert)
-                            cert_file.close()
-                            key_file.write(test_request.client_tls_creds.key)
-                            key_file.close()
-                            ctx.load_cert_chain(
-                                certfile=cert_file.name, keyfile=key_file.name
+
+    with ResponseMetadata() as meta:
+        try:
+            payloads: list[ConformancePayload] = []
+            task: asyncio.Task
+            session_kwargs = {}
+            match test_request.http_version:
+                case HTTPVersion.HTTP_VERSION_1:
+                    session_kwargs["http1"] = True
+                    session_kwargs["http2"] = False
+                case HTTPVersion.HTTP_VERSION_2:
+                    session_kwargs["http1"] = False
+                    session_kwargs["http2"] = True
+            scheme = "http"
+            if test_request.server_tls_cert:
+                scheme = "https"
+                ctx = ssl.create_default_context(
+                    purpose=ssl.Purpose.SERVER_AUTH,
+                    cadata=test_request.server_tls_cert.decode(),
+                )
+                if test_request.HasField("client_tls_creds"):
+                    with TemporaryFile() as cert_file, TemporaryFile() as key_file:
+                        cert_file.write(test_request.client_tls_creds.cert)
+                        cert_file.close()
+                        key_file.write(test_request.client_tls_creds.key)
+                        key_file.close()
+                        ctx.load_cert_chain(
+                            certfile=cert_file.name, keyfile=key_file.name
+                        )
+                session_kwargs["verify"] = ctx
+            match mode:
+                case "sync":
+                    with (
+                        httpx.Client(**session_kwargs) as session,
+                        ConformanceServiceClientSync(
+                            f"{scheme}://{test_request.host}:{test_request.port}",
+                            session=session,
+                            send_compression=_convert_compression(
+                                test_request.compression
+                            ),
+                            proto_json=test_request.codec == Codec.CODEC_JSON,
+                        ) as client,
+                    ):
+                        match test_request.method:
+                            case "ClientStream":
+
+                                def send_client_stream_request_sync(
+                                    client: ConformanceServiceClientSync,
+                                    request: Iterator[ClientStreamRequest],
+                                ):
+                                    res = client.ClientStream(
+                                        request,
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    )
+                                    payloads.append(res.payload)
+
+                                def request_stream_sync():
+                                    for message in test_request.request_messages:
+                                        if test_request.request_delay_ms:
+                                            time.sleep(
+                                                test_request.request_delay_ms / 1000.0
+                                            )
+                                        yield _unpack_request(
+                                            message, ClientStreamRequest()
+                                        )
+
+                                task = asyncio.create_task(
+                                    asyncio.to_thread(
+                                        send_client_stream_request_sync,
+                                        client,
+                                        request_stream_sync(),
+                                    )
+                                )
+                            case "IdempotentUnary":
+
+                                def send_idempotent_unary_request_sync(
+                                    client: ConformanceServiceClientSync,
+                                    request: IdempotentUnaryRequest,
+                                ):
+                                    res = client.IdempotentUnary(
+                                        request,
+                                        headers=request_headers,
+                                        use_get=test_request.use_get_http_method,
+                                        timeout_ms=timeout_ms,
+                                    )
+                                    payloads.append(res.payload)
+
+                                task = asyncio.create_task(
+                                    asyncio.to_thread(
+                                        send_idempotent_unary_request_sync,
+                                        client,
+                                        _unpack_request(
+                                            test_request.request_messages[0],
+                                            IdempotentUnaryRequest(),
+                                        ),
+                                    )
+                                )
+                            case "ServerStream":
+
+                                def send_server_stream_request_sync(
+                                    client: ConformanceServiceClientSync,
+                                    request: ServerStreamRequest,
+                                ):
+                                    for message in client.ServerStream(
+                                        request,
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    ):
+                                        payloads.append(message.payload)
+                                        if (
+                                            num
+                                            := test_request.cancel.after_num_responses
+                                        ):
+                                            if len(payloads) >= num:
+                                                task.cancel()
+
+                                task = asyncio.create_task(
+                                    asyncio.to_thread(
+                                        send_server_stream_request_sync,
+                                        client,
+                                        _unpack_request(
+                                            test_request.request_messages[0],
+                                            ServerStreamRequest(),
+                                        ),
+                                    )
+                                )
+                            case "Unary":
+
+                                def send_unary_request_sync(
+                                    client: ConformanceServiceClientSync,
+                                    request: UnaryRequest,
+                                ):
+                                    res = client.Unary(
+                                        request,
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    )
+                                    payloads.append(res.payload)
+
+                                task = asyncio.create_task(
+                                    asyncio.to_thread(
+                                        send_unary_request_sync,
+                                        client,
+                                        _unpack_request(
+                                            test_request.request_messages[0],
+                                            UnaryRequest(),
+                                        ),
+                                    )
+                                )
+                            case "Unimplemented":
+                                task = asyncio.create_task(
+                                    asyncio.to_thread(
+                                        client.Unimplemented,
+                                        _unpack_request(
+                                            test_request.request_messages[0],
+                                            UnimplementedRequest(),
+                                        ),
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    )
+                                )
+                            case _:
+                                raise ValueError(
+                                    f"Unrecognized method: {test_request.method}"
+                                )
+                        if test_request.cancel.after_close_send_ms:
+                            await asyncio.sleep(
+                                test_request.cancel.after_close_send_ms / 1000.0
                             )
-                    session_kwargs["verify"] = ctx
-                match mode:
-                    case "sync":
-                        with (
-                            httpx.Client(**session_kwargs) as session,
-                            ConformanceServiceClientSync(
-                                f"{scheme}://{test_request.host}:{test_request.port}",
-                                session=session,
-                                send_compression=_convert_compression(
-                                    test_request.compression
-                                ),
-                                proto_json=test_request.codec == Codec.CODEC_JSON,
-                            ) as client,
-                        ):
-                            match client_request:
-                                case IdempotentUnaryRequest():
+                            task.cancel()
+                        await task
+                case "async":
+                    async with (
+                        httpx.AsyncClient(**session_kwargs) as session,
+                        ConformanceServiceClient(
+                            f"{scheme}://{test_request.host}:{test_request.port}",
+                            session=session,
+                            send_compression=_convert_compression(
+                                test_request.compression
+                            ),
+                            proto_json=test_request.codec == Codec.CODEC_JSON,
+                        ) as client,
+                    ):
+                        match test_request.method:
+                            case "ClientStream":
 
-                                    def send_idempotent_unary_request_sync(
-                                        client: ConformanceServiceClientSync,
-                                        request: IdempotentUnaryRequest,
+                                async def send_client_stream_request(
+                                    client: ConformanceServiceClient,
+                                    request: AsyncIterator[ClientStreamRequest],
+                                ):
+                                    res = await client.ClientStream(
+                                        request,
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    )
+                                    payloads.append(res.payload)
+
+                                async def request_stream():
+                                    for message in test_request.request_messages:
+                                        if test_request.request_delay_ms:
+                                            await asyncio.sleep(
+                                                test_request.request_delay_ms / 1000.0
+                                            )
+                                        yield _unpack_request(
+                                            message, ClientStreamRequest()
+                                        )
+                                    if test_request.cancel.HasField(
+                                        "before_close_send"
                                     ):
-                                        res = client.IdempotentUnary(
-                                            request,
-                                            headers=request_headers,
-                                            use_get=test_request.use_get_http_method,
-                                            timeout_ms=timeout_ms,
-                                        )
-                                        payloads.append(res.payload)
+                                        task.cancel()
+                                        # Don't finish the stream for this case by sleeping for
+                                        # a long time. We won't end up sleeping for long since we
+                                        # cancelled.
+                                        await asyncio.sleep(600)
 
-                                    task = asyncio.create_task(
-                                        asyncio.to_thread(
-                                            send_idempotent_unary_request_sync,
-                                            client,
-                                            client_request,
-                                        )
+                                task = asyncio.create_task(
+                                    send_client_stream_request(
+                                        client,
+                                        request_stream(),
                                     )
-                                case ServerStreamRequest():
-
-                                    def send_server_stream_request_sync(
-                                        client: ConformanceServiceClientSync,
-                                        request: ServerStreamRequest,
-                                    ):
-                                        for message in client.ServerStream(
-                                            request,
-                                            headers=request_headers,
-                                            timeout_ms=timeout_ms,
-                                        ):
-                                            payloads.append(message.payload)
-                                            if (
-                                                num
-                                                := test_request.cancel.after_num_responses
-                                            ):
-                                                if len(payloads) >= num:
-                                                    task.cancel()
-
-                                    task = asyncio.create_task(
-                                        asyncio.to_thread(
-                                            send_server_stream_request_sync,
-                                            client,
-                                            client_request,
-                                        )
-                                    )
-                                case UnaryRequest():
-
-                                    def send_unary_request_sync(
-                                        client: ConformanceServiceClientSync,
-                                        request: UnaryRequest,
-                                    ):
-                                        res = client.Unary(
-                                            request,
-                                            headers=request_headers,
-                                            timeout_ms=timeout_ms,
-                                        )
-                                        payloads.append(res.payload)
-
-                                    task = asyncio.create_task(
-                                        asyncio.to_thread(
-                                            send_unary_request_sync,
-                                            client,
-                                            client_request,
-                                        )
-                                    )
-                                case UnimplementedRequest():
-                                    task = asyncio.create_task(
-                                        asyncio.to_thread(
-                                            client.Unimplemented,
-                                            client_request,
-                                            headers=request_headers,
-                                            timeout_ms=timeout_ms,
-                                        )
-                                    )
-                            if test_request.cancel.after_close_send_ms:
-                                await asyncio.sleep(
-                                    test_request.cancel.after_close_send_ms / 1000.0
                                 )
-                                task.cancel()
-                            await task
-                    case "async":
-                        async with (
-                            httpx.AsyncClient(**session_kwargs) as session,
-                            ConformanceServiceClient(
-                                f"{scheme}://{test_request.host}:{test_request.port}",
-                                session=session,
-                                send_compression=_convert_compression(
-                                    test_request.compression
-                                ),
-                                proto_json=test_request.codec == Codec.CODEC_JSON,
-                            ) as client,
-                        ):
-                            match client_request:
-                                case IdempotentUnaryRequest():
+                            case "IdempotentUnary":
 
-                                    async def send_idempotent_unary_request(
-                                        client: ConformanceServiceClient,
-                                        request: IdempotentUnaryRequest,
-                                    ):
-                                        res = await client.IdempotentUnary(
-                                            request,
-                                            headers=request_headers,
-                                            use_get=test_request.use_get_http_method,
-                                            timeout_ms=timeout_ms,
-                                        )
-                                        payloads.append(res.payload)
-
-                                    task = asyncio.create_task(
-                                        send_idempotent_unary_request(
-                                            client, client_request
-                                        )
+                                async def send_idempotent_unary_request(
+                                    client: ConformanceServiceClient,
+                                    request: IdempotentUnaryRequest,
+                                ):
+                                    res = await client.IdempotentUnary(
+                                        request,
+                                        headers=request_headers,
+                                        use_get=test_request.use_get_http_method,
+                                        timeout_ms=timeout_ms,
                                     )
-                                case ServerStreamRequest():
+                                    payloads.append(res.payload)
 
-                                    async def send_server_stream_request(
-                                        client: ConformanceServiceClient,
-                                        request: ServerStreamRequest,
-                                    ):
-                                        async for message in await client.ServerStream(
-                                            request,
-                                            headers=request_headers,
-                                            timeout_ms=timeout_ms,
-                                        ):
-                                            payloads.append(message.payload)
-                                            if (
-                                                num
-                                                := test_request.cancel.after_num_responses
-                                            ):
-                                                if len(payloads) >= num:
-                                                    task.cancel()
-
-                                    task = asyncio.create_task(
-                                        send_server_stream_request(
-                                            client, client_request
-                                        )
+                                task = asyncio.create_task(
+                                    send_idempotent_unary_request(
+                                        client,
+                                        _unpack_request(
+                                            test_request.request_messages[0],
+                                            IdempotentUnaryRequest(),
+                                        ),
                                     )
-                                case UnaryRequest():
-
-                                    async def send_unary_request(
-                                        client: ConformanceServiceClient,
-                                        request: UnaryRequest,
-                                    ):
-                                        res = await client.Unary(
-                                            request,
-                                            headers=request_headers,
-                                            timeout_ms=timeout_ms,
-                                        )
-                                        payloads.append(res.payload)
-
-                                    task = asyncio.create_task(
-                                        send_unary_request(client, client_request)
-                                    )
-                                case UnimplementedRequest():
-                                    task = asyncio.create_task(
-                                        client.Unimplemented(
-                                            client_request,
-                                            headers=request_headers,
-                                            timeout_ms=timeout_ms,
-                                        )
-                                    )
-                            if test_request.cancel.after_close_send_ms:
-                                await asyncio.sleep(
-                                    test_request.cancel.after_close_send_ms / 1000.0
                                 )
-                                task.cancel()
-                            await task
-            except ConnecpyException as e:
-                test_response.response.error.code = _convert_code(e.code)
-                test_response.response.error.message = e.message
-                test_response.response.error.details.extend(e.details)
-            except Exception as e:
-                test_response.error.message = str(e)
+                            case "ServerStream":
 
-            test_response.response.payloads.extend(payloads)
+                                async def send_server_stream_request(
+                                    client: ConformanceServiceClient,
+                                    request: ServerStreamRequest,
+                                ):
+                                    async for message in await client.ServerStream(
+                                        request,
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    ):
+                                        payloads.append(message.payload)
+                                        if (
+                                            num
+                                            := test_request.cancel.after_num_responses
+                                        ):
+                                            if len(payloads) >= num:
+                                                task.cancel()
 
-            for name in meta.headers().keys():
-                test_response.response.response_headers.add(
-                    name=name, value=meta.headers().getall(name)
-                )
-            for name in meta.trailers().keys():
-                test_response.response.response_trailers.add(
-                    name=name, value=meta.trailers().getall(name)
-                )
+                                task = asyncio.create_task(
+                                    send_server_stream_request(
+                                        client,
+                                        _unpack_request(
+                                            test_request.request_messages[0],
+                                            ServerStreamRequest(),
+                                        ),
+                                    )
+                                )
+                            case "Unary":
+
+                                async def send_unary_request(
+                                    client: ConformanceServiceClient,
+                                    request: UnaryRequest,
+                                ):
+                                    res = await client.Unary(
+                                        request,
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    )
+                                    payloads.append(res.payload)
+
+                                task = asyncio.create_task(
+                                    send_unary_request(
+                                        client,
+                                        _unpack_request(
+                                            test_request.request_messages[0],
+                                            UnaryRequest(),
+                                        ),
+                                    )
+                                )
+                            case "Unimplemented":
+                                task = asyncio.create_task(
+                                    client.Unimplemented(
+                                        _unpack_request(
+                                            test_request.request_messages[0],
+                                            UnimplementedRequest(),
+                                        ),
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    )
+                                )
+                            case _:
+                                raise ValueError(
+                                    f"Unrecognized method: {test_request.method}"
+                                )
+                        if test_request.cancel.after_close_send_ms:
+                            await asyncio.sleep(
+                                test_request.cancel.after_close_send_ms / 1000.0
+                            )
+                            task.cancel()
+                        await task
+        except ConnecpyException as e:
+            test_response.response.error.code = _convert_code(e.code)
+            test_response.response.error.message = e.message
+            test_response.response.error.details.extend(e.details)
+        except Exception as e:
+            test_response.error.message = str(e)
+
+        test_response.response.payloads.extend(payloads)
+
+        for name in meta.headers().keys():
+            test_response.response.response_headers.add(
+                name=name, value=meta.headers().getall(name)
+            )
+        for name in meta.trailers().keys():
+            test_response.response.response_trailers.add(
+                name=name, value=meta.trailers().getall(name)
+            )
 
     return test_response
 
@@ -378,11 +479,6 @@ async def main():
 
 
 if __name__ == "__main__":
-    if os.environ.get("CI") and sys.platform == "darwin":
-        # Use uvloop on macOS in CI because the asyncio implementation seems to
-        # cause some flakiness with timing-related tests.
-        import uvloop
-
-        uvloop.run(main())
-    else:
-        asyncio.run(main())
+    # Use uvloop because the default asyncio implementation seems to
+    # cause some flakiness with timing-related tests.
+    uvloop.run(main())

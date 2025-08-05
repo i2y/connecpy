@@ -91,6 +91,8 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 				Name:           string(method.Name()),
 				InputType:      symbolName(method.Input()),
 				OutputType:     symbolName(method.Output()),
+				Stream:         method.IsStreamingClient() || method.IsStreamingServer(),
+				RequestStream:  method.IsStreamingClient(),
 				ResponseStream: method.IsStreamingServer(),
 				NoSideEffects:  noSideEffects,
 			}

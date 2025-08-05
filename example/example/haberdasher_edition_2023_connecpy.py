@@ -4,7 +4,10 @@
 
 from typing import Iterable, Mapping, Protocol
 
-from connecpy.client import ConnecpyClient, ConnecpyClientSync
+from connecpy.client import (
+    ConnecpyClient,
+    ConnecpyClientSync,
+)
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
@@ -66,10 +69,9 @@ class HaberdasherClient(ConnecpyClient):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
-        method = "GET" if use_get else "POST"
         return await self._make_request(
             url="/i2y.connecpy.example2023.Haberdasher/MakeHat",
-            method=method,
+            method="GET" if use_get else "POST",
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
@@ -117,10 +119,9 @@ class HaberdasherClientSync(ConnecpyClientSync):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
-        method = "GET" if use_get else "POST"
         return self._make_request(
             url="/i2y.connecpy.example2023.Haberdasher/MakeHat",
-            method=method,
+            method="GET" if use_get else "POST",
             headers=headers,
             timeout_ms=timeout_ms,
             request=request,

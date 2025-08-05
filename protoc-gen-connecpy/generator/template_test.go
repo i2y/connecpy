@@ -37,7 +37,7 @@ func TestConnecpyTemplate(t *testing.T) {
 				},
 			},
 			contains: []string{
-				"from typing import Iterable, Mapping, Protocol",
+				"from typing import AsyncIterator, Iterable, Iterator, Mapping, Protocol",
 				"class TestService(Protocol):",
 				"class TestServiceASGIApplication(ConnecpyASGIApplication):",
 				"def TestMethod",
@@ -69,7 +69,7 @@ func TestConnecpyTemplate(t *testing.T) {
 			contains: []string{
 				`allowed_methods=("GET", "POST")`,
 				"use_get: bool = False",
-				`method = "GET" if use_get else "POST"`,
+				`"GET" if use_get else "POST"`,
 			},
 		},
 	}

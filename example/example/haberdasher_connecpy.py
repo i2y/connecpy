@@ -4,7 +4,10 @@
 
 from typing import Iterable, Mapping, Protocol
 
-from connecpy.client import ConnecpyClient, ConnecpyClientSync
+from connecpy.client import (
+    ConnecpyClient,
+    ConnecpyClientSync,
+)
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
@@ -82,10 +85,9 @@ class HaberdasherClient(ConnecpyClient):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat:
-        method = "GET" if use_get else "POST"
         return await self._make_request(
             url="/i2y.connecpy.example.Haberdasher/MakeHat",
-            method=method,
+            method="GET" if use_get else "POST",
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
@@ -99,10 +101,9 @@ class HaberdasherClient(ConnecpyClient):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        method = "POST"
         return await self._make_request(
             url="/i2y.connecpy.example.Haberdasher/DoNothing",
-            method=method,
+            method="POST",
             headers=headers,
             request=request,
             timeout_ms=timeout_ms,
@@ -165,10 +166,9 @@ class HaberdasherClientSync(ConnecpyClientSync):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat:
-        method = "GET" if use_get else "POST"
         return self._make_request(
             url="/i2y.connecpy.example.Haberdasher/MakeHat",
-            method=method,
+            method="GET" if use_get else "POST",
             headers=headers,
             timeout_ms=timeout_ms,
             request=request,
@@ -182,10 +182,9 @@ class HaberdasherClientSync(ConnecpyClientSync):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        method = "POST"
         return self._make_request(
             url="/i2y.connecpy.example.Haberdasher/DoNothing",
-            method=method,
+            method="POST",
             headers=headers,
             timeout_ms=timeout_ms,
             request=request,

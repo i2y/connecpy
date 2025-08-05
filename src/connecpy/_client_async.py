@@ -8,7 +8,7 @@ from httpx import Response, Timeout
 from . import _client_shared
 from ._codec import Codec, get_proto_binary_codec, get_proto_json_codec
 from ._compression import Compression, get_compression
-from ._envelope import EnvelopeReader
+from ._envelope import EnvelopeReader, EnvelopeWriter
 from ._protocol import CONNECT_STREAMING_HEADER_COMPRESSION, ConnectWireError
 from .code import Code
 from .exceptions import ConnecpyException
@@ -219,6 +219,20 @@ class ConnecpyClient:
         except Exception as e:
             raise ConnecpyException(Code.UNAVAILABLE, str(e))
 
+    async def _consume_single_response(self, stream: "ResponseStream[_RES]") -> _RES:
+        res = None
+        async for message in stream:
+            if res is not None:
+                raise ConnecpyException(
+                    Code.UNIMPLEMENTED, "unary response has multiple messages"
+                )
+            res = message
+        if res is None:
+            raise ConnecpyException(
+                Code.UNIMPLEMENTED, "unary response has zero messages"
+            )
+        return res
+
 
 def _convert_connect_timeout(timeout_ms: Optional[int]) -> Timeout:
     if timeout_ms is None:
@@ -235,29 +249,14 @@ async def _streaming_request_content(
     codec: Codec,
     compression_name: Optional[str],
 ) -> AsyncIterator[bytes]:
-    compression = get_compression(compression_name or "identity")
-    not_compressed = compression_name is None or compression_name.lower() == "identity"
-    if not_compressed:
-        prefix = b"\x00"
-    else:
-        prefix = b"\x01"
+    writer = EnvelopeWriter(codec, get_compression(compression_name or "identity"))
 
     if isinstance(msgs, Message):
-        yield prefix
-        content = codec.encode(msgs)
-        if compression:
-            content = compression.compress(content)
-        yield len(content).to_bytes(4, "big")
-        yield content
+        yield writer.write(msgs)
         return
 
     async for msg in msgs:
-        yield prefix
-        content = codec.encode(msg)
-        if compression:
-            content = compression.compress(content)
-        yield len(content).to_bytes(4, "big")
-        yield content
+        yield writer.write(msg)
 
 
 class ResponseStream(Generic[_RES]):
