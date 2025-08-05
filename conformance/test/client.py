@@ -23,6 +23,7 @@ from connectrpc.conformance.v1.service_connecpy import (
     ConformanceServiceClientSync,
 )
 from connectrpc.conformance.v1.service_pb2 import (
+    BidiStreamRequest,
     ClientStreamRequest,
     ConformancePayload,
     IdempotentUnaryRequest,
@@ -112,9 +113,10 @@ async def _run_test(
         for value in header.value:
             request_headers.add(header.name, value)
 
+    payloads: list[ConformancePayload] = []
+
     with ResponseMetadata() as meta:
         try:
-            payloads: list[ConformancePayload] = []
             task: asyncio.Task
             session_kwargs = {}
             match test_request.http_version:
@@ -155,6 +157,43 @@ async def _run_test(
                         ) as client,
                     ):
                         match test_request.method:
+                            case "BidiStream":
+
+                                def send_bidi_stream_request_sync(
+                                    client: ConformanceServiceClientSync,
+                                    request: Iterator[BidiStreamRequest],
+                                ):
+                                    for message in client.BidiStream(
+                                        request,
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    ):
+                                        payloads.append(message.payload)
+                                        if (
+                                            num
+                                            := test_request.cancel.after_num_responses
+                                        ):
+                                            if len(payloads) >= num:
+                                                task.cancel()
+
+                                def bidi_request_stream_sync():
+                                    for message in test_request.request_messages:
+                                        if test_request.request_delay_ms:
+                                            time.sleep(
+                                                test_request.request_delay_ms / 1000.0
+                                            )
+                                        yield _unpack_request(
+                                            message, BidiStreamRequest()
+                                        )
+
+                                task = asyncio.create_task(
+                                    asyncio.to_thread(
+                                        send_bidi_stream_request_sync,
+                                        client,
+                                        bidi_request_stream_sync(),
+                                    )
+                                )
+
                             case "ClientStream":
 
                                 def send_client_stream_request_sync(
@@ -296,6 +335,50 @@ async def _run_test(
                         ) as client,
                     ):
                         match test_request.method:
+                            case "BidiStream":
+
+                                async def send_bidi_stream_request(
+                                    client: ConformanceServiceClient,
+                                    request: AsyncIterator[BidiStreamRequest],
+                                ):
+                                    responses = await client.BidiStream(
+                                        request,
+                                        headers=request_headers,
+                                        timeout_ms=timeout_ms,
+                                    )
+                                    async for response in responses:
+                                        payloads.append(response.payload)
+                                        if (
+                                            num
+                                            := test_request.cancel.after_num_responses
+                                        ):
+                                            if len(payloads) >= num:
+                                                task.cancel()
+
+                                async def bidi_stream_request():
+                                    for message in test_request.request_messages:
+                                        if test_request.request_delay_ms:
+                                            await asyncio.sleep(
+                                                test_request.request_delay_ms / 1000.0
+                                            )
+                                        yield _unpack_request(
+                                            message, BidiStreamRequest()
+                                        )
+                                    if test_request.cancel.HasField(
+                                        "before_close_send"
+                                    ):
+                                        task.cancel()
+                                        # Don't finish the stream for this case by sleeping for
+                                        # a long time. We won't end up sleeping for long since we
+                                        # cancelled.
+                                        await asyncio.sleep(600)
+
+                                task = asyncio.create_task(
+                                    send_bidi_stream_request(
+                                        client, bidi_stream_request()
+                                    )
+                                )
+
                             case "ClientStream":
 
                                 async def send_client_stream_request(
@@ -309,7 +392,7 @@ async def _run_test(
                                     )
                                     payloads.append(res.payload)
 
-                                async def request_stream():
+                                async def client_stream_request():
                                     for message in test_request.request_messages:
                                         if test_request.request_delay_ms:
                                             await asyncio.sleep(
@@ -330,7 +413,7 @@ async def _run_test(
                                 task = asyncio.create_task(
                                     send_client_stream_request(
                                         client,
-                                        request_stream(),
+                                        client_stream_request(),
                                     )
                                 )
                             case "IdempotentUnary":
@@ -431,7 +514,11 @@ async def _run_test(
             test_response.response.error.code = _convert_code(e.code)
             test_response.response.error.message = e.message
             test_response.response.error.details.extend(e.details)
-        except Exception as e:
+        except (asyncio.CancelledError, Exception) as e:
+            import sys
+            import traceback
+
+            traceback.print_tb(e.__traceback__, file=sys.stderr)
             test_response.error.message = str(e)
 
         test_response.response.payloads.extend(payloads)

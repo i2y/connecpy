@@ -13,6 +13,8 @@ _config_path = str(_current_dir / "config.yaml")
 _skipped_tests = [
     # TODO: Implement server side of streaming
     "--skip",
+    "**/bidi-stream/**",
+    "--skip",
     "**/client-stream/**",
     "--skip",
     "**/server-stream/**",
