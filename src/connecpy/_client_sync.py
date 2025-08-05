@@ -7,7 +7,7 @@ from httpx import Response, Timeout
 from . import _client_shared
 from ._codec import Codec, get_proto_binary_codec, get_proto_json_codec
 from ._compression import Compression, get_compression
-from ._envelope import EnvelopeReader
+from ._envelope import EnvelopeReader, EnvelopeWriter
 from ._protocol import CONNECT_STREAMING_HEADER_COMPRESSION, ConnectWireError
 from .code import Code
 from .exceptions import ConnecpyException
@@ -200,6 +200,20 @@ class ConnecpyClientSync:
         except Exception as e:
             raise ConnecpyException(Code.UNAVAILABLE, str(e))
 
+    def _consume_single_response(self, stream: "ResponseStreamSync[_RES]") -> _RES:
+        res = None
+        for message in stream:
+            if res is not None:
+                raise ConnecpyException(
+                    Code.UNIMPLEMENTED, "unary response has multiple messages"
+                )
+            res = message
+        if res is None:
+            raise ConnecpyException(
+                Code.UNIMPLEMENTED, "unary response has zero messages"
+            )
+        return res
+
 
 # Convert a timeout with connect semantics to a httpx.Timeout. Connect timeouts
 # should apply to an entire operation but this is difficult in synchronous Python code
@@ -217,29 +231,14 @@ def _streaming_request_content(
     codec: Codec,
     compression_name: Optional[str],
 ) -> Iterator[bytes]:
-    compression = get_compression(compression_name or "identity")
-    not_compressed = compression_name is None or compression_name.lower() == "identity"
-    if not_compressed:
-        prefix = b"\x00"
-    else:
-        prefix = b"\x01"
+    writer = EnvelopeWriter(codec, get_compression(compression_name or "identity"))
 
     if isinstance(msgs, Message):
-        yield prefix
-        content = codec.encode(msgs)
-        if compression:
-            content = compression.compress(content)
-        yield len(content).to_bytes(4, "big")
-        yield content
+        yield writer.write(msgs)
         return
 
     for msg in msgs:
-        yield prefix
-        content = codec.encode(msg)
-        if compression:
-            content = compression.compress(content)
-        yield len(content).to_bytes(4, "big")
-        yield content
+        yield writer.write(msg)
 
 
 class ResponseStreamSync(Generic[_RES]):

@@ -1,5 +1,6 @@
 import json
-from typing import Generic, Iterator, TypeVar
+import struct
+from typing import Any, Generic, Iterator, Optional, TypeVar
 
 from ._client_shared import handle_response_trailers
 from ._codec import Codec
@@ -70,3 +71,18 @@ class EnvelopeReader(Generic[_RES]):
                 return
 
             self._next_message_length = int.from_bytes(self._buffer[1:5], "big")
+
+
+class EnvelopeWriter:
+    def __init__(self, codec: Codec, compression: Optional[Compression]):
+        self._codec = codec
+        self._compression = compression
+        self._prefix = 0 if not compression or compression.is_identity() else 1
+
+    def write(self, message: Any) -> bytes:
+        data = self._codec.encode(message)
+        if self._compression:
+            data = self._compression.compress(data)
+        # This copies data into the final envelope, but it is still better than issuing
+        # I/O multiple times for small prefix / length elements.
+        return struct.pack(">BI", self._prefix, len(data)) + data
