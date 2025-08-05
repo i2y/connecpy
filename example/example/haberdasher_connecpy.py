@@ -15,6 +15,7 @@ from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
+    EndpointSync,
     ServerInterceptor,
     ServiceContext,
 )
@@ -49,7 +50,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="Haberdasher",
                     name="MakeHat",
-                    function=getattr(service, "MakeHat"),
+                    function=service.MakeHat,
                     input=example_dot_haberdasher__pb2.Size,
                     output=example_dot_haberdasher__pb2.Hat,
                     allowed_methods=("GET", "POST"),
@@ -60,7 +61,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="Haberdasher",
                     name="DoNothing",
-                    function=getattr(service, "DoNothing"),
+                    function=service.DoNothing,
                     input=google_dot_protobuf_dot_empty__pb2.Empty,
                     output=google_dot_protobuf_dot_empty__pb2.Empty,
                     allowed_methods=("POST",),
@@ -127,23 +128,23 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: HaberdasherSync):
         super().__init__(
             endpoints={
-                "/i2y.connecpy.example.Haberdasher/MakeHat": Endpoint[
+                "/i2y.connecpy.example.Haberdasher/MakeHat": EndpointSync[
                     example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
                 ](
                     service_name="Haberdasher",
                     name="MakeHat",
-                    function=getattr(service, "MakeHat"),
+                    function=service.MakeHat,
                     input=example_dot_haberdasher__pb2.Size,
                     output=example_dot_haberdasher__pb2.Hat,
                     allowed_methods=("GET", "POST"),
                 ),
-                "/i2y.connecpy.example.Haberdasher/DoNothing": Endpoint[
+                "/i2y.connecpy.example.Haberdasher/DoNothing": EndpointSync[
                     google_dot_protobuf_dot_empty__pb2.Empty,
                     google_dot_protobuf_dot_empty__pb2.Empty,
                 ](
                     service_name="Haberdasher",
                     name="DoNothing",
-                    function=getattr(service, "DoNothing"),
+                    function=service.DoNothing,
                     input=google_dot_protobuf_dot_empty__pb2.Empty,
                     output=google_dot_protobuf_dot_empty__pb2.Empty,
                     allowed_methods=("POST",),

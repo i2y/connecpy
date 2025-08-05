@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import reduce
 from typing import (
     Any,
+    Awaitable,
     Callable,
     Generic,
     Iterable,
@@ -125,6 +126,81 @@ class Endpoint(Generic[T, U]):
     Attributes:
         service_name (str): The name of the service.
         name (str): The name of the endpoint.
+        function (Callable[[T, context.ServiceContext], Awaitable[U]]): The function that implements the endpoint.
+        input (type): The type of the input parameter.
+        output (type): The type of the output parameter.
+        allowed_methods (list[str]): The allowed HTTP methods for the endpoint.
+        _async_proc (Callable[[T, context.ServiceContext], U] | None): The asynchronous function that implements the endpoint.
+    """
+
+    service_name: str
+    name: str
+    function: Callable[
+        [
+            T,
+            ServiceContext,
+        ],
+        Awaitable[U],
+    ]
+    input: type
+    output: type
+    allowed_methods: tuple[str, ...] = ("POST",)
+    _async_proc: Union[
+        Callable[
+            [
+                T,
+                ServiceContext,
+            ],
+            Awaitable[U],
+        ],
+        None,
+    ] = None
+    _proc: Union[
+        Callable[
+            [
+                T,
+                ServiceContext,
+            ],
+            U,
+        ],
+        None,
+    ] = None
+
+    def make_async_proc(
+        self,
+        interceptors: Iterable[ServerInterceptor],
+    ) -> Callable[[T, ServiceContext], Awaitable[U]]:
+        """
+        Creates an asynchronous function that implements the endpoint.
+
+        Args:
+            interceptors (Iterable[interceptor.AsyncConnecpyServerInterceptor]): The interceptors to apply to the endpoint.
+
+        Returns:
+            Callable[[T, context.ServiceContext], U]: The asynchronous function that implements the endpoint.
+        """
+        if self._async_proc is not None:
+            return self._async_proc
+
+        method_name = self.name
+        reversed_interceptors = reversed(tuple(interceptors))
+        self._async_proc = reduce(
+            lambda acc, interceptor: _apply_interceptor(interceptor, acc, method_name),
+            reversed_interceptors,
+            asynchronize(self.function),
+        )  # type: ignore
+
+        return self._async_proc  # type: ignore
+
+
+@dataclass
+class EndpointSync(Generic[T, U]):
+    """
+    Represents a sync endpoint in a service.
+
+    Attributes:
+        service_name (str): The name of the service.
+        name (str): The name of the endpoint.
         function (Callable[[T, context.ServiceContext], U]): The function that implements the endpoint.
         input (type): The type of the input parameter.
         output (type): The type of the output parameter.
@@ -164,32 +240,6 @@ class Endpoint(Generic[T, U]):
         ],
         None,
     ] = None
-
-    def make_async_proc(
-        self,
-        interceptors: Iterable[ServerInterceptor],
-    ) -> Callable[[T, ServiceContext], U]:
-        """
-        Creates an asynchronous function that implements the endpoint.
-
-        Args:
-            interceptors (Iterable[interceptor.AsyncConnecpyServerInterceptor]): The interceptors to apply to the endpoint.
-
-        Returns:
-            Callable[[T, context.ServiceContext], U]: The asynchronous function that implements the endpoint.
-        """
-        if self._async_proc is not None:
-            return self._async_proc
-
-        method_name = self.name
-        reversed_interceptors = reversed(tuple(interceptors))
-        self._async_proc = reduce(
-            lambda acc, interceptor: _apply_interceptor(interceptor, acc, method_name),
-            reversed_interceptors,
-            asynchronize(self.function),
-        )  # type: ignore
-
-        return self._async_proc  # type: ignore
 
     def make_proc(
         self,

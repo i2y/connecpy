@@ -17,6 +17,7 @@ from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
+    EndpointSync,
     ServerInterceptor,
     ServiceContext,
 )
@@ -83,7 +84,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="ConformanceService",
                     name="Unary",
-                    function=getattr(service, "Unary"),
+                    function=service.Unary,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
                     allowed_methods=("POST",),
@@ -94,7 +95,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="ConformanceService",
                     name="ServerStream",
-                    function=getattr(service, "ServerStream"),
+                    function=service.ServerStream,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                     allowed_methods=("POST",),
@@ -105,7 +106,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="ConformanceService",
                     name="ClientStream",
-                    function=getattr(service, "ClientStream"),
+                    function=service.ClientStream,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                     allowed_methods=("POST",),
@@ -116,7 +117,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="ConformanceService",
                     name="BidiStream",
-                    function=getattr(service, "BidiStream"),
+                    function=service.BidiStream,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                     allowed_methods=("POST",),
@@ -127,7 +128,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="ConformanceService",
                     name="Unimplemented",
-                    function=getattr(service, "Unimplemented"),
+                    function=service.Unimplemented,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
                     allowed_methods=("POST",),
@@ -138,7 +139,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 ](
                     service_name="ConformanceService",
                     name="IdempotentUnary",
-                    function=getattr(service, "IdempotentUnary"),
+                    function=service.IdempotentUnary,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
                     allowed_methods=("GET", "POST"),
@@ -309,68 +310,68 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: ConformanceServiceSync):
         super().__init__(
             endpoints={
-                "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint[
+                "/connectrpc.conformance.v1.ConformanceService/Unary": EndpointSync[
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
                 ](
                     service_name="ConformanceService",
                     name="Unary",
-                    function=getattr(service, "Unary"),
+                    function=service.Unary,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ServerStream": Endpoint[
+                "/connectrpc.conformance.v1.ConformanceService/ServerStream": EndpointSync[
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                 ](
                     service_name="ConformanceService",
                     name="ServerStream",
-                    function=getattr(service, "ServerStream"),
+                    function=service.ServerStream,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ClientStream": Endpoint[
+                "/connectrpc.conformance.v1.ConformanceService/ClientStream": EndpointSync[
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                 ](
                     service_name="ConformanceService",
                     name="ClientStream",
-                    function=getattr(service, "ClientStream"),
+                    function=service.ClientStream,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/BidiStream": Endpoint[
+                "/connectrpc.conformance.v1.ConformanceService/BidiStream": EndpointSync[
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                 ](
                     service_name="ConformanceService",
                     name="BidiStream",
-                    function=getattr(service, "BidiStream"),
+                    function=service.BidiStream,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": Endpoint[
+                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": EndpointSync[
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
                 ](
                     service_name="ConformanceService",
                     name="Unimplemented",
-                    function=getattr(service, "Unimplemented"),
+                    function=service.Unimplemented,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
                     allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": Endpoint[
+                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": EndpointSync[
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
                     connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
                 ](
                     service_name="ConformanceService",
                     name="IdempotentUnary",
-                    function=getattr(service, "IdempotentUnary"),
+                    function=service.IdempotentUnary,
                     input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
                     allowed_methods=("GET", "POST"),

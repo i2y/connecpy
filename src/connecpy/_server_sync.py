@@ -132,7 +132,7 @@ class ConnecpyWSGIApplication(ABC):
     def path(self) -> str:
         raise NotImplementedError()
 
-    def __init__(self, *, endpoints: Mapping[str, _server_shared.Endpoint]):
+    def __init__(self, *, endpoints: Mapping[str, _server_shared.EndpointSync]):
         """Initialize the WSGI application."""
         super().__init__()
         self._endpoints = endpoints
@@ -216,7 +216,7 @@ class ConnecpyWSGIApplication(ABC):
     def _handle_post_request(
         self,
         environ: WSGIEnvironment,
-        endpoint: _server_shared.Endpoint,
+        endpoint: _server_shared.EndpointSync,
         ctx: _server_shared.ServiceContext,
         request_headers: Headers,
     ) -> tuple[Any, Codec]:
