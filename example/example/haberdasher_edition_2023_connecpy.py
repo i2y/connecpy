@@ -4,10 +4,7 @@
 
 from typing import Iterable, Mapping, Protocol
 
-from connecpy.client import (
-    ConnecpyClient,
-    ConnecpyClientSync,
-)
+from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers

@@ -43,14 +43,18 @@ class ConformanceService(Protocol):
 
     async def ClientStream(
         self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
+        req: AsyncIterator[
+            connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest
+        ],
         ctx: ServiceContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def BidiStream(
         self,
-        req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
+        req: AsyncIterator[
+            connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest
+        ],
         ctx: ServiceContext,
     ) -> AsyncIterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse

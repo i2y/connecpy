@@ -56,7 +56,7 @@ import {{.Name}} as {{.Alias}}
 
 
 class {{.Name}}(Protocol):{{- range .Methods }}
-    {{if not .ResponseStream }}async {{end}}def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{if .ResponseStream}}AsyncIterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
+    {{if not .ResponseStream }}async {{end}}def {{.Name}}(self, req: {{if .RequestStream}}AsyncIterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: ServiceContext) -> {{if .ResponseStream}}AsyncIterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{ end }}
 
