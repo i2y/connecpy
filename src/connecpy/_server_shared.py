@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import reduce
 from typing import (
     Any,
+    AsyncIterator,
     Awaitable,
     Callable,
     Generic,
@@ -118,7 +119,7 @@ class ServerInterceptor(Protocol):
     ) -> Any: ...
 
 
-@dataclass
+@dataclass(kw_only=True, slots=True)
 class Endpoint(Generic[T, U]):
     """
     Represents an endpoint in a service.
@@ -133,17 +134,101 @@ class Endpoint(Generic[T, U]):
         _async_proc (Callable[[T, context.ServiceContext], U] | None): The asynchronous function that implements the endpoint.
     """
 
+    @staticmethod
+    def unary(
+        service_name: str,
+        name: str,
+        function: Callable[
+            [
+                T,
+                ServiceContext,
+            ],
+            Awaitable[U],
+        ],
+        input: type[T],
+        output: type[U],
+        allowed_methods: tuple[str, ...] = ("POST",),
+    ) -> "Endpoint[T, U]":
+        return EndpointUnary(
+            service_name=service_name,
+            name=name,
+            function=function,
+            input=input,
+            output=output,
+            allowed_methods=allowed_methods,
+        )
+
+    @staticmethod
+    def request_stream(
+        service_name: str,
+        name: str,
+        function: Callable[
+            [
+                AsyncIterator[T],
+                ServiceContext,
+            ],
+            Awaitable[U],
+        ],
+        input: type[T],
+        output: type[U],
+    ) -> "Endpoint[T, U]":
+        return EndpointRequestStream(
+            service_name=service_name,
+            name=name,
+            function=function,
+            input=input,
+            output=output,
+        )
+
+    @staticmethod
+    def response_stream(
+        service_name: str,
+        name: str,
+        function: Callable[
+            [
+                T,
+                ServiceContext,
+            ],
+            AsyncIterator[U],
+        ],
+        input: type[T],
+        output: type[U],
+    ) -> "Endpoint[T, U]":
+        return EndpointResponseStream(
+            service_name=service_name,
+            name=name,
+            function=function,
+            input=input,
+            output=output,
+            allowed_methods=("POST",),
+        )
+
+    @staticmethod
+    def bidi_stream(
+        service_name: str,
+        name: str,
+        function: Callable[
+            [
+                AsyncIterator[T],
+                ServiceContext,
+            ],
+            AsyncIterator[U],
+        ],
+        input: type[T],
+        output: type[U],
+    ) -> "Endpoint[T, U]":
+        return EndpointBidiStream(
+            service_name=service_name,
+            name=name,
+            function=function,
+            input=input,
+            output=output,
+        )
+
     service_name: str
     name: str
-    function: Callable[
-        [
-            T,
-            ServiceContext,
-        ],
-        Awaitable[U],
-    ]
-    input: type
-    output: type
+    input: type[T]
+    output: type[U]
     allowed_methods: tuple[str, ...] = ("POST",)
     _async_proc: Union[
         Callable[
@@ -152,16 +237,6 @@ class Endpoint(Generic[T, U]):
                 ServiceContext,
             ],
             Awaitable[U],
-        ],
-        None,
-    ] = None
-    _proc: Union[
-        Callable[
-            [
-                T,
-                ServiceContext,
-            ],
-            U,
         ],
         None,
     ] = None
@@ -187,10 +262,54 @@ class Endpoint(Generic[T, U]):
         self._async_proc = reduce(
             lambda acc, interceptor: _apply_interceptor(interceptor, acc, method_name),
             reversed_interceptors,
-            asynchronize(self.function),
+            asynchronize(self.function),  # type:ignore # TODO
         )  # type: ignore
 
         return self._async_proc  # type: ignore
+
+
+@dataclass(kw_only=True, slots=True)
+class EndpointUnary(Endpoint[T, U]):
+    function: Callable[
+        [
+            T,
+            ServiceContext,
+        ],
+        Awaitable[U],
+    ]
+
+
+@dataclass(kw_only=True, slots=True)
+class EndpointRequestStream(Endpoint[T, U]):
+    function: Callable[
+        [
+            AsyncIterator[T],
+            ServiceContext,
+        ],
+        Awaitable[U],
+    ]
+
+
+@dataclass(kw_only=True, slots=True)
+class EndpointResponseStream(Endpoint[T, U]):
+    function: Callable[
+        [
+            T,
+            ServiceContext,
+        ],
+        AsyncIterator[U],
+    ]
+
+
+@dataclass(kw_only=True, slots=True)
+class EndpointBidiStream(Endpoint[T, U]):
+    function: Callable[
+        [
+            AsyncIterator[T],
+            ServiceContext,
+        ],
+        AsyncIterator[U],
+    ]
 
 
 @dataclass
@@ -220,16 +339,6 @@ class EndpointSync(Generic[T, U]):
     input: type
     output: type
     allowed_methods: tuple[str, ...] = ("POST",)
-    _async_proc: Union[
-        Callable[
-            [
-                T,
-                ServiceContext,
-            ],
-            U,
-        ],
-        None,
-    ] = None
     _proc: Union[
         Callable[
             [

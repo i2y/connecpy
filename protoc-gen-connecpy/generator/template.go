@@ -28,6 +28,7 @@ type ConnecpyMethod struct {
 	Comment        string
 	InputType      string
 	OutputType     string
+	EndpointType   string
 	Stream         bool
 	RequestStream  bool
 	ResponseStream bool
@@ -55,7 +56,7 @@ import {{.Name}} as {{.Alias}}
 
 
 class {{.Name}}(Protocol):{{- range .Methods }}
-    async def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
+    {{if not .ResponseStream }}async {{end}}def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{if .ResponseStream}}AsyncIterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{ end }}
 
@@ -63,13 +64,13 @@ class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
     def __init__(self, service: {{.Name}}, *, interceptors: Iterable[ServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
         super().__init__(
             endpoints={ {{- range .Methods }}
-                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}](
+                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}].{{.EndpointType}}(
                     service_name="{{.ServiceName}}",
                     name="{{.Name}}",
                     function=service.{{.Name}},
                     input={{.InputType}},
                     output={{.OutputType}},
-                    allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},
+                    {{- if not .Stream }}allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},{{end}}
                 ),{{- end }}
             },
             interceptors=interceptors,

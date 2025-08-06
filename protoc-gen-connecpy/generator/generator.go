@@ -85,12 +85,21 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 			if mo, ok := method.Options().(*descriptorpb.MethodOptions); ok {
 				noSideEffects = mo.GetIdempotencyLevel() == descriptorpb.MethodOptions_NO_SIDE_EFFECTS
 			}
+			endpointType := "unary"
+			if method.IsStreamingClient() && method.IsStreamingServer() {
+				endpointType = "bidi_stream"
+			} else if method.IsStreamingClient() {
+				endpointType = "request_stream"
+			} else if method.IsStreamingServer() {
+				endpointType = "response_stream"
+			}
 			connecpyMethod := &ConnecpyMethod{
 				Package:        packageName,
 				ServiceName:    connecpySvc.Name,
 				Name:           string(method.Name()),
 				InputType:      symbolName(method.Input()),
 				OutputType:     symbolName(method.Output()),
+				EndpointType:   endpointType,
 				Stream:         method.IsStreamingClient() || method.IsStreamingServer(),
 				RequestStream:  method.IsStreamingClient(),
 				ResponseStream: method.IsStreamingServer(),

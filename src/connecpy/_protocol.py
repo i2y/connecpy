@@ -151,7 +151,7 @@ class ConnectWireError:
     def to_http_status(self) -> ExtendedHTTPStatus:
         return _error_to_http_status.get(self.code, _INTERNAL_SERVER_ERROR)
 
-    def to_json_bytes(self) -> bytes:
+    def to_dict(self) -> dict:
         data: dict = {
             "code": self.code.value,
             "message": self.message,
@@ -171,7 +171,10 @@ class ConnectWireError:
                     }
                 )
             data["details"] = details
-        return json.dumps(data).encode("utf-8")
+        return data
+
+    def to_json_bytes(self) -> bytes:
+        return json.dumps(self.to_dict()).encode("utf-8")
 
 
 class HTTPException(Exception):
@@ -182,9 +185,14 @@ class HTTPException(Exception):
         self.headers = headers
 
 
-def codec_name_from_content_type(content_type: str) -> str:
-    if content_type.startswith(CONNECT_UNARY_CONTENT_TYPE_PREFIX):
-        return content_type[len(CONNECT_UNARY_CONTENT_TYPE_PREFIX) :]
+def codec_name_from_content_type(content_type: str, stream: bool) -> str:
+    prefix = (
+        CONNECT_STREAMING_CONTENT_TYPE_PREFIX
+        if stream
+        else CONNECT_UNARY_CONTENT_TYPE_PREFIX
+    )
+    if content_type.startswith(prefix):
+        return content_type[len(prefix) :]
     # Follow connect-go behavior for malformed content type. If the content type misses the prefix,
     # it will still be coincidentally handled.
     return content_type

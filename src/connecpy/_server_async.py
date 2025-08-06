@@ -1,13 +1,27 @@
 import base64
 from abc import ABC, abstractmethod
+from asyncio import CancelledError, sleep
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncIterator,
+    Iterable,
+    Mapping,
+    Optional,
+    Tuple,
+    TypeVar,
+)
 from urllib.parse import parse_qs
 
 from . import _compression, _server_shared
 from ._codec import Codec, get_codec
+from ._envelope import EnvelopeReader, EnvelopeWriter
 from ._protocol import (
+    CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
+    CONNECT_STREAMING_HEADER_COMPRESSION,
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
+    CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION,
     ConnectWireError,
     HTTPException,
     codec_name_from_content_type,
@@ -25,6 +39,10 @@ else:
     ASGISendCallable = "asgiref.typing.ASGISendCallable"
     HTTPScope = "asgiref.typing.HTTPScope"
     Scope = "asgiref.typing.Scope"
+
+
+_REQ = TypeVar("_REQ")
+_RES = TypeVar("_RES")
 
 
 class ConnecpyASGIApplication(ABC):
@@ -82,65 +100,93 @@ class ConnecpyASGIApplication(ABC):
                 )
 
             headers = _process_headers(scope.get("headers", ()))
-            accept_encoding = headers.get("accept-encoding", "")
-            selected_encoding = _compression.select_encoding(accept_encoding)
-
             ctx = ServiceContext(headers)
 
-            if http_method == "GET":
-                request, codec = await self._handle_get_request(endpoint, scope, ctx)
-            else:
-                request, codec = await self._handle_post_request(
-                    endpoint, scope, receive, ctx, headers
+            if isinstance(endpoint, _server_shared.EndpointUnary):
+                await self._handle_unary(
+                    scope,
+                    http_method,
+                    headers,
+                    endpoint,
+                    receive,
+                    send,
+                    ctx,
                 )
-
-            proc = endpoint.make_async_proc(self._interceptors)
-            response_data = await proc(request, ctx)
-
-            res_bytes = codec.encode(response_data)
-            headers = {
-                "content-type": [f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"]
-            }
-
-            # Compress response if needed
-            if selected_encoding != "identity":
-                compressor = _compression.get_compression(selected_encoding)
-                if compressor:
-                    res_bytes = compressor.compress(res_bytes)
-                    headers["content-encoding"] = [selected_encoding]
-                    headers["vary"] = ["Accept-Encoding"]
-
-            final_headers: list[tuple[bytes, bytes]] = []
-            for key, values in headers.items():
-                for value in values:
-                    final_headers.append((key.lower().encode(), value.encode()))
-            _add_context_headers(final_headers, ctx)
-
-            await send(
-                {
-                    "type": "http.response.start",
-                    "status": 200,
-                    "headers": final_headers,
-                    "trailers": False,
-                }
-            )
-            await send(
-                {
-                    "type": "http.response.body",
-                    "body": res_bytes,
-                    "more_body": False,
-                }
-            )
+            else:
+                await self._handle_stream(
+                    headers,
+                    endpoint,
+                    receive,
+                    send,
+                    ctx,
+                )
 
         except Exception as e:
             await self._handle_error(e, ctx, scope, receive, send)
 
+    async def _handle_unary(
+        self,
+        scope: HTTPScope,
+        http_method: str,
+        headers: Headers,
+        endpoint: _server_shared.EndpointUnary[_REQ, _RES],
+        receive: ASGIReceiveCallable,
+        send: ASGISendCallable,
+        ctx: _server_shared.ServiceContext,
+    ):
+        accept_encoding = headers.get("accept-encoding", "")
+        selected_encoding = _compression.select_encoding(accept_encoding)
+
+        if http_method == "GET":
+            request, codec = await self._handle_get_request(endpoint, scope, ctx)
+        else:
+            request, codec = await self._handle_post_request(
+                endpoint, scope, receive, ctx, headers
+            )
+
+        proc = endpoint.make_async_proc(self._interceptors)
+        response_data = await proc(request, ctx)
+
+        res_bytes = codec.encode(response_data)
+        response_headers: dict[str, str] = {
+            "content-type": f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"
+        }
+
+        # Compress response if needed
+        if selected_encoding != "identity":
+            compressor = _compression.get_compression(selected_encoding)
+            if compressor:
+                res_bytes = compressor.compress(res_bytes)
+                response_headers["content-encoding"] = selected_encoding
+                response_headers["vary"] = "Accept-Encoding"
+
+        final_headers: list[tuple[bytes, bytes]] = []
+        for key, value in response_headers.items():
+            final_headers.append((key.lower().encode(), value.encode()))
+        _add_context_headers(final_headers, ctx)
+
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": final_headers,
+                "trailers": False,
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": res_bytes,
+                "more_body": False,
+            }
+        )
+
     async def _handle_get_request(
         self,
-        endpoint: _server_shared.Endpoint,
+        endpoint: _server_shared.Endpoint[_REQ, _RES],
         scope: HTTPScope,
         ctx: _server_shared.ServiceContext,
-    ) -> tuple[Any, Codec]:
+    ) -> tuple[_REQ, Codec]:
         """Handle GET request with query parameters."""
         query_string = scope.get("query_string", b"").decode("utf-8")
         params = parse_qs(query_string)
@@ -200,7 +246,9 @@ class ConnecpyASGIApplication(ABC):
     ) -> tuple[Any, Codec]:
         """Handle POST request with body."""
 
-        codec_name = codec_name_from_content_type(headers.get("content-type", ""))
+        codec_name = codec_name_from_content_type(
+            headers.get("content-type", ""), False
+        )
         codec = get_codec(codec_name)
         if not codec:
             raise HTTPException(
@@ -209,7 +257,10 @@ class ConnecpyASGIApplication(ABC):
             )
 
         # Get request body and endpoint
-        req_body = await self._read_body(receive)
+        chunks: list[bytes] = []
+        async for chunk in _read_body(receive):
+            chunks.append(chunk)
+        req_body = b"".join(chunks)
 
         if len(req_body) > self._max_receive_message_length:
             raise ConnecpyException(
@@ -236,27 +287,102 @@ class ConnecpyASGIApplication(ABC):
 
         return codec.decode(req_body, endpoint.input()), codec
 
-    async def _read_body(self, receive: ASGIReceiveCallable) -> bytes:
-        """Read the body of the request."""
-        chunks = []
-        while True:
-            message = await receive()
-            match message["type"]:
-                case "http.request":
-                    chunks.append(message.get("body", b""))
-                    if not message.get("more_body", False):
-                        break
-                case "http.disconnect":
-                    raise ConnecpyException(
-                        Code.CANCELED,
-                        "Client disconnected before request completion",
+    async def _handle_stream(
+        self,
+        headers: Headers,
+        endpoint: _server_shared.Endpoint[_REQ, _RES],
+        receive: ASGIReceiveCallable,
+        send: ASGISendCallable,
+        ctx: _server_shared.ServiceContext,
+    ):
+        accept_compression = headers.get(
+            CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
+        )
+        response_compression_name = _compression.select_encoding(accept_compression)
+        response_compression = _compression.get_compression(response_compression_name)
+
+        codec_name = codec_name_from_content_type(headers.get("content-type", ""), True)
+        codec = get_codec(codec_name)
+        if not codec:
+            raise HTTPException(
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                [
+                    (
+                        "Accept-Post",
+                        "application/connect+json, application/connect+proto",
                     )
-                case _:
-                    raise ConnecpyException(
-                        Code.UNKNOWN,
-                        "Unexpected message type",
+                ],
+            )
+        req_compression_name = headers.get(
+            CONNECT_STREAMING_HEADER_COMPRESSION, "identity"
+        )
+        req_compression = (
+            _compression.get_compression(req_compression_name)
+            or _compression.IdentityCompression()
+        )
+        request_stream = _request_stream(
+            receive, endpoint.input, codec, req_compression
+        )
+
+        writer = EnvelopeWriter(codec, response_compression)
+        sent_headers = False
+
+        error: Exception | None = None
+        try:
+            if isinstance(endpoint, _server_shared.EndpointResponseStream):
+                request = await _consume_single_request(request_stream)
+            else:
+                request = request_stream
+            proc = endpoint.make_async_proc(self._interceptors)
+            response = await proc(request, ctx)  # type:ignore # TODO
+            if isinstance(endpoint, _server_shared.EndpointRequestStream):
+                body = writer.write(response)
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": body,
+                        "more_body": True,
+                    }
+                )
+                return
+
+            async for message in response:  # type:ignore # TODO
+                # Don't send headers until the first message to allow logic a chance to add
+                # response headers.
+                if not sent_headers:
+                    await _send_stream_response_headers(
+                        send, codec, response_compression_name, ctx
                     )
-        return b"".join(chunks)
+                    sent_headers = True
+
+                body = writer.write(message)
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": body,
+                        "more_body": True,
+                    }
+                )
+        except CancelledError as e:
+            raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
+        except Exception as e:
+            error = e
+        finally:
+            if not sent_headers:
+                # Exception before any response message is returned
+                await _send_stream_response_headers(
+                    send, codec, response_compression_name, ctx
+                )
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": writer.end(
+                        ctx.response_trailers(),
+                        ConnectWireError.from_exception(error) if error else None,
+                    ),
+                    "more_body": False,
+                }
+            )
 
     async def _handle_error(
         self,
@@ -300,6 +426,88 @@ class ConnecpyASGIApplication(ABC):
                 "more_body": False,
             }
         )
+
+
+async def _send_stream_response_headers(
+    send: ASGISendCallable,
+    codec: Codec,
+    compression_name: str,
+    ctx: ServiceContext,
+):
+    response_headers = [
+        (
+            b"content-type",
+            f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX}{codec.name()}".encode(),
+        ),
+        (
+            CONNECT_STREAMING_HEADER_COMPRESSION.encode(),
+            compression_name.encode(),
+        ),
+    ]
+    response_headers.extend(
+        (key.encode(), value.encode())
+        for key, value in ctx.response_headers().allitems()
+    )
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 200,
+            "headers": response_headers,
+            "trailers": False,
+        }
+    )
+
+
+async def _request_stream(
+    receive: ASGIReceiveCallable,
+    request_class: type[_REQ],
+    codec: Codec,
+    compression: _compression.Compression,
+) -> AsyncIterator[_REQ]:
+    reader = EnvelopeReader(request_class, codec, compression)
+    try:
+        async for chunk in _read_body(receive):
+            for message in reader.feed(chunk):
+                yield message
+                # Check for cancellation each message. While this seems heavyweight,
+                # conformance tests require it.
+                await sleep(0)
+    except CancelledError as e:
+        raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
+
+
+async def _read_body(receive: ASGIReceiveCallable) -> AsyncIterator[bytes]:
+    """Read the body of the request."""
+    while True:
+        message = await receive()
+        match message["type"]:
+            case "http.request":
+                yield message.get("body", b"")
+                if not message.get("more_body", False):
+                    return
+            case "http.disconnect":
+                raise ConnecpyException(
+                    Code.CANCELED,
+                    "Client disconnected before request completion",
+                )
+            case _:
+                raise ConnecpyException(
+                    Code.UNKNOWN,
+                    "Unexpected message type",
+                )
+
+
+async def _consume_single_request(stream: AsyncIterator[_REQ]) -> _REQ:
+    req = None
+    async for message in stream:
+        if req is not None:
+            raise ConnecpyException(
+                Code.UNIMPLEMENTED, "unary request has multiple messages"
+            )
+        req = message
+    if req is None:
+        raise ConnecpyException(Code.UNIMPLEMENTED, "unary request has zero messages")
+    return req
 
 
 def _process_headers(

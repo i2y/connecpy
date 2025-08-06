@@ -42,7 +42,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[
                     example_dot_haberdasher__edition__2023__pb2.Size,
                     example_dot_haberdasher__edition__2023__pb2.Hat,
-                ](
+                ].unary(
                     service_name="Haberdasher",
                     name="MakeHat",
                     function=service.MakeHat,
