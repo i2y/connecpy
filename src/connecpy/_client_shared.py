@@ -137,7 +137,7 @@ def validate_response_content_type(
             f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
         )
 
-    response_codec_name = codec_name_from_content_type(response_content_type)
+    response_codec_name = codec_name_from_content_type(response_content_type, False)
     if response_codec_name == request_codec_name:
         return
 

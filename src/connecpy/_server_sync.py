@@ -223,7 +223,7 @@ class ConnecpyWSGIApplication(ABC):
         """Handle POST request with body."""
 
         codec_name = codec_name_from_content_type(
-            request_headers.get("content-type", "")
+            request_headers.get("content-type", ""), False
         )
         codec = get_codec(codec_name)
         if not codec:

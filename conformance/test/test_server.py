@@ -10,7 +10,7 @@ _server_py_path = str(_current_dir / "server.py")
 _config_path = str(_current_dir / "config.yaml")
 
 
-_skipped_tests = [
+_skipped_tests_sync = [
     # TODO: Implement server side of streaming
     "--skip",
     "**/bidi-stream/**",
@@ -36,7 +36,7 @@ def test_server_sync():
             _config_path,
             "--mode",
             "server",
-            *_skipped_tests,
+            *_skipped_tests_sync,
             "--parallel",
             "1",
             "--",
@@ -47,6 +47,15 @@ def test_server_sync():
     )
     if result.returncode != 0:
         pytest.fail(f"\n{result.stdout}\n{result.stderr}")
+
+
+_skipped_tests_async = [
+    # TODO: Implement more server side of streaming
+    "--skip",
+    "**/bidi-stream/**",
+    "--skip",
+    "**/client-stream/**",
+]
 
 
 def test_server_async():
@@ -62,7 +71,7 @@ def test_server_async():
             _config_path,
             "--mode",
             "server",
-            *_skipped_tests,
+            *_skipped_tests_async,
             "--parallel",
             "1",
             "--",

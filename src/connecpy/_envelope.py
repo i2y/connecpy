@@ -8,6 +8,7 @@ from ._compression import Compression
 from ._protocol import ConnectWireError
 from .code import Code
 from .exceptions import ConnecpyException
+from .headers import Headers
 
 _RES = TypeVar("_RES")
 
@@ -16,10 +17,10 @@ class EnvelopeReader(Generic[_RES]):
     _next_message_length: int | None
 
     def __init__(
-        self, response_class: type[_RES], codec: Codec, compression: Compression
+        self, message_class: type[_RES], codec: Codec, compression: Compression
     ):
         self._buffer = bytearray()
-        self._response_class = response_class
+        self._message_class = message_class
         self._codec = codec
         self._compression = compression
 
@@ -63,7 +64,7 @@ class EnvelopeReader(Generic[_RES]):
                         ).to_exception()
                     return
 
-                res = self._response_class()
+                res = self._message_class()
                 self._codec.decode(message_data, res)
                 yield res
 
@@ -86,3 +87,17 @@ class EnvelopeWriter:
         # This copies data into the final envelope, but it is still better than issuing
         # I/O multiple times for small prefix / length elements.
         return struct.pack(">BI", self._prefix, len(data)) + data
+
+    def end(self, trailers: Headers, error: Optional[ConnectWireError]) -> bytes:
+        end_message = {}
+        if trailers:
+            metadata: dict[str, list[str]] = {}
+            for key, value in trailers.allitems():
+                metadata.setdefault(key, []).append(value)
+            end_message["metadata"] = metadata
+        if error:
+            end_message["error"] = error.to_dict()
+        data = json.dumps(end_message).encode()
+        if self._compression:
+            data = self._compression.compress(data)
+        return struct.pack(">BI", self._prefix | 0b10, len(data)) + data

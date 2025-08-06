@@ -3,7 +3,7 @@ import asyncio
 import signal
 from contextlib import ExitStack
 from tempfile import NamedTemporaryFile
-from typing import Literal, TypeVar
+from typing import AsyncIterator, Literal, TypeVar
 
 from _util import create_standard_streams
 from connecpy.code import Code
@@ -24,11 +24,14 @@ from connectrpc.conformance.v1.service_pb2 import (
     ConformancePayload,
     IdempotentUnaryRequest,
     IdempotentUnaryResponse,
+    ServerStreamRequest,
+    ServerStreamResponse,
     UnaryRequest,
     UnaryResponse,
     UnaryResponseDefinition,
 )
 from google.protobuf.any import Any, pack
+from google.protobuf.message import Message
 from hypercorn.asyncio import serve as hypercorn_serve
 from hypercorn.config import Config as HypercornConfig
 from hypercorn.logging import Logger
@@ -129,6 +132,39 @@ class TestService(ConformanceService):
         return await _handle_unary_response(
             req.response_definition, [pack(req)], IdempotentUnaryResponse(), ctx
         )
+
+    async def ServerStream(
+        self, req: ServerStreamRequest, ctx: ServiceContext
+    ) -> AsyncIterator[ServerStreamResponse]:
+        definition = req.response_definition
+        for header in definition.response_headers:
+            for value in header.value:
+                ctx.response_headers().add(header.name, value)
+        for trailer in definition.response_trailers:
+            for value in trailer.value:
+                ctx.response_trailers().add(trailer.name, value)
+        request_info = _create_request_info(ctx, [pack(req)])
+
+        sent_message = False
+        for res_data in definition.response_data:
+            res = ServerStreamResponse()
+            if not sent_message:
+                res.payload.request_info.CopyFrom(request_info)
+            res.payload.data = res_data
+            if definition.response_delay_ms:
+                await asyncio.sleep(definition.response_delay_ms / 1000.0)
+            sent_message = True
+            yield res
+
+        if definition.HasField("error"):
+            details: list[Message] = [*definition.error.details]
+            if not sent_message:
+                details.append(request_info)
+            raise ConnecpyException(
+                code=_convert_code(definition.error.code),
+                message=definition.error.message,
+                details=details,
+            )
 
 
 class TestServiceSync(ConformanceServiceSync):
