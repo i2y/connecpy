@@ -6,7 +6,6 @@ from tempfile import TemporaryFile
 from typing import AsyncIterator, Iterator, Literal, TypeVar
 
 import httpx
-import uvloop
 from _util import create_standard_streams
 from connecpy.client import ResponseMetadata
 from connecpy.code import Code
@@ -566,6 +565,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    # Use uvloop because the default asyncio implementation seems to
-    # cause some flakiness with timing-related tests.
-    uvloop.run(main())
+    asyncio.run(main())
