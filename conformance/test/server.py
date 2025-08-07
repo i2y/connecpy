@@ -21,11 +21,16 @@ from connectrpc.conformance.v1.service_connecpy import (
     ConformanceServiceWSGIApplication,
 )
 from connectrpc.conformance.v1.service_pb2 import (
+    BidiStreamRequest,
+    BidiStreamResponse,
+    ClientStreamRequest,
+    ClientStreamResponse,
     ConformancePayload,
     IdempotentUnaryRequest,
     IdempotentUnaryResponse,
     ServerStreamRequest,
     ServerStreamResponse,
+    StreamResponseDefinition,
     UnaryRequest,
     UnaryResponse,
     UnaryResponseDefinition,
@@ -35,20 +40,6 @@ from google.protobuf.message import Message
 from hypercorn.asyncio import serve as hypercorn_serve
 from hypercorn.config import Config as HypercornConfig
 from hypercorn.logging import Logger
-
-
-def _create_request_info(
-    ctx: ServiceContext, reqs: list[Any]
-) -> ConformancePayload.RequestInfo:
-    request_info = ConformancePayload.RequestInfo(requests=reqs)
-    timeout_ms = ctx.timeout_ms()
-    if timeout_ms is not None:
-        request_info.timeout_ms = int(timeout_ms)
-    for key in ctx.request_headers():
-        request_info.request_headers.add(
-            name=key, value=ctx.request_headers().getall(key)
-        )
-    return request_info
 
 
 def _convert_code(conformance_code: ConformanceCode) -> Code:
@@ -88,7 +79,39 @@ def _convert_code(conformance_code: ConformanceCode) -> Code:
     raise ValueError(f"Unknown ConformanceCode: {conformance_code}")
 
 
-RES = TypeVar("RES", bound=UnaryResponse | IdempotentUnaryResponse)
+RES = TypeVar(
+    "RES",
+    bound=UnaryResponse
+    | IdempotentUnaryResponse
+    | ClientStreamResponse
+    | ServerStreamResponse
+    | BidiStreamResponse,
+)
+
+
+def _send_headers(
+    ctx: ServiceContext, definition: UnaryResponseDefinition | StreamResponseDefinition
+):
+    for header in definition.response_headers:
+        for value in header.value:
+            ctx.response_headers().add(header.name, value)
+    for trailer in definition.response_trailers:
+        for value in trailer.value:
+            ctx.response_trailers().add(trailer.name, value)
+
+
+def _create_request_info(
+    ctx: ServiceContext, reqs: list[Any]
+) -> ConformancePayload.RequestInfo:
+    request_info = ConformancePayload.RequestInfo(requests=reqs)
+    timeout_ms = ctx.timeout_ms()
+    if timeout_ms is not None:
+        request_info.timeout_ms = int(timeout_ms)
+    for key in ctx.request_headers():
+        request_info.request_headers.add(
+            name=key, value=ctx.request_headers().getall(key)
+        )
+    return request_info
 
 
 async def _handle_unary_response(
@@ -97,13 +120,7 @@ async def _handle_unary_response(
     res: RES,
     ctx: ServiceContext,
 ) -> RES:
-    for header in definition.response_headers:
-        for value in header.value:
-            ctx.response_headers().add(header.name, value)
-    for trailer in definition.response_trailers:
-        for value in trailer.value:
-            ctx.response_trailers().add(trailer.name, value)
-
+    _send_headers(ctx, definition)
     request_info = _create_request_info(ctx, reqs)
 
     if definition.WhichOneof("response") == "error":
@@ -133,18 +150,28 @@ class TestService(ConformanceService):
             req.response_definition, [pack(req)], IdempotentUnaryResponse(), ctx
         )
 
+    async def ClientStream(
+        self, req: AsyncIterator[ClientStreamRequest], ctx: ServiceContext
+    ) -> ClientStreamResponse:
+        requests: list[Any] = []
+        definition: UnaryResponseDefinition | None = None
+        async for message in req:
+            requests.append(pack(message))
+            if not definition:
+                definition = message.response_definition
+
+        if not definition:
+            raise ValueError("ClientStream must have a response definition")
+        return await _handle_unary_response(
+            definition, requests, ClientStreamResponse(), ctx
+        )
+
     async def ServerStream(
         self, req: ServerStreamRequest, ctx: ServiceContext
     ) -> AsyncIterator[ServerStreamResponse]:
         definition = req.response_definition
-        for header in definition.response_headers:
-            for value in header.value:
-                ctx.response_headers().add(header.name, value)
-        for trailer in definition.response_trailers:
-            for value in trailer.value:
-                ctx.response_trailers().add(trailer.name, value)
+        _send_headers(ctx, definition)
         request_info = _create_request_info(ctx, [pack(req)])
-
         sent_message = False
         for res_data in definition.response_data:
             res = ServerStreamResponse()
@@ -159,6 +186,57 @@ class TestService(ConformanceService):
         if definition.HasField("error"):
             details: list[Message] = [*definition.error.details]
             if not sent_message:
+                details.append(request_info)
+            raise ConnecpyException(
+                code=_convert_code(definition.error.code),
+                message=definition.error.message,
+                details=details,
+            )
+
+    async def BidiStream(
+        self, req: AsyncIterator[BidiStreamRequest], ctx: ServiceContext
+    ) -> AsyncIterator[BidiStreamResponse]:
+        definition: StreamResponseDefinition | None = None
+        full_duplex = False
+        requests: list[Any] = []
+        res_idx = 0
+        async for message in req:
+            if not definition:
+                definition = message.response_definition
+                _send_headers(ctx, definition)
+                full_duplex = message.full_duplex
+            requests.append(pack(message))
+            if not full_duplex:
+                continue
+            if not definition or res_idx >= len(definition.response_data):
+                break
+            if definition.response_delay_ms:
+                await asyncio.sleep(definition.response_delay_ms / 1000.0)
+            res = BidiStreamResponse()
+            res.payload.data = definition.response_data[res_idx]
+            res.payload.request_info.CopyFrom(
+                _create_request_info(ctx, [pack(message)])
+            )
+            yield res
+            res_idx += 1
+            requests = []
+
+        if not definition:
+            return
+
+        request_info = _create_request_info(ctx, requests)
+        for i in range(res_idx, len(definition.response_data)):
+            if definition.response_delay_ms:
+                await asyncio.sleep(definition.response_delay_ms / 1000.0)
+            res = BidiStreamResponse()
+            res.payload.data = definition.response_data[i]
+            if i == 0:
+                res.payload.request_info.CopyFrom(request_info)
+            yield res
+
+        if definition.HasField("error"):
+            details: list[Message] = [*definition.error.details]
+            if len(definition.response_data) == 0:
                 details.append(request_info)
             raise ConnecpyException(
                 code=_convert_code(definition.error.code),
