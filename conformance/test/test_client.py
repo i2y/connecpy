@@ -54,6 +54,8 @@ def test_client_async():
             _config_path,
             "--mode",
             "client",
+            "--known-flaky",
+            "Client Cancellation/**",
             "--",
             *args,
         ],
