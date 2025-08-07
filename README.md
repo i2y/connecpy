@@ -190,6 +190,227 @@ if __name__ == "__main__":
     main()
 ```
 
+## Streaming RPCs
+
+Connecpy supports streaming RPCs in addition to unary RPCs. Here are examples of each type:
+
+### Server Streaming RPC
+
+In server streaming RPCs, the client sends a single request and receives multiple responses from the server.
+
+#### Server implementation
+
+```python
+# service.py
+from typing import AsyncIterator
+from connecpy.server import ServiceContext
+from haberdasher_pb2 import Hat, Size
+
+class HaberdasherService:
+    async def MakeSimilarHats(self, req: Size, ctx: ServiceContext) -> AsyncIterator[Hat]:
+        """Server Streaming: Returns multiple hats of similar size"""
+        for i in range(3):
+            yield Hat(
+                size=req.inches + i,
+                color=["red", "green", "blue"][i],
+                name=f"hat #{i+1}"
+            )
+```
+
+#### Client implementation (Async)
+
+```python
+# async_client.py
+import asyncio
+import httpx
+from connecpy.exceptions import ConnecpyException
+import haberdasher_connecpy, haberdasher_pb2
+
+async def main():
+    async with httpx.AsyncClient(base_url="http://localhost:3000") as session:
+        async with haberdasher_connecpy.HaberdasherClient(
+            "http://localhost:3000", 
+            session=session
+        ) as client:
+            # Server streaming: receive multiple responses
+            hats = []
+            stream = await client.MakeSimilarHats(
+                haberdasher_pb2.Size(inches=12, description="summer hat")
+            )
+            async for hat in stream:
+                print(f"Received: {hat.color} {hat.name} (size {hat.size})")
+                hats.append(hat)
+            print(f"Total hats received: {len(hats)}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+#### Client implementation (Sync)
+
+```python
+# sync_client.py
+import httpx
+from connecpy.exceptions import ConnecpyException
+import haberdasher_connecpy, haberdasher_pb2
+
+def main():
+    with httpx.Client(base_url="http://localhost:3000") as session:
+        with haberdasher_connecpy.HaberdasherClientSync(
+            "http://localhost:3000",
+            session=session
+        ) as client:
+            # Server streaming: receive multiple responses
+            hats = []
+            stream = client.MakeSimilarHats(
+                haberdasher_pb2.Size(inches=12, description="winter hat")
+            )
+            for hat in stream:
+                print(f"Received: {hat.color} {hat.name} (size {hat.size})")
+                hats.append(hat)
+            print(f"Total hats received: {len(hats)}")
+
+if __name__ == "__main__":
+    main()
+```
+
+### Client Streaming RPC
+
+In client streaming RPCs, the client sends multiple requests and receives a single response from the server.
+
+#### Proto definition example
+
+```proto
+service ExampleService {
+  rpc CollectSizes(stream Size) returns (Summary);
+}
+
+message Summary {
+  int32 total_count = 1;
+  float average_size = 2;
+}
+```
+
+#### Server implementation
+
+```python
+# service.py
+from typing import AsyncIterator
+from connecpy.server import ServiceContext
+from example_pb2 import Size, Summary
+
+class ExampleService:
+    async def CollectSizes(
+        self, 
+        req: AsyncIterator[Size], 
+        ctx: ServiceContext
+    ) -> Summary:
+        """Client Streaming: Collect multiple sizes and return summary"""
+        sizes = []
+        async for size_msg in req:
+            sizes.append(size_msg.inches)
+        
+        if not sizes:
+            return Summary(total_count=0, average_size=0)
+        
+        return Summary(
+            total_count=len(sizes),
+            average_size=sum(sizes) / len(sizes)
+        )
+```
+
+#### Client implementation (Async)
+
+```python
+# async_client.py
+import asyncio
+from typing import AsyncIterator
+import haberdasher_pb2
+
+async def send_sizes() -> AsyncIterator[haberdasher_pb2.Size]:
+    """Generator to send multiple sizes to the server"""
+    sizes_to_send = [10, 12, 14, 16, 18]
+    for size in sizes_to_send:
+        yield haberdasher_pb2.Size(inches=size)
+        await asyncio.sleep(0.1)  # Simulate some delay
+
+async def main():
+    async with haberdasher_connecpy.ExampleClient(
+        "http://localhost:3000", 
+        session=session
+    ) as client:
+        # Client streaming: send multiple requests
+        summary = await client.CollectSizes(send_sizes())
+        print(f"Summary: {summary.total_count} sizes, average: {summary.average_size}")
+```
+
+#### Client implementation (Sync)
+
+```python
+# sync_client.py
+from typing import Iterator
+import haberdasher_pb2
+
+def send_sizes() -> Iterator[haberdasher_pb2.Size]:
+    """Generator to send multiple sizes to the server"""
+    sizes_to_send = [10, 12, 14, 16, 18]
+    for size in sizes_to_send:
+        yield haberdasher_pb2.Size(inches=size)
+
+def main():
+    with haberdasher_connecpy.ExampleClientSync(
+        "http://localhost:3000",
+        session=session
+    ) as client:
+        # Client streaming: send multiple requests
+        summary = client.CollectSizes(send_sizes())
+        print(f"Summary: {summary.total_count} sizes, average: {summary.average_size}")
+```
+
+### Bidirectional Streaming RPC
+
+Bidirectional streaming RPCs allow both client and server to send multiple messages to each other. Connecpy supports both:
+- **Full-duplex bidirectional streaming**: Client and server can send and receive messages simultaneously
+- **Half-duplex bidirectional streaming**: Client finishes sending all requests before the server starts sending responses
+
+### Important Notes on Streaming
+
+1. **Server Implementation Limitations**:
+   - **ASGI servers** (uvicorn, hypercorn, daphne): Support all streaming types
+   - **WSGI servers**: Do NOT support streaming responses (server streaming, bidirectional streaming)
+   - For streaming features, you must use an ASGI server
+
+2. **Client Support**:
+   - Both `ConnecpyClient` (async) and `ConnecpyClientSync` support receiving streaming responses
+   - Both support sending streaming requests (client streaming)
+
+3. **Resource Management**: When using streaming responses, always ensure proper cleanup:
+   - Use the stream as a context manager (`with`/`async with`) when possible
+   - Or fully iterate through all messages with `for`/`async for`
+   - If you break out of iteration early, call `stream.close()` to release resources
+
+4. **Error Handling**: Streaming RPCs can raise exceptions during iteration:
+   ```python
+   # Async version
+   try:
+       async for message in stream:
+           process(message)
+   except ConnecpyException as e:
+       print(f"Stream error: {e.code} - {e.message}")
+   
+   # Sync version
+   try:
+       for message in stream:
+           process(message)
+   except ConnecpyException as e:
+       print(f"Stream error: {e.code} - {e.message}")
+   ```
+
+5. **Bidirectional Streaming**: 
+   - Both full-duplex and half-duplex modes are supported
+   - In full-duplex mode, client and server can send/receive messages simultaneously
+   - In half-duplex mode, client must finish sending before server starts responding
+
 ### Other clients
 
 Of course, you can use any HTTP client to make requests to a Connecpy server. For example, commands like `curl` or `buf curl` can be used, as well as HTTP client libraries such as `requests`, `httpx`, `aiohttp`, and others. The examples below use `curl` and `buf curl`.
@@ -324,7 +545,14 @@ headers commonly used by Connect clients for CORS negotiation and a full [exampl
 ## Connect Protocol
 
 Connecpy protoc plugin generates the code based on [Connect Protocol](https://connectrpc.com/docs/protocol) from the `.proto` files.
-Currently, Connecpy supports only Unary RPCs using the POST HTTP method. Connecpy will support other types of RPCs as well, in the near future.
+
+### Supported RPC Types
+
+Connecpy supports the following RPC types:
+- **Unary RPCs** - Single request/response
+- **Server Streaming RPCs** - Single request, multiple responses
+- **Client Streaming RPCs** - Multiple requests, single response
+- **Bidirectional Streaming RPCs** - Multiple requests and responses (both full-duplex and half-duplex)
 
 ## Proto Editions Support
 
