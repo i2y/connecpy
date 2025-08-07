@@ -11,7 +11,7 @@ _config_path = str(_current_dir / "config.yaml")
 
 
 _skipped_tests_sync = [
-    # TODO: Implement server side of streaming
+    # TODO: Implement server side of streaming for sync
     "--skip",
     "**/bidi-stream/**",
     "--skip",
@@ -49,15 +49,6 @@ def test_server_sync():
         pytest.fail(f"\n{result.stdout}\n{result.stderr}")
 
 
-_skipped_tests_async = [
-    # TODO: Implement more server side of streaming
-    "--skip",
-    "**/bidi-stream/**",
-    "--skip",
-    "**/client-stream/**",
-]
-
-
 def test_server_async():
     args = maybe_patch_args_with_debug(
         [sys.executable, _server_py_path, "--mode", "async"]
@@ -71,7 +62,6 @@ def test_server_async():
             _config_path,
             "--mode",
             "server",
-            *_skipped_tests_async,
             "--parallel",
             "1",
             "--",

@@ -336,17 +336,15 @@ class ConnecpyASGIApplication(ABC):
             proc = endpoint.make_async_proc(self._interceptors)
             response = await proc(request, ctx)  # type:ignore # TODO
             if isinstance(endpoint, _server_shared.EndpointRequestStream):
-                body = writer.write(response)
-                await send(
-                    {
-                        "type": "http.response.body",
-                        "body": body,
-                        "more_body": True,
-                    }
-                )
-                return
 
-            async for message in response:  # type:ignore # TODO
+                async def yield_single_response(response: _RES) -> AsyncIterator[_RES]:
+                    yield response
+
+                response_stream = yield_single_response(response)
+            else:
+                response_stream = response
+
+            async for message in response_stream:  # type:ignore # TODO
                 # Don't send headers until the first message to allow logic a chance to add
                 # response headers.
                 if not sent_headers:
