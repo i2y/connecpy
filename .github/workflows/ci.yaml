@@ -63,4 +63,7 @@ jobs:
 
       - name: build Go archives
         if: ${{ startsWith(matrix.os, 'ubuntu-') }}
-        run: go tool goreleaser release --snapshot --clean
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
+        with:
+          version: '~> v2'
+          args: release --snapshot --clean
