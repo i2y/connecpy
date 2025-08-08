@@ -1,9 +1,10 @@
 import argparse
 import asyncio
 import signal
+import time
 from contextlib import ExitStack
 from tempfile import NamedTemporaryFile
-from typing import AsyncIterator, Literal, TypeVar
+from typing import AsyncIterator, Iterator, Literal, TypeVar
 
 from _util import create_standard_streams
 from connecpy.code import Code
@@ -245,16 +246,135 @@ class TestService(ConformanceService):
             )
 
 
-class TestServiceSync(ConformanceServiceSync):
-    _delegate = TestService()
+def _handle_unary_response_sync(
+    definition: UnaryResponseDefinition,
+    reqs: list[Any],
+    res: RES,
+    ctx: ServiceContext,
+) -> RES:
+    _send_headers(ctx, definition)
+    request_info = _create_request_info(ctx, reqs)
 
+    if definition.WhichOneof("response") == "error":
+        raise ConnecpyException(
+            code=_convert_code(definition.error.code),
+            message=definition.error.message,
+            details=[*definition.error.details, request_info],
+        )
+    if definition.response_delay_ms:
+        time.sleep(definition.response_delay_ms / 1000.0)
+
+    res.payload.request_info.CopyFrom(request_info)
+    res.payload.data = definition.response_data
+    return res
+
+
+class TestServiceSync(ConformanceServiceSync):
     def Unary(self, req: UnaryRequest, ctx: ServiceContext) -> UnaryResponse:
-        return asyncio.run(self._delegate.Unary(req, ctx))
+        return _handle_unary_response_sync(
+            req.response_definition, [pack(req)], UnaryResponse(), ctx
+        )
 
     def IdempotentUnary(
         self, req: IdempotentUnaryRequest, ctx: ServiceContext
     ) -> IdempotentUnaryResponse:
-        return asyncio.run(self._delegate.IdempotentUnary(req, ctx))
+        return _handle_unary_response_sync(
+            req.response_definition, [pack(req)], IdempotentUnaryResponse(), ctx
+        )
+
+    def ClientStream(
+        self, req: Iterator[ClientStreamRequest], ctx: ServiceContext
+    ) -> ClientStreamResponse:
+        requests: list[Any] = []
+        definition: UnaryResponseDefinition | None = None
+        for message in req:
+            requests.append(pack(message))
+            if not definition:
+                definition = message.response_definition
+
+        if not definition:
+            raise ValueError("ClientStream must have a response definition")
+        return _handle_unary_response_sync(
+            definition, requests, ClientStreamResponse(), ctx
+        )
+
+    def ServerStream(
+        self, req: ServerStreamRequest, ctx: ServiceContext
+    ) -> Iterator[ServerStreamResponse]:
+        definition = req.response_definition
+        _send_headers(ctx, definition)
+        request_info = _create_request_info(ctx, [pack(req)])
+        sent_message = False
+        for res_data in definition.response_data:
+            res = ServerStreamResponse()
+            if not sent_message:
+                res.payload.request_info.CopyFrom(request_info)
+            res.payload.data = res_data
+            if definition.response_delay_ms:
+                time.sleep(definition.response_delay_ms / 1000.0)
+            sent_message = True
+            yield res
+
+        if definition.HasField("error"):
+            details: list[Message] = [*definition.error.details]
+            if not sent_message:
+                details.append(request_info)
+            raise ConnecpyException(
+                code=_convert_code(definition.error.code),
+                message=definition.error.message,
+                details=details,
+            )
+
+    def BidiStream(
+        self, req: Iterator[BidiStreamRequest], ctx: ServiceContext
+    ) -> Iterator[BidiStreamResponse]:
+        definition: StreamResponseDefinition | None = None
+        full_duplex = False
+        requests: list[Any] = []
+        res_idx = 0
+        for message in req:
+            if not definition:
+                definition = message.response_definition
+                _send_headers(ctx, definition)
+                full_duplex = message.full_duplex
+            requests.append(pack(message))
+            if not full_duplex:
+                continue
+            if not definition or res_idx >= len(definition.response_data):
+                break
+            if definition.response_delay_ms:
+                time.sleep(definition.response_delay_ms / 1000.0)
+            res = BidiStreamResponse()
+            res.payload.data = definition.response_data[res_idx]
+            res.payload.request_info.CopyFrom(
+                _create_request_info(ctx, [pack(message)])
+            )
+            yield res
+            res_idx += 1
+            requests = []
+
+        if not definition:
+            return
+
+        request_info = _create_request_info(ctx, requests)
+        for i in range(res_idx, len(definition.response_data)):
+            if definition.response_delay_ms:
+                time.sleep(definition.response_delay_ms / 1000.0)
+            res = BidiStreamResponse()
+            res.payload.data = definition.response_data[i]
+            if i == 0:
+                res.payload.request_info.CopyFrom(request_info)
+            yield res
+
+        if definition.HasField("error"):
+            details: list[Message] = [*definition.error.details]
+            if len(definition.response_data) == 0:
+                details.append(request_info)
+            raise ConnecpyException(
+                code=_convert_code(definition.error.code),
+                message=definition.error.message,
+                details=details,
+            )
 
 
 class PortCapturingLogger(Logger):
