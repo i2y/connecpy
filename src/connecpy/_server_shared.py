@@ -9,6 +9,7 @@ from typing import (
     Callable,
     Generic,
     Iterable,
+    Iterator,
     Protocol,
     TypeVar,
     Union,
@@ -329,13 +330,6 @@ class EndpointSync(Generic[T, U]):
 
     service_name: str
     name: str
-    function: Callable[
-        [
-            T,
-            ServiceContext,
-        ],
-        U,
-    ]
     input: type
     output: type
     allowed_methods: tuple[str, ...] = ("POST",)
@@ -349,6 +343,97 @@ class EndpointSync(Generic[T, U]):
         ],
         None,
     ] = None
+
+    @staticmethod
+    def unary(
+        service_name: str,
+        name: str,
+        function: Callable[
+            [
+                T,
+                ServiceContext,
+            ],
+            U,
+        ],
+        input: type[T],
+        output: type[U],
+        allowed_methods: tuple[str, ...] = ("POST",),
+    ) -> "EndpointSync[T, U]":
+        return EndpointUnarySync(
+            service_name=service_name,
+            name=name,
+            function=function,
+            input=input,
+            output=output,
+            allowed_methods=allowed_methods,
+        )
+
+    @staticmethod
+    def request_stream(
+        service_name: str,
+        name: str,
+        function: Callable[
+            [
+                Iterator[T],
+                ServiceContext,
+            ],
+            U,
+        ],
+        input: type[T],
+        output: type[U],
+    ) -> "EndpointSync[T, U]":
+        return EndpointRequestStreamSync(
+            service_name=service_name,
+            name=name,
+            function=function,
+            input=input,
+            output=output,
+        )
+
+    @staticmethod
+    def response_stream(
+        service_name: str,
+        name: str,
+        function: Callable[
+            [
+                T,
+                ServiceContext,
+            ],
+            Iterator[U],
+        ],
+        input: type[T],
+        output: type[U],
+    ) -> "EndpointSync[T, U]":
+        return EndpointResponseStreamSync(
+            service_name=service_name,
+            name=name,
+            function=function,
+            input=input,
+            output=output,
+            allowed_methods=("POST",),
+        )
+
+    @staticmethod
+    def bidi_stream(
+        service_name: str,
+        name: str,
+        function: Callable[
+            [
+                Iterator[T],
+                ServiceContext,
+            ],
+            Iterator[U],
+        ],
+        input: type[T],
+        output: type[U],
+    ) -> "EndpointSync[T, U]":
+        return EndpointBidiStreamSync(
+            service_name=service_name,
+            name=name,
+            function=function,
+            input=input,
+            output=output,
+        )
 
     def make_proc(
         self,
@@ -365,9 +450,53 @@ class EndpointSync(Generic[T, U]):
         if self._proc is not None:
             return self._proc
 
-        self._proc = self.function
+        self._proc = self.function  # type:ignore # TODO
 
         return self._proc  # type: ignore
+
+
+@dataclass(kw_only=True, slots=True)
+class EndpointUnarySync(EndpointSync[T, U]):
+    function: Callable[
+        [
+            T,
+            ServiceContext,
+        ],
+        U,
+    ]
+
+
+@dataclass(kw_only=True, slots=True)
+class EndpointRequestStreamSync(EndpointSync[T, U]):
+    function: Callable[
+        [
+            Iterator[T],
+            ServiceContext,
+        ],
+        U,
+    ]
+
+
+@dataclass(kw_only=True, slots=True)
+class EndpointResponseStreamSync(EndpointSync[T, U]):
+    function: Callable[
+        [
+            T,
+            ServiceContext,
+        ],
+        Iterator[U],
+    ]
+
+
+@dataclass(kw_only=True, slots=True)
+class EndpointBidiStreamSync(EndpointSync[T, U]):
+    function: Callable[
+        [
+            Iterator[T],
+            ServiceContext,
+        ],
+        Iterator[U],
+    ]
 
 
 def thread_pool_runner(func):

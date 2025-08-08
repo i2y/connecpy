@@ -118,7 +118,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
 {{end}}{{- end }}
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
-    def {{.Name}}(self, req: {{.InputType}}, ctx: ServiceContext) -> {{.OutputType}}:
+    def {{.Name}}(self, req: {{if .RequestStream}}Iterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: ServiceContext) -> {{if .ResponseStream}}Iterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{- end }}
 
@@ -127,13 +127,13 @@ class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: {{.Name}}Sync):
         super().__init__(
             endpoints={ {{- range .Methods }}
-                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": EndpointSync[{{.InputType}}, {{.OutputType}}](
+                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": EndpointSync[{{.InputType}}, {{.OutputType}}].{{.EndpointType}}(
                     service_name="{{.ServiceName}}",
                     name="{{.Name}}",
                     function=service.{{.Name}},
                     input={{.InputType}},
                     output={{.OutputType}},
-                    allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},
+                    {{- if not .Stream }}allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},{{end}}
                 ),{{- end }}
             }
         )

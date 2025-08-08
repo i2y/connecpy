@@ -11,15 +11,13 @@ _config_path = str(_current_dir / "config.yaml")
 
 
 _skipped_tests_sync = [
-    # TODO: Implement server side of streaming for sync
+    # TODO: While Hypercorn supports HTTP/2 and WSGI, its WSGI support is a very simple wrapper
+    # that reads the entire request body before running the application, which does not work for
+    # full duplex. There are no other popular WSGI servers that support HTTP/2, so in practice
+    # it cannot be supported. It is possible in theory following hyper-h2's example code in
+    # https://python-hyper.org/projects/hyper-h2/en/stable/wsgi-example.html though.
     "--skip",
-    "**/bidi-stream/**",
-    "--skip",
-    "**/client-stream/**",
-    "--skip",
-    "**/server-stream/**",
-    "--skip",
-    "**/unexpected-compressed-message",
+    "**/bidi-stream/full-duplex/**",
 ]
 
 
