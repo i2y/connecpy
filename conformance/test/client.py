@@ -106,6 +106,9 @@ async def _run_test(
     timeout_ms = None
     if test_request.timeout_ms:
         timeout_ms = test_request.timeout_ms
+    read_max_bytes = None
+    if test_request.message_receive_limit:
+        read_max_bytes = test_request.message_receive_limit
 
     request_headers = Headers()
     for header in test_request.request_headers:
@@ -153,6 +156,7 @@ async def _run_test(
                                 test_request.compression
                             ),
                             proto_json=test_request.codec == Codec.CODEC_JSON,
+                            read_max_bytes=read_max_bytes,
                         ) as client,
                     ):
                         match test_request.method:
@@ -331,6 +335,7 @@ async def _run_test(
                                 test_request.compression
                             ),
                             proto_json=test_request.codec == Codec.CODEC_JSON,
+                            read_max_bytes=read_max_bytes,
                         ) as client,
                     ):
                         match test_request.method:

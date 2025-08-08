@@ -3,7 +3,9 @@ features:
     - HTTP_VERSION_1
     - HTTP_VERSION_2
   supports_half_duplex_bidi_over_http1: true
-  supports_message_receive_limit: false
+  # This currently only tests the server
+  # https://github.com/connectrpc/conformance/issues/1018
+  supports_message_receive_limit: true
   supports_trailers: false
   protocols:
     - PROTOCOL_CONNECT

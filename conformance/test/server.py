@@ -276,11 +276,16 @@ class PortCapturingLogger(Logger):
 async def serve(
     request: ServerCompatRequest, mode: Literal["sync", "async"]
 ) -> tuple[asyncio.Task, int]:
+    read_max_bytes = request.message_receive_limit or None
     match mode:
         case "async":
-            app = ConformanceServiceASGIApplication(TestService())
+            app = ConformanceServiceASGIApplication(
+                TestService(), read_max_bytes=read_max_bytes
+            )
         case "sync":
-            app = ConformanceServiceWSGIApplication(TestServiceSync())
+            app = ConformanceServiceWSGIApplication(
+                TestServiceSync(), read_max_bytes=read_max_bytes
+            )
 
     conf = HypercornConfig()
     conf.bind = ["127.0.0.1:0"]

@@ -58,13 +58,13 @@ class ConnecpyASGIApplication(ABC):
         *,
         endpoints: Mapping[str, _server_shared.Endpoint],
         interceptors: Iterable[_server_shared.ServerInterceptor] = (),
-        max_receive_message_length=1024 * 100 * 100,
+        read_max_bytes: int | None = None,
     ):
         """Initialize the ASGI application."""
         super().__init__()
         self._endpoints = endpoints
         self._interceptors = interceptors
-        self._max_receive_message_length = max_receive_message_length
+        self._read_max_bytes = read_max_bytes
 
     async def __call__(
         self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
@@ -112,17 +112,18 @@ class ConnecpyASGIApplication(ABC):
                     send,
                     ctx,
                 )
-            else:
-                await self._handle_stream(
-                    headers,
-                    endpoint,
-                    receive,
-                    send,
-                    ctx,
-                )
-
+                return
         except Exception as e:
             await self._handle_error(e, ctx, scope, receive, send)
+
+        # Streams have their own error handling so move out of the try block.
+        await self._handle_stream(
+            headers,
+            endpoint,
+            receive,
+            send,
+            ctx,
+        )
 
     async def _handle_unary(
         self,
@@ -262,12 +263,6 @@ class ConnecpyASGIApplication(ABC):
             chunks.append(chunk)
         req_body = b"".join(chunks)
 
-        if len(req_body) > self._max_receive_message_length:
-            raise ConnecpyException(
-                Code.INVALID_ARGUMENT,
-                f"Request body exceeds maximum size of {self._max_receive_message_length} bytes",
-            )
-
         # Handle compression if specified
         compression_name = (
             dict(scope["headers"])
@@ -285,6 +280,12 @@ class ConnecpyASGIApplication(ABC):
         if req_body:  # Don't decompress empty body
             req_body = compression.decompress(req_body)
 
+        if self._read_max_bytes is not None and len(req_body) > self._read_max_bytes:
+            raise ConnecpyException(
+                Code.RESOURCE_EXHAUSTED,
+                f"message is larger than configured max {self._read_max_bytes}",
+            )
+
         return codec.decode(req_body, endpoint.input()), codec
 
     async def _handle_stream(
@@ -295,40 +296,48 @@ class ConnecpyASGIApplication(ABC):
         send: ASGISendCallable,
         ctx: _server_shared.ServiceContext,
     ):
-        accept_compression = headers.get(
-            CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
-        )
-        response_compression_name = _compression.select_encoding(accept_compression)
-        response_compression = _compression.get_compression(response_compression_name)
-
-        codec_name = codec_name_from_content_type(headers.get("content-type", ""), True)
-        codec = get_codec(codec_name)
-        if not codec:
-            raise HTTPException(
-                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                [
-                    (
-                        "Accept-Post",
-                        "application/connect+json, application/connect+proto",
-                    )
-                ],
-            )
-        req_compression_name = headers.get(
-            CONNECT_STREAMING_HEADER_COMPRESSION, "identity"
-        )
-        req_compression = (
-            _compression.get_compression(req_compression_name)
-            or _compression.IdentityCompression()
-        )
-        request_stream = _request_stream(
-            receive, endpoint.input, codec, req_compression
-        )
-
-        writer = EnvelopeWriter(codec, response_compression)
-        sent_headers = False
-
         error: Exception | None = None
+        sent_headers = False
         try:
+            accept_compression = headers.get(
+                CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
+            )
+            response_compression_name = _compression.select_encoding(accept_compression)
+            response_compression = _compression.get_compression(
+                response_compression_name
+            )
+
+            codec_name = codec_name_from_content_type(
+                headers.get("content-type", ""), True
+            )
+            codec = get_codec(codec_name)
+            if not codec:
+                raise HTTPException(
+                    HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                    [
+                        (
+                            "Accept-Post",
+                            "application/connect+json, application/connect+proto",
+                        )
+                    ],
+                )
+            req_compression_name = headers.get(
+                CONNECT_STREAMING_HEADER_COMPRESSION, "identity"
+            )
+            req_compression = (
+                _compression.get_compression(req_compression_name)
+                or _compression.IdentityCompression()
+            )
+            request_stream = _request_stream(
+                receive,
+                endpoint.input,
+                codec,
+                req_compression,
+                self._read_max_bytes,
+            )
+
+            writer = EnvelopeWriter(codec, response_compression)
+
             if isinstance(endpoint, _server_shared.EndpointResponseStream):
                 request = await _consume_single_request(request_stream)
             else:
@@ -461,8 +470,9 @@ async def _request_stream(
     request_class: type[_REQ],
     codec: Codec,
     compression: _compression.Compression,
+    read_max_bytes: int | None = None,
 ) -> AsyncIterator[_REQ]:
-    reader = EnvelopeReader(request_class, codec, compression)
+    reader = EnvelopeReader(request_class, codec, compression, read_max_bytes)
     try:
         async for chunk in _read_body(receive):
             for message in reader.feed(chunk):
@@ -480,7 +490,8 @@ async def _read_body(receive: ASGIReceiveCallable) -> AsyncIterator[bytes]:
         message = await receive()
         match message["type"]:
             case "http.request":
-                yield message.get("body", b"")
+                body = message.get("body", b"")
+                yield body
                 if not message.get("more_body", False):
                     return
             case "http.disconnect":
