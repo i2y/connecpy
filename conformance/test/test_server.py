@@ -11,7 +11,7 @@ _config_path = str(_current_dir / "config.yaml")
 
 
 _skipped_tests_sync = [
-    # TODO: While Hypercorn supports HTTP/2 and WSGI, its WSGI support is a very simple wrapper
+    # While Hypercorn supports HTTP/2 and WSGI, its WSGI support is a very simple wrapper
     # that reads the entire request body before running the application, which does not work for
     # full duplex. There are no other popular WSGI servers that support HTTP/2, so in practice
     # it cannot be supported. It is possible in theory following hyper-h2's example code in
