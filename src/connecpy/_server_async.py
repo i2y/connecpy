@@ -4,7 +4,6 @@ from asyncio import CancelledError, sleep
 from http import HTTPStatus
 from typing import (
     TYPE_CHECKING,
-    Any,
     AsyncIterator,
     Iterable,
     Mapping,
@@ -43,6 +42,9 @@ else:
 
 _REQ = TypeVar("_REQ")
 _RES = TypeVar("_RES")
+
+# We don't mutate query params so use a singleton for when they're not set.
+_UNSET_QUERY_PARAMS: dict[str, list[str]] = {}
 
 
 class ConnecpyASGIApplication(ABC):
@@ -99,37 +101,59 @@ class ConnecpyASGIApplication(ABC):
                     [("allow", ", ".join(endpoint.allowed_methods))],
                 )
 
+            is_unary = isinstance(endpoint, _server_shared.EndpointUnary)
+
             headers = _process_headers(scope.get("headers", ()))
+
+            if http_method == "GET":
+                query_string = scope.get("query_string", b"").decode("utf-8")
+                query_params = parse_qs(query_string)
+                codec_name = query_params.get("encoding", ("",))[0]
+            else:
+                query_params = _UNSET_QUERY_PARAMS
+                codec_name = codec_name_from_content_type(
+                    headers.get("content-type", ""), not is_unary
+                )
+            codec = get_codec(codec_name.lower())
+            if not codec:
+                raise HTTPException(
+                    HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                    [("Accept-Post", "application/json, application/proto")],
+                )
+
             ctx = ServiceContext(headers)
 
-            if isinstance(endpoint, _server_shared.EndpointUnary):
-                await self._handle_unary(
-                    scope,
+            if is_unary:
+                return await self._handle_unary(
                     http_method,
                     headers,
+                    codec,
+                    query_params,
                     endpoint,
                     receive,
                     send,
                     ctx,
                 )
-                return
         except Exception as e:
-            await self._handle_error(e, ctx, scope, receive, send)
+            await self._handle_error(e, ctx, send)
+            return
 
         # Streams have their own error handling so move out of the try block.
         await self._handle_stream(
-            headers,
-            endpoint,
             receive,
             send,
+            endpoint,
+            codec,
+            headers,
             ctx,
         )
 
     async def _handle_unary(
         self,
-        scope: HTTPScope,
         http_method: str,
         headers: Headers,
+        codec: Codec,
+        query_params: dict[str, list[str]],
         endpoint: _server_shared.EndpointUnary[_REQ, _RES],
         receive: ASGIReceiveCallable,
         send: ASGISendCallable,
@@ -139,11 +163,9 @@ class ConnecpyASGIApplication(ABC):
         selected_encoding = _compression.select_encoding(accept_encoding)
 
         if http_method == "GET":
-            request, codec = await self._handle_get_request(endpoint, scope, ctx)
+            request = await self._read_get_request(endpoint, codec, query_params)
         else:
-            request, codec = await self._handle_post_request(
-                endpoint, scope, receive, ctx, headers
-            )
+            request = await self._read_post_request(endpoint, receive, codec, headers)
 
         proc = endpoint.make_async_proc(self._interceptors)
         response_data = await proc(request, ctx)
@@ -182,16 +204,13 @@ class ConnecpyASGIApplication(ABC):
             }
         )
 
-    async def _handle_get_request(
+    async def _read_get_request(
         self,
         endpoint: _server_shared.Endpoint[_REQ, _RES],
-        scope: HTTPScope,
-        ctx: _server_shared.ServiceContext,
-    ) -> tuple[_REQ, Codec]:
+        codec: Codec,
+        params: dict[str, list[str]],
+    ) -> _REQ:
         """Handle GET request with query parameters."""
-        query_string = scope.get("query_string", b"").decode("utf-8")
-        params = parse_qs(query_string)
-
         # Validation
         if "message" not in params:
             raise ConnecpyException(
@@ -213,14 +232,6 @@ class ConnecpyASGIApplication(ABC):
         else:
             message = message.encode("utf-8")
 
-        # Handle encoding
-        codec_name = params.get("encoding", ("",))[0]
-        codec = get_codec(codec_name)
-        if not codec:
-            raise ConnecpyException(
-                Code.UNIMPLEMENTED, f"invalid message encoding: '{codec_name}'"
-            )
-
         # Handle compression
         compression_name = params.get("compression", ["identity"])[0]
         compression = _compression.get_compression(compression_name)
@@ -235,41 +246,25 @@ class ConnecpyASGIApplication(ABC):
             message = compression.decompress(message)
 
         # Get the appropriate decoder for the endpoint
-        return codec.decode(message, endpoint.input()), codec
+        return codec.decode(message, endpoint.input())
 
-    async def _handle_post_request(
+    async def _read_post_request(
         self,
-        endpoint: _server_shared.Endpoint,
-        scope: HTTPScope,
+        endpoint: _server_shared.Endpoint[_REQ, _RES],
         receive,
-        ctx: _server_shared.ServiceContext,
+        codec: Codec,
         headers: Headers,
-    ) -> tuple[Any, Codec]:
+    ) -> _REQ:
         """Handle POST request with body."""
 
-        codec_name = codec_name_from_content_type(
-            headers.get("content-type", ""), False
-        )
-        codec = get_codec(codec_name)
-        if not codec:
-            raise HTTPException(
-                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                [("Accept-Post", "application/json, application/proto")],
-            )
-
-        # Get request body and endpoint
+        # Get request body
         chunks: list[bytes] = []
         async for chunk in _read_body(receive):
             chunks.append(chunk)
         req_body = b"".join(chunks)
 
         # Handle compression if specified
-        compression_name = (
-            dict(scope["headers"])
-            .get(b"content-encoding", b"identity")
-            .decode("ascii")
-            .lower()
-        )
+        compression_name = headers.get("content-encoding", "identity").lower()
         compression = _compression.get_compression(compression_name)
         if not compression:
             raise ConnecpyException(
@@ -286,48 +281,35 @@ class ConnecpyASGIApplication(ABC):
                 f"message is larger than configured max {self._read_max_bytes}",
             )
 
-        return codec.decode(req_body, endpoint.input()), codec
+        return codec.decode(req_body, endpoint.input())
 
     async def _handle_stream(
         self,
-        headers: Headers,
-        endpoint: _server_shared.Endpoint[_REQ, _RES],
         receive: ASGIReceiveCallable,
         send: ASGISendCallable,
+        endpoint: _server_shared.Endpoint[_REQ, _RES],
+        codec: Codec,
+        headers: Headers,
         ctx: _server_shared.ServiceContext,
     ):
+        req_compression_name = headers.get(
+            CONNECT_STREAMING_HEADER_COMPRESSION, "identity"
+        )
+        req_compression = (
+            _compression.get_compression(req_compression_name)
+            or _compression.IdentityCompression()
+        )
+        accept_compression = headers.get(
+            CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
+        )
+        response_compression_name = _compression.select_encoding(accept_compression)
+        response_compression = _compression.get_compression(response_compression_name)
+
+        writer = EnvelopeWriter(codec, response_compression)
+
         error: Exception | None = None
         sent_headers = False
         try:
-            accept_compression = headers.get(
-                CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
-            )
-            response_compression_name = _compression.select_encoding(accept_compression)
-            response_compression = _compression.get_compression(
-                response_compression_name
-            )
-
-            codec_name = codec_name_from_content_type(
-                headers.get("content-type", ""), True
-            )
-            codec = get_codec(codec_name)
-            if not codec:
-                raise HTTPException(
-                    HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                    [
-                        (
-                            "Accept-Post",
-                            "application/connect+json, application/connect+proto",
-                        )
-                    ],
-                )
-            req_compression_name = headers.get(
-                CONNECT_STREAMING_HEADER_COMPRESSION, "identity"
-            )
-            req_compression = (
-                _compression.get_compression(req_compression_name)
-                or _compression.IdentityCompression()
-            )
             request_stream = _request_stream(
                 receive,
                 endpoint.input,
@@ -335,8 +317,6 @@ class ConnecpyASGIApplication(ABC):
                 req_compression,
                 self._read_max_bytes,
             )
-
-            writer = EnvelopeWriter(codec, response_compression)
 
             if isinstance(endpoint, _server_shared.EndpointResponseStream):
                 request = await _consume_single_request(request_stream)
@@ -395,8 +375,6 @@ class ConnecpyASGIApplication(ABC):
         self,
         exc,
         ctx: Optional[ServiceContext],
-        scope: HTTPScope,
-        receive: ASGIReceiveCallable,
         send: ASGISendCallable,
     ) -> None:
         """Handle errors that occur during request processing."""
