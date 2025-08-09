@@ -35,13 +35,15 @@ class ConnecpyClient:
         accept_compression: Optional[Iterable[str]] = None,
         send_compression: Optional[str] = None,
         timeout_ms: Optional[int] = None,
+        read_max_bytes: Optional[int] = None,
         session: Optional[httpx.AsyncClient] = None,
     ) -> None:
         self._address = address
         self._codec = get_proto_json_codec() if proto_json else get_proto_binary_codec()
-        self._timeout_ms = timeout_ms
         self._accept_compression = accept_compression
         self._send_compression = send_compression
+        self._timeout_ms = timeout_ms
+        self._read_max_bytes = read_max_bytes
         if session:
             self._session = session
             self._close_client = False
@@ -138,6 +140,15 @@ class ConnecpyClient:
             _client_shared.handle_response_headers(resp.headers)
 
             if resp.status_code == 200:
+                if (
+                    self._read_max_bytes is not None
+                    and len(resp.content) > self._read_max_bytes
+                ):
+                    raise ConnecpyException(
+                        Code.RESOURCE_EXHAUSTED,
+                        f"message is larger than configured max {self._read_max_bytes}",
+                    )
+
                 response = response_class()
                 self._codec.decode(resp.content, response)
                 return response
@@ -207,7 +218,9 @@ class ConnecpyClient:
             _client_shared.handle_response_headers(resp.headers)
 
             if resp.status_code == 200:
-                return ResponseStream(resp, response_class, self._codec, compression)
+                return ResponseStream(
+                    resp, response_class, self._codec, compression, self._read_max_bytes
+                )
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError):
@@ -275,18 +288,22 @@ class ResponseStream(Generic[_RES]):
         response_class: type[_RES],
         codec: Codec,
         compression: Compression,
+        read_max_bytes: Optional[int],
     ):
         self._response = response
         self._response_class = response_class
         self._codec = codec
         self._compression = compression
+        self._read_max_bytes = read_max_bytes
         self._closed = False
 
     async def __aiter__(self) -> AsyncIterator[_RES]:
         if self._closed:
             return
 
-        reader = EnvelopeReader(self._response_class, self._codec, self._compression)
+        reader = EnvelopeReader(
+            self._response_class, self._codec, self._compression, self._read_max_bytes
+        )
         try:
             async for chunk in self._response.aiter_bytes():
                 for message in reader.feed(chunk):

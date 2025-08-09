@@ -17,12 +17,17 @@ class EnvelopeReader(Generic[_RES]):
     _next_message_length: int | None
 
     def __init__(
-        self, message_class: type[_RES], codec: Codec, compression: Compression
+        self,
+        message_class: type[_RES],
+        codec: Codec,
+        compression: Compression,
+        read_max_bytes: int | None,
     ):
         self._buffer = bytearray()
         self._message_class = message_class
         self._codec = codec
         self._compression = compression
+        self._read_max_bytes = read_max_bytes
 
         self._next_message_length = None
 
@@ -49,6 +54,15 @@ class EnvelopeReader(Generic[_RES]):
                             "protocol error: sent compressed message without compression support",
                         )
                     message_data = self._compression.decompress(message_data)
+
+                if (
+                    self._read_max_bytes is not None
+                    and len(message_data) > self._read_max_bytes
+                ):
+                    raise ConnecpyException(
+                        Code.RESOURCE_EXHAUSTED,
+                        f"message is larger than configured max {self._read_max_bytes}",
+                    )
 
                 if end_stream:
                     end_stream_message: dict = json.loads(message_data)

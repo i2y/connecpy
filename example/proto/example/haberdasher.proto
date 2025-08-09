@@ -38,6 +38,8 @@ service Haberdasher {
   rpc MakeSimilarHats(Size) returns (stream Hat) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
+  // MakeVariousHats produces hats of mysterious, randomly-selected color following many orders!
+  rpc MakeVariousHats(stream Size) returns (stream Hat) {}
 
   rpc DoNothing(google.protobuf.Empty) returns (google.protobuf.Empty);
 }

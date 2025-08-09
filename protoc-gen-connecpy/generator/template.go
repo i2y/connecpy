@@ -61,7 +61,7 @@ class {{.Name}}(Protocol):{{- range .Methods }}
 {{ end }}
 
 class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: {{.Name}}, *, interceptors: Iterable[ServerInterceptor]=(), max_receive_message_length=1024 * 100 * 100):
+    def __init__(self, service: {{.Name}}, *, interceptors: Iterable[ServerInterceptor]=(), read_max_bytes: int | None = None):
         super().__init__(
             endpoints={ {{- range .Methods }}
                 "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}].{{.EndpointType}}(
@@ -74,7 +74,7 @@ class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
                 ),{{- end }}
             },
             interceptors=interceptors,
-             max_receive_message_length=max_receive_message_length
+            read_max_bytes=read_max_bytes,
         )
 
     @property
@@ -124,7 +124,7 @@ class {{.Name}}Sync(Protocol):{{- range .Methods }}
 
 
 class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: {{.Name}}Sync):
+    def __init__(self, service: {{.Name}}Sync, read_max_bytes: int | None = None):
         super().__init__(
             endpoints={ {{- range .Methods }}
                 "/{{.Package}}.{{.ServiceName}}/{{.Name}}": EndpointSync[{{.InputType}}, {{.OutputType}}].{{.EndpointType}}(
@@ -135,7 +135,8 @@ class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
                     output={{.OutputType}},
                     {{- if not .Stream }}allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},{{end}}
                 ),{{- end }}
-            }
+            },
+            read_max_bytes=read_max_bytes,
         )
 
     @property

@@ -24,4 +24,6 @@ features:
   supports_trailers: false
   supports_half_duplex_bidi_over_http1: true
   supports_connect_get: true
-  supports_message_receive_limit: false
+  # This currently only tests the server
+  # https://github.com/connectrpc/conformance/issues/1018
+  supports_message_receive_limit: true
