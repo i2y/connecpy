@@ -94,7 +94,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": EndpointSync[
                     example_dot_haberdasher__edition__2023__pb2.Size,
                     example_dot_haberdasher__edition__2023__pb2.Hat,
-                ](
+                ].unary(
                     service_name="Haberdasher",
                     name="MakeHat",
                     function=service.MakeHat,

@@ -83,8 +83,6 @@ class ConnecpyASGIApplication(ABC):
 
         ctx: Optional[ServiceContext] = None
         try:
-            http_method = scope["method"]
-
             path = scope["path"]
             endpoint = self._endpoints.get(path)
             if not endpoint and scope["root_path"]:
@@ -95,6 +93,7 @@ class ConnecpyASGIApplication(ABC):
             if not endpoint:
                 raise HTTPException(HTTPStatus.NOT_FOUND, [])
 
+            http_method = scope["method"]
             if http_method not in endpoint.allowed_methods:
                 raise HTTPException(
                     HTTPStatus.METHOD_NOT_ALLOWED,

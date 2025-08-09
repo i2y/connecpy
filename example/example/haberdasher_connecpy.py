@@ -183,7 +183,7 @@ class HaberdasherSync(Protocol):
 
     def MakeSimilarHats(
         self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
-    ) -> example_dot_haberdasher__pb2.Hat:
+    ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeVariousHats(
@@ -203,7 +203,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
             endpoints={
                 "/i2y.connecpy.example.Haberdasher/MakeHat": EndpointSync[
                     example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ](
+                ].unary(
                     service_name="Haberdasher",
                     name="MakeHat",
                     function=service.MakeHat,
@@ -213,13 +213,12 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 ),
                 "/i2y.connecpy.example.Haberdasher/MakeSimilarHats": EndpointSync[
                     example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ](
+                ].response_stream(
                     service_name="Haberdasher",
                     name="MakeSimilarHats",
                     function=service.MakeSimilarHats,
                     input=example_dot_haberdasher__pb2.Size,
                     output=example_dot_haberdasher__pb2.Hat,
-                    allowed_methods=("GET", "POST"),
                 ),
                 "/i2y.connecpy.example.Haberdasher/MakeVariousHats": EndpointSync[
                     example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
@@ -234,7 +233,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 "/i2y.connecpy.example.Haberdasher/DoNothing": EndpointSync[
                     google_dot_protobuf_dot_empty__pb2.Empty,
                     google_dot_protobuf_dot_empty__pb2.Empty,
-                ](
+                ].unary(
                     service_name="Haberdasher",
                     name="DoNothing",
                     function=service.DoNothing,
