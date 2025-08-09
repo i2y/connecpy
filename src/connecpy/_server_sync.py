@@ -1,14 +1,19 @@
 import base64
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import Any, Iterable, Mapping, Optional
+from io import BytesIO
+from typing import Any, Iterable, Iterator, Mapping, Optional, TypeVar
 from urllib.parse import parse_qs
 from wsgiref.types import StartResponse, WSGIEnvironment
 
 from . import _compression, _server_shared
 from ._codec import Codec, get_codec
+from ._envelope import EnvelopeReader, EnvelopeWriter
 from ._protocol import (
+    CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
+    CONNECT_STREAMING_HEADER_COMPRESSION,
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
+    CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION,
     ConnectWireError,
     HTTPException,
     codec_name_from_content_type,
@@ -17,6 +22,11 @@ from ._server_shared import ServiceContext
 from .code import Code
 from .exceptions import ConnecpyException
 from .headers import Headers
+
+_REQ = TypeVar("_REQ")
+_RES = TypeVar("_RES")
+
+_BODY_CHUNK_SIZE = 4096
 
 
 def _normalize_wsgi_headers(environ: WSGIEnvironment) -> dict:
@@ -106,22 +116,13 @@ def prepare_response_headers(
     return headers, use_compression
 
 
-def read_chunked(input_stream):
-    chunks = []
+def _read_body(environ: WSGIEnvironment) -> Iterator[bytes]:
+    input_stream: BytesIO = environ["wsgi.input"]
     while True:
-        line = input_stream.readline()
-        if not line:
-            break
-
-        chunk_size = int(line.strip(), 16)
-        if chunk_size == 0:
-            # Zero-sized chunk indicates the end
-            break
-
-        chunk = input_stream.read(chunk_size)
-        chunks.append(chunk)
-        input_stream.read(2)  # CRLF
-    return b"".join(chunks)
+        chunk = input_stream.read(_BODY_CHUNK_SIZE)
+        if not chunk:
+            return
+        yield chunk
 
 
 class ConnecpyWSGIApplication(ABC):
@@ -143,14 +144,9 @@ class ConnecpyWSGIApplication(ABC):
         """Handle incoming WSGI requests."""
         ctx: Optional[ServiceContext] = None
         try:
-            request_method = environ.get("REQUEST_METHOD")
-            request_headers = _process_headers(_normalize_wsgi_headers(environ))
-            ctx = ServiceContext(request_headers)
-
             path = environ["PATH_INFO"]
             if not path:
                 path = "/"
-
             endpoint = self._endpoints.get(path)
             if not endpoint and environ["SCRIPT_NAME"] == self.path:
                 # The application was mounted at the service's path so we reconstruct
@@ -160,58 +156,79 @@ class ConnecpyWSGIApplication(ABC):
             if not endpoint:
                 raise HTTPException(HTTPStatus.NOT_FOUND, [])
 
-            request_method = environ["REQUEST_METHOD"]
-            if request_method not in endpoint.allowed_methods:
+            http_method = environ["REQUEST_METHOD"]
+            if http_method not in endpoint.allowed_methods:
                 raise HTTPException(
                     HTTPStatus.METHOD_NOT_ALLOWED,
                     [("Allow", ", ".join(endpoint.allowed_methods))],
                 )
-            # Handle request based on method
-            if request_method == "GET":
-                request, codec = self._handle_get_request(environ, endpoint, ctx)
+
+            headers = _process_headers(_normalize_wsgi_headers(environ))
+            ctx = ServiceContext(headers)
+
+            if isinstance(endpoint, _server_shared.EndpointUnarySync):
+                return self._handle_unary(
+                    environ, start_response, http_method, endpoint, ctx, headers
+                )
             else:
-                request, codec = self._handle_post_request(
-                    environ, endpoint, ctx, request_headers
+                return self._handle_stream(
+                    environ, start_response, headers, endpoint, ctx
                 )
 
-            # Process request
-            proc = endpoint.make_proc()
-            response = proc(request, ctx)
-
-            # Encode response
-            res_bytes = codec.encode(response)
-            base_headers = {
-                "content-type": [f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"]
-            }
-
-            # Handle compression if accepted
-            accept_encoding = request_headers.get("accept-encoding", "identity")
-            selected_encoding = _compression.select_encoding(accept_encoding)
-            compressed_bytes = None
-            if selected_encoding != "identity":
-                compression = _compression.get_compression(selected_encoding)
-                if compression:
-                    compressed_bytes = compression.compress(res_bytes)
-            response_headers, use_compression = prepare_response_headers(
-                base_headers,
-                selected_encoding,
-                len(compressed_bytes) if compressed_bytes is not None else None,
-            )
-
-            # Convert headers to WSGI format
-            wsgi_headers: list[tuple[str, str]] = []
-            for key, values in response_headers.items():
-                for value in values:
-                    wsgi_headers.append((key.lower(), value))
-            _add_context_headers(wsgi_headers, ctx)
-
-            start_response("200 OK", wsgi_headers)
-            final_response = (
-                compressed_bytes if use_compression and compressed_bytes else res_bytes
-            )
-            return [final_response]
         except Exception as e:
             return self._handle_error(e, ctx, environ, start_response)
+
+    def _handle_unary(
+        self,
+        environ: WSGIEnvironment,
+        start_response: StartResponse,
+        http_method: str,
+        endpoint: _server_shared.EndpointSync,
+        ctx: _server_shared.ServiceContext,
+        headers: Headers,
+    ):
+        # Handle request based on method
+        if http_method == "GET":
+            request, codec = self._handle_get_request(environ, endpoint, ctx)
+        else:
+            request, codec = self._handle_post_request(environ, endpoint, ctx, headers)
+
+        # Process request
+        proc = endpoint.make_proc()
+        response = proc(request, ctx)
+
+        # Encode response
+        res_bytes = codec.encode(response)
+        base_headers = {
+            "content-type": [f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"]
+        }
+
+        # Handle compression if accepted
+        accept_encoding = headers.get("accept-encoding", "identity")
+        selected_encoding = _compression.select_encoding(accept_encoding)
+        compressed_bytes = None
+        if selected_encoding != "identity":
+            compression = _compression.get_compression(selected_encoding)
+            if compression:
+                compressed_bytes = compression.compress(res_bytes)
+        response_headers, use_compression = prepare_response_headers(
+            base_headers,
+            selected_encoding,
+            len(compressed_bytes) if compressed_bytes is not None else None,
+        )
+
+        # Convert headers to WSGI format
+        wsgi_headers: list[tuple[str, str]] = []
+        for key, values in response_headers.items():
+            for value in values:
+                wsgi_headers.append((key.lower(), value))
+        _add_context_headers(wsgi_headers, ctx)
+
+        start_response("200 OK", wsgi_headers)
+        final_response = (
+            compressed_bytes if use_compression and compressed_bytes else res_bytes
+        )
+        return [final_response]
 
     def _handle_post_request(
         self,
@@ -241,8 +258,10 @@ class ConnecpyWSGIApplication(ABC):
             if content_length > 0:
                 req_body = environ["wsgi.input"].read(content_length)
             else:
-                input_stream = environ["wsgi.input"]
-                req_body = read_chunked(input_stream)
+                req_body_chunks: list[bytes] = []
+                for chunk in _read_body(environ):
+                    req_body_chunks.append(chunk)
+                req_body = b"".join(req_body_chunks)
 
             # Handle compression if specified
             compression_name = environ.get("HTTP_CONTENT_ENCODING", "identity").lower()
@@ -332,6 +351,87 @@ class ConnecpyWSGIApplication(ABC):
                 raise ConnecpyException(Code.INTERNAL, str(e))
             raise
 
+    def _handle_stream(
+        self,
+        environ: WSGIEnvironment,
+        start_response: StartResponse,
+        headers: Headers,
+        endpoint: _server_shared.EndpointSync,
+        ctx: _server_shared.ServiceContext,
+    ) -> Iterable[bytes]:
+        accept_compression = headers.get(
+            CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
+        )
+        response_compression_name = _compression.select_encoding(accept_compression)
+        response_compression = _compression.get_compression(response_compression_name)
+
+        codec_name = codec_name_from_content_type(headers.get("content-type", ""), True)
+        codec = get_codec(codec_name)
+        if not codec:
+            raise HTTPException(
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                [
+                    (
+                        "Accept-Post",
+                        "application/connect+json, application/connect+proto",
+                    )
+                ],
+            )
+        req_compression_name = headers.get(
+            CONNECT_STREAMING_HEADER_COMPRESSION, "identity"
+        )
+        req_compression = (
+            _compression.get_compression(req_compression_name)
+            or _compression.IdentityCompression()
+        )
+        request_stream = _request_stream(
+            environ, endpoint.input, codec, req_compression
+        )
+        writer = EnvelopeWriter(codec, response_compression)
+        try:
+            if isinstance(endpoint, _server_shared.EndpointResponseStreamSync):
+                request = _consume_single_request(request_stream)
+            else:
+                request = request_stream
+            proc = endpoint.make_proc()
+            response = proc(request, ctx)  # type:ignore # TODO
+            if isinstance(endpoint, _server_shared.EndpointRequestStreamSync):
+                response_stream = iter([response])
+            else:
+                response_stream = response
+
+            # Trigger service logic by consuming the first (possibly only) response message.
+            first_response = next(response_stream, None)
+            # Response headers set before the first message should be set to the context and
+            # we can send them.
+            _send_stream_response_headers(
+                start_response, codec, response_compression_name, ctx
+            )
+            if first_response is None:
+                # It's valid for a service method to return no messages, finish the response
+                # without error.
+                return [writer.end(ctx.response_trailers(), None)]
+
+            # WSGI requires start_response to be called before returning the body iterator.
+            # This means we cannot call yield in this function since the function would not
+            # run at all until the iterator is consumed, meaning start_response wouldn't have
+            # been called in time. So we return the response stream as a separate generator
+            # function. This means some duplication of error handling.
+            return _response_stream(first_response, response_stream, writer, ctx)
+        except Exception as e:
+            # Exception before any response message was returned. An error after the first
+            # response message will be handled by _response_stream, so here we have a
+            # full error-only response.
+            _send_stream_response_headers(
+                start_response, codec, response_compression_name, ctx
+            )
+            return [
+                writer.end(
+                    ctx.response_trailers(),
+                    ConnectWireError.from_exception(e),
+                )
+            ]
+
     def _handle_error(
         self, exc, ctx: Optional[ServiceContext], _environ, start_response
     ):
@@ -362,3 +462,72 @@ def _add_context_headers(headers: list[tuple[str, str]], ctx: ServiceContext) ->
     headers.extend(
         (f"trailer-{key}", value) for key, value in ctx.response_trailers().allitems()
     )
+
+
+def _send_stream_response_headers(
+    start_response: StartResponse,
+    codec: Codec,
+    compression_name: str,
+    ctx: ServiceContext,
+):
+    response_headers = [
+        (
+            "content-type",
+            f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX}{codec.name()}",
+        ),
+        (
+            CONNECT_STREAMING_HEADER_COMPRESSION,
+            compression_name,
+        ),
+    ]
+    response_headers.extend(
+        (key, value) for key, value in ctx.response_headers().allitems()
+    )
+    start_response("200 OK", response_headers)
+
+
+def _request_stream(
+    environ: WSGIEnvironment,
+    request_class: type[_REQ],
+    codec: Codec,
+    compression: _compression.Compression,
+) -> Iterator[_REQ]:
+    reader = EnvelopeReader(request_class, codec, compression)
+    for chunk in _read_body(environ):
+        for message in reader.feed(chunk):
+            yield message
+
+
+def _response_stream(
+    first_response: _RES,
+    response_stream: Iterator[_RES],
+    writer: EnvelopeWriter,
+    ctx: ServiceContext,
+) -> Iterable[bytes]:
+    error: Exception | None = None
+    try:
+        body = writer.write(first_response)
+        yield body
+        for message in response_stream:
+            body = writer.write(message)
+            yield body
+    except Exception as e:
+        error = e
+    finally:
+        yield writer.end(
+            ctx.response_trailers(),
+            ConnectWireError.from_exception(error) if error else None,
+        )
+
+
+def _consume_single_request(stream: Iterator[_REQ]) -> _REQ:
+    req = None
+    for message in stream:
+        if req is not None:
+            raise ConnecpyException(
+                Code.UNIMPLEMENTED, "unary request has multiple messages"
+            )
+        req = message
+    if req is None:
+        raise ConnecpyException(Code.UNIMPLEMENTED, "unary request has zero messages")
+    return req
