@@ -1,4 +1,4 @@
-from typing import AsyncIterator
+from typing import AsyncIterator, Iterator
 
 import pytest
 from httpx import (
@@ -97,6 +97,71 @@ async def test_roundtrip_response_stream_async(proto_json: bool, compression: st
 
     assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
     assert exc_info.value.message == "No more hats available"
+
+
+@pytest.mark.parametrize("client_bad", [False, True])
+@pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
+def test_message_limit_sync(
+    client_bad: bool,
+    compression: str,
+):
+    requests: list[Size] = []
+    responses: list[Hat] = []
+
+    good_size = Size(description="good")
+    bad_size = Size(description="X" * 1000)
+    good_hat = Hat(color="good")
+    bad_hat = Hat(color="X" * 1000)
+
+    class LargeHaberdasher(HaberdasherSync):
+        def MakeHat(self, req, ctx):
+            requests.append(req)
+            return good_hat if client_bad else bad_hat
+
+        def MakeVariousHats(self, req: Iterator[Size], ctx) -> Iterator[Hat]:
+            for size in req:
+                requests.append(size)
+            yield Hat(color="good")
+            yield good_hat if client_bad else bad_hat
+
+    app = HaberdasherWSGIApplication(LargeHaberdasher(), read_max_bytes=100)
+    transport = WSGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
+    with HaberdasherClientSync(
+        "http://localhost",
+        session=Client(transport=transport),
+        send_compression=compression,
+        accept_compression=[compression] if compression else None,
+        read_max_bytes=100,
+    ) as client:
+        with pytest.raises(ConnecpyException) as exc_info:
+            client.MakeHat(request=bad_size if client_bad else good_size)
+        assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
+        assert exc_info.value.message == "message is larger than configured max 100"
+        if client_bad:
+            assert len(requests) == 0
+        else:
+            assert len(requests) == 1
+        assert len(responses) == 0
+
+        requests = []
+        responses = []
+
+        with pytest.raises(ConnecpyException) as exc_info:
+
+            def request_stream():
+                yield good_size
+                yield bad_size if client_bad else good_size
+
+            for h in client.MakeVariousHats(request=request_stream()):
+                responses.append(h)
+        assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
+        assert exc_info.value.message == "message is larger than configured max 100"
+        if client_bad:
+            assert len(requests) == 1
+            assert len(responses) == 0
+        else:
+            assert len(requests) == 2
+            assert len(responses) == 1
 
 
 @pytest.mark.parametrize("client_bad", [False, True])
