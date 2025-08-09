@@ -14,7 +14,25 @@ This repo contains a protoc plugin that generates sever and client code and a py
 
 You can install the protoc plugin using one of these methods:
 
-#### Option 1: Download pre-built binary (recommended)
+#### Option 1: Quick Install (Linux/macOS) - Recommended
+
+Install with a single command:
+
+```bash
+curl -sSL https://i2y.github.io/connecpy/install.sh | bash
+```
+
+Or install to a custom directory:
+
+```bash
+# Install to user directory
+curl -sSL https://i2y.github.io/connecpy/install.sh | PROTOC_GEN_CONNECPY_INSTALL=$HOME/.local/bin bash
+
+# Install specific version
+curl -sSL https://i2y.github.io/connecpy/install.sh | VERSION=v2.1.0 bash
+```
+
+#### Option 2: Manual Download
 
 1. **Download the appropriate binary for your platform** from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest):
    - **Linux AMD64**: `protoc-gen-connecpy-linux-amd64`
@@ -63,7 +81,7 @@ You can install the protoc plugin using one of these methods:
    protoc --connecpy_out=. --connecpy_opt=paths=source_relative test.proto
    ```
 
-#### Option 2: Install with Go
+#### Option 3: Install with Go
 If you have Go installed, you can install the plugin directly:
 
 ```sh
