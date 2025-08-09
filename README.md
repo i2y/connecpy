@@ -695,15 +695,31 @@ service = haberdasher_connecpy.HaberdasherASGIApplication(
 
 Btw, `ServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
 
-### Message Body Length
+### Message Size Limits
 
-Currently, message body length limit is set to 100kb, you can override this by passing `max_receive_message_length` to the application constructor.
+By default, Connecpy limits incoming message sizes to protect against resource exhaustion. The default limit is 100KB per message. You can customize this limit by passing `read_max_bytes` to the application constructor:
 
 ```python
-# this sets max message length to be 10 bytes
-app = HaberedasherASGIApplication(max_receive_message_length=10)
+# Set maximum message size to 1MB for ASGI applications
+app = haberdasher_connecpy.HaberdasherASGIApplication(
+    service,
+    read_max_bytes=1024 * 1024  # 1MB
+)
 
+# Set maximum message size for WSGI applications  
+wsgi_app = haberdasher_connecpy.HaberdasherWSGIApplication(
+    service_sync,
+    read_max_bytes=1024 * 1024  # 1MB
+)
+
+# Disable message size limit (not recommended for production)
+app = haberdasher_connecpy.HaberdasherASGIApplication(
+    service,
+    read_max_bytes=None
+)
 ```
+
+When a message exceeds the configured limit, the server will return a `RESOURCE_EXHAUSTED` error to the client.
 
 ## Standing on the shoulders of giants
 
