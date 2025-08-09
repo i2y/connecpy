@@ -15,17 +15,62 @@ This repo contains a protoc plugin that generates sever and client code and a py
 You can install the protoc plugin using one of these methods:
 
 #### Option 1: Download pre-built binary (recommended)
-Download the latest release from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest) page. Pre-built binaries are available for:
-- Linux (amd64, arm64)
-- macOS (amd64, arm64)
-- Windows (amd64, arm64)
+
+1. **Download the appropriate binary for your platform** from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest):
+   - **Linux AMD64**: `protoc-gen-connecpy-linux-amd64`
+   - **Linux ARM64**: `protoc-gen-connecpy-linux-arm64`
+   - **macOS Intel**: `protoc-gen-connecpy-darwin-amd64`
+   - **macOS Apple Silicon**: `protoc-gen-connecpy-darwin-arm64`
+   - **Windows AMD64**: `protoc-gen-connecpy-windows-amd64.exe`
+   - **Windows ARM64**: `protoc-gen-connecpy-windows-arm64.exe`
+
+2. **Rename and install the binary:**
+
+   **Linux/macOS:**
+   ```bash
+   # Rename to protoc-gen-connecpy
+   mv protoc-gen-connecpy-* protoc-gen-connecpy
+   
+   # Make executable
+   chmod +x protoc-gen-connecpy
+   
+   # Move to a directory in PATH
+   sudo mv protoc-gen-connecpy /usr/local/bin/
+   # Or for user-only installation:
+   # mkdir -p ~/.local/bin
+   # mv protoc-gen-connecpy ~/.local/bin/
+   # Make sure ~/.local/bin is in your PATH
+   ```
+
+   **Windows (PowerShell):**
+   ```powershell
+   # Rename the file
+   Rename-Item protoc-gen-connecpy-windows-*.exe protoc-gen-connecpy.exe
+   
+   # Move to a directory in PATH, for example:
+   Move-Item protoc-gen-connecpy.exe C:\Tools\
+   # Then add C:\Tools to your PATH environment variable:
+   # [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools", "User")
+   ```
+
+3. **Verify installation:**
+   ```bash
+   # Check if the plugin is accessible
+   which protoc-gen-connecpy  # Linux/macOS
+   where protoc-gen-connecpy  # Windows
+   
+   # Test with protoc (requires a .proto file)
+   protoc --connecpy_out=. --connecpy_opt=paths=source_relative test.proto
+   ```
 
 #### Option 2: Install with Go
-If you have Go installed, you can install using:
+If you have Go installed, you can install the plugin directly:
 
 ```sh
 go install github.com/i2y/connecpy/v2/protoc-gen-connecpy@latest
 ```
+
+This will install the binary to `$GOPATH/bin` (or `$HOME/go/bin` if GOPATH is not set). Make sure this directory is in your PATH.
 
 ### Install the Python package
 
