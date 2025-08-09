@@ -112,6 +112,29 @@ To run the server, you'll need one of the following: [Uvicorn](https://www.uvico
 
 Use the protoc plugin to generate connecpy server and client code.
 
+### Using Buf (v2) - Recommended
+
+Create a `buf.gen.yaml` file:
+
+```yaml
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/python
+    out: gen
+  - remote: buf.build/protocolbuffers/pyi
+    out: gen
+  - local: protoc-gen-connecpy
+    out: gen
+```
+
+Then run:
+
+```sh
+buf generate
+```
+
+### Using protoc directly
+
 ```sh
 protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 ```

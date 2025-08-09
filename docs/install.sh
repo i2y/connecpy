@@ -95,12 +95,18 @@ main() {
     print_info "Installing version: $VERSION"
     
     # Construct download URL
-    BINARY_SUFFIX="${OS}-${ARCH}"
+    # Remove 'v' prefix from version for filename
+    VERSION_NUM="${VERSION#v}"
+    
     if [ "$OS" = "windows" ]; then
-        BINARY_SUFFIX="${BINARY_SUFFIX}.exe"
+        ARCHIVE_NAME="${BINARY_NAME}_${VERSION_NUM}_${OS}_${ARCH}.zip"
+        ARCHIVE_TYPE="zip"
+    else
+        ARCHIVE_NAME="${BINARY_NAME}_${VERSION_NUM}_${OS}_${ARCH}.tar.gz"
+        ARCHIVE_TYPE="tar.gz"
     fi
     
-    DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/${BINARY_NAME}-${BINARY_SUFFIX}"
+    DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/${ARCHIVE_NAME}"
     
     print_info "Downloading from: $DOWNLOAD_URL"
     
@@ -108,9 +114,29 @@ main() {
     TMP_DIR=$(mktemp -d)
     trap "rm -rf $TMP_DIR" EXIT
     
-    # Download binary
-    if ! curl -sL -o "$TMP_DIR/$BINARY_NAME" "$DOWNLOAD_URL"; then
-        print_error "Failed to download binary"
+    # Download archive
+    if ! curl -sL -o "$TMP_DIR/$ARCHIVE_NAME" "$DOWNLOAD_URL"; then
+        print_error "Failed to download archive from $DOWNLOAD_URL"
+        exit 1
+    fi
+    
+    # Extract archive
+    print_info "Extracting archive..."
+    if [ "$ARCHIVE_TYPE" = "zip" ]; then
+        if ! unzip -q "$TMP_DIR/$ARCHIVE_NAME" -d "$TMP_DIR"; then
+            print_error "Failed to extract zip archive"
+            exit 1
+        fi
+    else
+        if ! tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR"; then
+            print_error "Failed to extract tar.gz archive"
+            exit 1
+        fi
+    fi
+    
+    # Find the binary (it should be named protoc-gen-connecpy)
+    if [ ! -f "$TMP_DIR/$BINARY_NAME" ]; then
+        print_error "Binary not found in archive"
         exit 1
     fi
     
@@ -137,15 +163,23 @@ main() {
     fi
     
     # Verify installation
-    if command -v "$BINARY_NAME" >/dev/null 2>&1; then
-        print_success "✅ Successfully installed $BINARY_NAME $VERSION"
-        print_info "You can now use: protoc --connecpy_out=. your_service.proto"
+    if [ -f "$INSTALL_DIR/$BINARY_NAME" ]; then
+        print_success "✅ Successfully installed $BINARY_NAME $VERSION to $INSTALL_DIR"
+        
+        # Check if it's in PATH
+        if command -v "$BINARY_NAME" >/dev/null 2>&1; then
+            print_info "You can now use: protoc --connecpy_out=. your_service.proto"
+        else
+            print_info "Note: $INSTALL_DIR is not in your PATH"
+            print_info "To use $BINARY_NAME from anywhere, add this directory to your PATH:"
+            print_info "  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.bashrc"
+            print_info "  source ~/.bashrc"
+            print_info ""
+            print_info "Or you can use the full path: $INSTALL_DIR/$BINARY_NAME"
+        fi
     else
-        print_error "Installation completed but $BINARY_NAME not found in PATH"
-        print_info "Make sure $INSTALL_DIR is in your PATH environment variable"
-        print_info "You can add it by running:"
-        print_info "  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.bashrc"
-        print_info "  source ~/.bashrc"
+        print_error "Installation failed - binary not found at $INSTALL_DIR/$BINARY_NAME"
+        exit 1
     fi
 }
 

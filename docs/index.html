@@ -158,10 +158,26 @@ uv add connecpy</code></pre>
 
     <div class="install-section">
         <h2>🎯 Generate Code</h2>
-        <p>Use the protoc plugin to generate Python code from your .proto files:</p>
+        
+        <h3>Using Buf (v2) - Recommended</h3>
+        <p>Create a <code>buf.gen.yaml</code> file:</p>
+        <pre><code>version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/python
+    out: gen
+  - remote: buf.build/protocolbuffers/pyi
+    out: gen
+  - local: protoc-gen-connecpy
+    out: gen</code></pre>
+        
+        <p>Then generate code:</p>
+        <pre><code>buf generate</code></pre>
+
+        <h3>Using protoc directly</h3>
+        <p>Generate Python code from your .proto files:</p>
         <pre><code>protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./your_service.proto</code></pre>
         
-        <p>Or with grpc_tools:</p>
+        <h3>Using grpc_tools</h3>
         <pre><code>python -m grpc_tools.protoc --python_out=. --pyi_out=. --connecpy_out=. -I . your_service.proto</code></pre>
     </div>
 
