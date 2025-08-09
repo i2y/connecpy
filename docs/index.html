@@ -127,13 +127,16 @@
             <button class="copy-button" onclick="copyToClipboard('curl -sSL https://i2y.github.io/connecpy/install.sh | bash')">Copy</button>
         </div>
 
-        <h3>Custom Installation</h3>
-        <p>Install to a custom directory:</p>
-        <pre><code># Install to user directory
+        <h3>Customize Installation</h3>
+        <p>You can customize the installation with environment variables:</p>
+        <pre><code># Install to a custom directory
 curl -sSL https://i2y.github.io/connecpy/install.sh | PROTOC_GEN_CONNECPY_INSTALL=$HOME/.local/bin bash
 
-# Install specific version
-curl -sSL https://i2y.github.io/connecpy/install.sh | VERSION=v2.1.0 bash</code></pre>
+# Install a specific version
+curl -sSL https://i2y.github.io/connecpy/install.sh | VERSION=v2.1.0 bash
+
+# Combine multiple options
+curl -sSL https://i2y.github.io/connecpy/install.sh | PROTOC_GEN_CONNECPY_INSTALL=$HOME/.local/bin VERSION=v2.1.0 bash</code></pre>
 
         <h3>Supported Platforms</h3>
         <div class="platforms">

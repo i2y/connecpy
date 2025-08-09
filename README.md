@@ -22,14 +22,17 @@ Install with a single command:
 curl -sSL https://i2y.github.io/connecpy/install.sh | bash
 ```
 
-Or install to a custom directory:
+You can customize the installation with environment variables:
 
 ```bash
-# Install to user directory
+# Install to a custom directory
 curl -sSL https://i2y.github.io/connecpy/install.sh | PROTOC_GEN_CONNECPY_INSTALL=$HOME/.local/bin bash
 
-# Install specific version
+# Install a specific version
 curl -sSL https://i2y.github.io/connecpy/install.sh | VERSION=v2.1.0 bash
+
+# Combine multiple options
+curl -sSL https://i2y.github.io/connecpy/install.sh | PROTOC_GEN_CONNECPY_INSTALL=$HOME/.local/bin VERSION=v2.1.0 bash
 ```
 
 #### Option 2: Manual Download
