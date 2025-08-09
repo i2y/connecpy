@@ -82,7 +82,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
         service: ConformanceService,
         *,
         interceptors: Iterable[ServerInterceptor] = (),
-        max_receive_message_length=1024 * 100 * 100,
+        read_max_bytes: int | None = None,
     ):
         super().__init__(
             endpoints={
@@ -151,7 +151,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 ),
             },
             interceptors=interceptors,
-            max_receive_message_length=max_receive_message_length,
+            read_max_bytes=read_max_bytes,
         )
 
     @property
@@ -320,7 +320,9 @@ class ConformanceServiceSync(Protocol):
 
 
 class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: ConformanceServiceSync):
+    def __init__(
+        self, service: ConformanceServiceSync, read_max_bytes: int | None = None
+    ):
         super().__init__(
             endpoints={
                 "/connectrpc.conformance.v1.ConformanceService/Unary": EndpointSync[
@@ -386,7 +388,8 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                     output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
                     allowed_methods=("GET", "POST"),
                 ),
-            }
+            },
+            read_max_bytes=read_max_bytes,
         )
 
     @property

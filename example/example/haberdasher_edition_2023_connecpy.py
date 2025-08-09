@@ -35,7 +35,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         service: Haberdasher,
         *,
         interceptors: Iterable[ServerInterceptor] = (),
-        max_receive_message_length=1024 * 100 * 100,
+        read_max_bytes: int | None = None,
     ):
         super().__init__(
             endpoints={
@@ -52,7 +52,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 ),
             },
             interceptors=interceptors,
-            max_receive_message_length=max_receive_message_length,
+            read_max_bytes=read_max_bytes,
         )
 
     @property
@@ -88,7 +88,7 @@ class HaberdasherSync(Protocol):
 
 
 class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: HaberdasherSync):
+    def __init__(self, service: HaberdasherSync, read_max_bytes: int | None = None):
         super().__init__(
             endpoints={
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": EndpointSync[
@@ -102,7 +102,8 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                     output=example_dot_haberdasher__edition__2023__pb2.Hat,
                     allowed_methods=("GET", "POST"),
                 ),
-            }
+            },
+            read_max_bytes=read_max_bytes,
         )
 
     @property

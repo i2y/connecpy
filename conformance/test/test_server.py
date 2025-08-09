@@ -47,6 +47,16 @@ def test_server_sync():
         pytest.fail(f"\n{result.stdout}\n{result.stderr}")
 
 
+_skipped_tests_async = [
+    "--skip",
+    # There seems to be a hypercorn bug with HTTP/1 and request termination.
+    # https://github.com/pgjones/hypercorn/issues/314
+    # TODO: We should probably test HTTP/1 with uvicorn to both increase coverage
+    # of app servers and to verify behavior with the the dominant HTTP/1 ASGI server.
+    "Server Message Size/HTTPVersion:1/**",
+]
+
+
 def test_server_async():
     args = maybe_patch_args_with_debug(
         [sys.executable, _server_py_path, "--mode", "async"]
@@ -60,6 +70,7 @@ def test_server_async():
             _config_path,
             "--mode",
             "server",
+            *_skipped_tests_async,
             "--parallel",
             "1",
             "--",
