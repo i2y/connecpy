@@ -3,6 +3,7 @@ import asyncio
 import signal
 import time
 from contextlib import ExitStack
+from ssl import VerifyMode
 from tempfile import NamedTemporaryFile
 from typing import AsyncIterator, Iterator, Literal, TypeVar
 
@@ -415,6 +416,14 @@ async def serve(
         key_file.close()
         conf.certfile = cert_file.name
         conf.keyfile = key_file.name
+        if request.client_tls_cert:
+            ca_cert_file = cleanup.enter_context(
+                NamedTemporaryFile(delete_on_close=False)
+            )
+            ca_cert_file.write(request.client_tls_cert)
+            ca_cert_file.close()
+            conf.ca_certs = ca_cert_file.name
+            conf.verify_mode = VerifyMode.CERT_REQUIRED
 
     conf._log = PortCapturingLogger(conf)
 

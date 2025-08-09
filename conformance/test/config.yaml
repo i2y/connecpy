@@ -2,9 +2,6 @@ features:
   versions:
     - HTTP_VERSION_1
     - HTTP_VERSION_2
-  supports_half_duplex_bidi_over_http1: true
-  supports_message_receive_limit: false
-  supports_trailers: false
   protocols:
     - PROTOCOL_CONNECT
   codecs:
@@ -21,3 +18,10 @@ features:
     - STREAM_TYPE_SERVER_STREAM
     - STREAM_TYPE_HALF_DUPLEX_BIDI_STREAM
     - STREAM_TYPE_FULL_DUPLEX_BIDI_STREAM
+  supports_h2c: true
+  supports_tls: true
+  supports_tls_client_certs: true
+  supports_trailers: false
+  supports_half_duplex_bidi_over_http1: true
+  supports_connect_get: true
+  supports_message_receive_limit: false

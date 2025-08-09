@@ -2,7 +2,7 @@ import argparse
 import asyncio
 import ssl
 import time
-from tempfile import TemporaryFile
+from tempfile import NamedTemporaryFile
 from typing import AsyncIterator, Iterator, Literal, TypeVar
 
 import httpx
@@ -133,7 +133,10 @@ async def _run_test(
                     cadata=test_request.server_tls_cert.decode(),
                 )
                 if test_request.HasField("client_tls_creds"):
-                    with TemporaryFile() as cert_file, TemporaryFile() as key_file:
+                    with (
+                        NamedTemporaryFile(delete_on_close=False) as cert_file,
+                        NamedTemporaryFile(delete_on_close=False) as key_file,
+                    ):
                         cert_file.write(test_request.client_tls_creds.cert)
                         cert_file.close()
                         key_file.write(test_request.client_tls_creds.key)
