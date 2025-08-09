@@ -375,10 +375,10 @@ Bidirectional streaming RPCs allow both client and server to send multiple messa
 
 ### Important Notes on Streaming
 
-1. **Server Implementation Limitations**:
-   - **ASGI servers** (uvicorn, hypercorn, daphne): Support all streaming types
-   - **WSGI servers**: Do NOT support streaming responses (server streaming, bidirectional streaming)
-   - For streaming features, you must use an ASGI server
+1. **Server Implementation**:
+   - **ASGI servers** (uvicorn, hypercorn, daphne): Support all streaming types including full-duplex bidirectional streaming
+   - **WSGI servers**: Support unary, server streaming, client streaming, and half-duplex bidirectional streaming
+   - **Note**: Full-duplex bidirectional streaming is not supported by WSGI servers due to protocol limitations (WSGI servers read the entire request before processing)
 
 2. **Client Support**:
    - Both `ConnecpyClient` (async) and `ConnecpyClientSync` support receiving streaming responses
@@ -465,9 +465,63 @@ curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"
 
 ## WSGI Support
 
-Connecpy now provides WSGI support via the `ConnecpyWSGIApp`. This synchronous application adapts our service endpoints to the WSGI specification. It reads requests from the WSGI `environ`, processes POST requests, and returns responses using `start_response`. This enables integration with legacy WSGI servers and middleware.
+Connecpy provides full WSGI support via the `ConnecpyWSGIApplication`. This synchronous application adapts our service endpoints to the WSGI specification. It reads requests from the WSGI `environ`, processes requests, and returns responses using `start_response`. This enables integration with WSGI servers and middleware.
 
-Please see the example in the [example directory](example/example/wsgi_server.py).
+### WSGI Streaming Support
+
+Starting from version 2.1.0, WSGI applications now support streaming RPCs! This includes server streaming, client streaming, and half-duplex bidirectional streaming. Here's how to implement streaming with WSGI:
+
+```python
+# service_sync.py
+from typing import Iterator
+from connecpy.server import ServiceContext
+from haberdasher_pb2 import Hat, Size
+
+class HaberdasherServiceSync:
+    def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
+        """Unary RPC"""
+        return Hat(size=req.inches, color="red", name="fedora")
+    
+    def MakeSimilarHats(self, req: Size, ctx: ServiceContext) -> Iterator[Hat]:
+        """Server Streaming RPC - returns multiple hats"""
+        for i in range(3):
+            yield Hat(
+                size=req.inches + i,
+                color=["red", "green", "blue"][i],
+                name=f"hat #{i+1}"
+            )
+    
+    def CollectSizes(self, req: Iterator[Size], ctx: ServiceContext) -> Hat:
+        """Client Streaming RPC - receives multiple sizes, returns one hat"""
+        sizes = []
+        for size_msg in req:
+            sizes.append(size_msg.inches)
+        
+        avg_size = sum(sizes) / len(sizes) if sizes else 0
+        return Hat(size=int(avg_size), color="average", name="custom")
+    
+    def MakeVariousHats(self, req: Iterator[Size], ctx: ServiceContext) -> Iterator[Hat]:
+        """Bidirectional Streaming RPC (half-duplex only for WSGI)"""
+        # Note: In WSGI, all requests are received before sending responses
+        for size_msg in req:
+            yield Hat(size=size_msg.inches, color="custom", name=f"size-{size_msg.inches}")
+```
+
+```python
+# wsgi_server.py
+import haberdasher_connecpy
+from service_sync import HaberdasherServiceSync
+
+app = haberdasher_connecpy.HaberdasherWSGIApplication(
+    HaberdasherServiceSync()
+)
+
+if __name__ == "__main__":
+    from werkzeug.serving import run_simple
+    run_simple("localhost", 3000, app)
+```
+
+Please see the complete example in the [example directory](example/example/wsgi_server.py).
 
 ## Compression Support
 
