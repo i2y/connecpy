@@ -400,7 +400,7 @@ class ConnecpyWSGIApplication(ABC):
             or _compression.IdentityCompression()
         )
         request_stream = _request_stream(
-            environ, endpoint.input, codec, req_compression
+            environ, endpoint.input, codec, req_compression, self._read_max_bytes
         )
         writer = EnvelopeWriter(codec, response_compression)
         try:
@@ -506,8 +506,9 @@ def _request_stream(
     request_class: type[_REQ],
     codec: Codec,
     compression: _compression.Compression,
+    read_max_bytes: int | None = None,
 ) -> Iterator[_REQ]:
-    reader = EnvelopeReader(request_class, codec, compression)
+    reader = EnvelopeReader(request_class, codec, compression, read_max_bytes)
     for chunk in _read_body(environ):
         for message in reader.feed(chunk):
             yield message

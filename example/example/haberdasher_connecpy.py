@@ -187,8 +187,8 @@ class HaberdasherSync(Protocol):
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeVariousHats(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
-    ) -> example_dot_haberdasher__pb2.Hat:
+        self, req: Iterator[example_dot_haberdasher__pb2.Size], ctx: ServiceContext
+    ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def DoNothing(
@@ -222,13 +222,12 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 ),
                 "/i2y.connecpy.example.Haberdasher/MakeVariousHats": EndpointSync[
                     example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ](
+                ].bidi_stream(
                     service_name="Haberdasher",
                     name="MakeVariousHats",
                     function=service.MakeVariousHats,
                     input=example_dot_haberdasher__pb2.Size,
                     output=example_dot_haberdasher__pb2.Hat,
-                    allowed_methods=("POST",),
                 ),
                 "/i2y.connecpy.example.Haberdasher/DoNothing": EndpointSync[
                     google_dot_protobuf_dot_empty__pb2.Empty,
