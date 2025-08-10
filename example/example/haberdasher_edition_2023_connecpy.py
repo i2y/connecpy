@@ -11,12 +11,13 @@ from connecpy.client import (
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
+from connecpy.interceptor import Interceptor, InterceptorSync
+from connecpy.method import IdempotencyLevel, MethodInfo
 from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
     EndpointSync,
-    ServerInterceptor,
     ServiceContext,
 )
 import example.haberdasher_edition_2023_pb2 as example_dot_haberdasher__edition__2023__pb2
@@ -34,21 +35,20 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         self,
         service: Haberdasher,
         *,
-        interceptors: Iterable[ServerInterceptor] = (),
+        interceptors: Iterable[Interceptor] = (),
         read_max_bytes: int | None = None,
     ):
         super().__init__(
             endpoints={
-                "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint[
-                    example_dot_haberdasher__edition__2023__pb2.Size,
-                    example_dot_haberdasher__edition__2023__pb2.Hat,
-                ].unary(
-                    service_name="Haberdasher",
-                    name="MakeHat",
+                "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint.unary(
+                    method=MethodInfo(
+                        name="MakeHat",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__edition__2023__pb2.Size,
+                        output=example_dot_haberdasher__edition__2023__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+                    ),
                     function=service.MakeHat,
-                    input=example_dot_haberdasher__edition__2023__pb2.Size,
-                    output=example_dot_haberdasher__edition__2023__pb2.Hat,
-                    allowed_methods=("GET", "POST"),
                 ),
             },
             interceptors=interceptors,
@@ -88,21 +88,26 @@ class HaberdasherSync(Protocol):
 
 
 class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: HaberdasherSync, read_max_bytes: int | None = None):
+    def __init__(
+        self,
+        service: HaberdasherSync,
+        interceptors: Iterable[InterceptorSync] = (),
+        read_max_bytes: int | None = None,
+    ):
         super().__init__(
             endpoints={
-                "/i2y.connecpy.example2023.Haberdasher/MakeHat": EndpointSync[
-                    example_dot_haberdasher__edition__2023__pb2.Size,
-                    example_dot_haberdasher__edition__2023__pb2.Hat,
-                ].unary(
-                    service_name="Haberdasher",
-                    name="MakeHat",
+                "/i2y.connecpy.example2023.Haberdasher/MakeHat": EndpointSync.unary(
+                    method=MethodInfo(
+                        name="MakeHat",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__edition__2023__pb2.Size,
+                        output=example_dot_haberdasher__edition__2023__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+                    ),
                     function=service.MakeHat,
-                    input=example_dot_haberdasher__edition__2023__pb2.Size,
-                    output=example_dot_haberdasher__edition__2023__pb2.Hat,
-                    allowed_methods=("GET", "POST"),
                 ),
             },
+            interceptors=interceptors,
             read_max_bytes=read_max_bytes,
         )
 

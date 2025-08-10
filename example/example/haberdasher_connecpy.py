@@ -13,12 +13,13 @@ from connecpy.client import (
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
+from connecpy.interceptor import Interceptor, InterceptorSync
+from connecpy.method import IdempotencyLevel, MethodInfo
 from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
     EndpointSync,
-    ServerInterceptor,
     ServiceContext,
 )
 import example.haberdasher_pb2 as example_dot_haberdasher__pb2
@@ -28,6 +29,11 @@ import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 class Haberdasher(Protocol):
     async def MakeHat(
         self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
+    ) -> example_dot_haberdasher__pb2.Hat:
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
+
+    async def MakeFlexibleHat(
+        self, req: AsyncIterator[example_dot_haberdasher__pb2.Size], ctx: ServiceContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -52,49 +58,60 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         self,
         service: Haberdasher,
         *,
-        interceptors: Iterable[ServerInterceptor] = (),
+        interceptors: Iterable[Interceptor] = (),
         read_max_bytes: int | None = None,
     ):
         super().__init__(
             endpoints={
-                "/i2y.connecpy.example.Haberdasher/MakeHat": Endpoint[
-                    example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ].unary(
-                    service_name="Haberdasher",
-                    name="MakeHat",
+                "/i2y.connecpy.example.Haberdasher/MakeHat": Endpoint.unary(
+                    method=MethodInfo(
+                        name="MakeHat",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__pb2.Size,
+                        output=example_dot_haberdasher__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+                    ),
                     function=service.MakeHat,
-                    input=example_dot_haberdasher__pb2.Size,
-                    output=example_dot_haberdasher__pb2.Hat,
-                    allowed_methods=("GET", "POST"),
                 ),
-                "/i2y.connecpy.example.Haberdasher/MakeSimilarHats": Endpoint[
-                    example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ].response_stream(
-                    service_name="Haberdasher",
-                    name="MakeSimilarHats",
+                "/i2y.connecpy.example.Haberdasher/MakeFlexibleHat": Endpoint.client_stream(
+                    method=MethodInfo(
+                        name="MakeFlexibleHat",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__pb2.Size,
+                        output=example_dot_haberdasher__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
+                    function=service.MakeFlexibleHat,
+                ),
+                "/i2y.connecpy.example.Haberdasher/MakeSimilarHats": Endpoint.server_stream(
+                    method=MethodInfo(
+                        name="MakeSimilarHats",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__pb2.Size,
+                        output=example_dot_haberdasher__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+                    ),
                     function=service.MakeSimilarHats,
-                    input=example_dot_haberdasher__pb2.Size,
-                    output=example_dot_haberdasher__pb2.Hat,
                 ),
-                "/i2y.connecpy.example.Haberdasher/MakeVariousHats": Endpoint[
-                    example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ].bidi_stream(
-                    service_name="Haberdasher",
-                    name="MakeVariousHats",
+                "/i2y.connecpy.example.Haberdasher/MakeVariousHats": Endpoint.bidi_stream(
+                    method=MethodInfo(
+                        name="MakeVariousHats",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__pb2.Size,
+                        output=example_dot_haberdasher__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.MakeVariousHats,
-                    input=example_dot_haberdasher__pb2.Size,
-                    output=example_dot_haberdasher__pb2.Hat,
                 ),
-                "/i2y.connecpy.example.Haberdasher/DoNothing": Endpoint[
-                    google_dot_protobuf_dot_empty__pb2.Empty,
-                    google_dot_protobuf_dot_empty__pb2.Empty,
-                ].unary(
-                    service_name="Haberdasher",
-                    name="DoNothing",
+                "/i2y.connecpy.example.Haberdasher/DoNothing": Endpoint.unary(
+                    method=MethodInfo(
+                        name="DoNothing",
+                        service_name="Haberdasher",
+                        input=google_dot_protobuf_dot_empty__pb2.Empty,
+                        output=google_dot_protobuf_dot_empty__pb2.Empty,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.DoNothing,
-                    input=google_dot_protobuf_dot_empty__pb2.Empty,
-                    output=google_dot_protobuf_dot_empty__pb2.Empty,
-                    allowed_methods=("POST",),
                 ),
             },
             interceptors=interceptors,
@@ -124,6 +141,22 @@ class HaberdasherClient(ConnecpyClient):
             timeout_ms=timeout_ms,
             response_class=example_dot_haberdasher__pb2.Hat,
         )
+
+    async def MakeFlexibleHat(
+        self,
+        request: AsyncIterator[example_dot_haberdasher__pb2.Size],
+        *,
+        headers: Headers | Mapping[str, str] | None = None,
+        timeout_ms: int | None = None,
+    ) -> example_dot_haberdasher__pb2.Hat:
+        res = await self._make_request_stream(
+            url="/i2y.connecpy.example.Haberdasher/MakeFlexibleHat",
+            headers=headers,
+            request=request,
+            timeout_ms=timeout_ms,
+            response_class=example_dot_haberdasher__pb2.Hat,
+        )
+        return await self._consume_single_response(res)
 
     async def MakeSimilarHats(
         self,
@@ -181,6 +214,11 @@ class HaberdasherSync(Protocol):
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
+    def MakeFlexibleHat(
+        self, req: Iterator[example_dot_haberdasher__pb2.Size], ctx: ServiceContext
+    ) -> example_dot_haberdasher__pb2.Hat:
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
+
     def MakeSimilarHats(
         self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
     ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
@@ -198,49 +236,66 @@ class HaberdasherSync(Protocol):
 
 
 class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: HaberdasherSync, read_max_bytes: int | None = None):
+    def __init__(
+        self,
+        service: HaberdasherSync,
+        interceptors: Iterable[InterceptorSync] = (),
+        read_max_bytes: int | None = None,
+    ):
         super().__init__(
             endpoints={
-                "/i2y.connecpy.example.Haberdasher/MakeHat": EndpointSync[
-                    example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ].unary(
-                    service_name="Haberdasher",
-                    name="MakeHat",
+                "/i2y.connecpy.example.Haberdasher/MakeHat": EndpointSync.unary(
+                    method=MethodInfo(
+                        name="MakeHat",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__pb2.Size,
+                        output=example_dot_haberdasher__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+                    ),
                     function=service.MakeHat,
-                    input=example_dot_haberdasher__pb2.Size,
-                    output=example_dot_haberdasher__pb2.Hat,
-                    allowed_methods=("GET", "POST"),
                 ),
-                "/i2y.connecpy.example.Haberdasher/MakeSimilarHats": EndpointSync[
-                    example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ].response_stream(
-                    service_name="Haberdasher",
-                    name="MakeSimilarHats",
+                "/i2y.connecpy.example.Haberdasher/MakeFlexibleHat": EndpointSync.client_stream(
+                    method=MethodInfo(
+                        name="MakeFlexibleHat",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__pb2.Size,
+                        output=example_dot_haberdasher__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
+                    function=service.MakeFlexibleHat,
+                ),
+                "/i2y.connecpy.example.Haberdasher/MakeSimilarHats": EndpointSync.server_stream(
+                    method=MethodInfo(
+                        name="MakeSimilarHats",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__pb2.Size,
+                        output=example_dot_haberdasher__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+                    ),
                     function=service.MakeSimilarHats,
-                    input=example_dot_haberdasher__pb2.Size,
-                    output=example_dot_haberdasher__pb2.Hat,
                 ),
-                "/i2y.connecpy.example.Haberdasher/MakeVariousHats": EndpointSync[
-                    example_dot_haberdasher__pb2.Size, example_dot_haberdasher__pb2.Hat
-                ].bidi_stream(
-                    service_name="Haberdasher",
-                    name="MakeVariousHats",
+                "/i2y.connecpy.example.Haberdasher/MakeVariousHats": EndpointSync.bidi_stream(
+                    method=MethodInfo(
+                        name="MakeVariousHats",
+                        service_name="Haberdasher",
+                        input=example_dot_haberdasher__pb2.Size,
+                        output=example_dot_haberdasher__pb2.Hat,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.MakeVariousHats,
-                    input=example_dot_haberdasher__pb2.Size,
-                    output=example_dot_haberdasher__pb2.Hat,
                 ),
-                "/i2y.connecpy.example.Haberdasher/DoNothing": EndpointSync[
-                    google_dot_protobuf_dot_empty__pb2.Empty,
-                    google_dot_protobuf_dot_empty__pb2.Empty,
-                ].unary(
-                    service_name="Haberdasher",
-                    name="DoNothing",
+                "/i2y.connecpy.example.Haberdasher/DoNothing": EndpointSync.unary(
+                    method=MethodInfo(
+                        name="DoNothing",
+                        service_name="Haberdasher",
+                        input=google_dot_protobuf_dot_empty__pb2.Empty,
+                        output=google_dot_protobuf_dot_empty__pb2.Empty,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.DoNothing,
-                    input=google_dot_protobuf_dot_empty__pb2.Empty,
-                    output=google_dot_protobuf_dot_empty__pb2.Empty,
-                    allowed_methods=("POST",),
                 ),
             },
+            interceptors=interceptors,
             read_max_bytes=read_max_bytes,
         )
 
@@ -267,6 +322,22 @@ class HaberdasherClientSync(ConnecpyClientSync):
             request=request,
             response_class=example_dot_haberdasher__pb2.Hat,
         )
+
+    def MakeFlexibleHat(
+        self,
+        request: Iterator[example_dot_haberdasher__pb2.Size],
+        *,
+        headers: Headers | Mapping[str, str] | None = None,
+        timeout_ms: int | None = None,
+    ) -> example_dot_haberdasher__pb2.Hat:
+        res = self._make_request_stream(
+            url="/i2y.connecpy.example.Haberdasher/MakeFlexibleHat",
+            headers=headers,
+            request=request,
+            timeout_ms=timeout_ms,
+            response_class=example_dot_haberdasher__pb2.Hat,
+        )
+        return self._consume_single_response(res)
 
     def MakeSimilarHats(
         self,

@@ -1,14 +1,25 @@
 import base64
+import functools
 from abc import ABC, abstractmethod
+from dataclasses import replace
 from http import HTTPStatus
 from io import BytesIO
-from typing import Any, Iterable, Iterator, Mapping, Optional, TypeVar
+from typing import Iterable, Iterator, Mapping, Optional, Sequence, TypeVar
 from urllib.parse import parse_qs
 from wsgiref.types import StartResponse, WSGIEnvironment
 
 from . import _compression, _server_shared
 from ._codec import Codec, get_codec
 from ._envelope import EnvelopeReader, EnvelopeWriter
+from ._interceptor_sync import (
+    BidiStreamInterceptorSync,
+    ClientStreamInterceptorSync,
+    InterceptorSync,
+    MetadataInterceptorInvokerSync,
+    MetadataInterceptorSync,
+    ServerStreamInterceptorSync,
+    UnaryInterceptorSync,
+)
 from ._protocol import (
     CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
     CONNECT_STREAMING_HEADER_COMPRESSION,
@@ -137,10 +148,22 @@ class ConnecpyWSGIApplication(ABC):
         self,
         *,
         endpoints: Mapping[str, _server_shared.EndpointSync],
+        interceptors: Iterable[InterceptorSync] = (),
         read_max_bytes: int | None = None,
     ):
         """Initialize the WSGI application."""
         super().__init__()
+        if interceptors:
+            interceptors = [
+                MetadataInterceptorInvokerSync(interceptor)
+                if isinstance(interceptor, MetadataInterceptorSync)
+                else interceptor
+                for interceptor in interceptors
+            ]
+            endpoints = {
+                path: _apply_interceptors(endpoint, interceptors)
+                for path, endpoint in endpoints.items()
+            }
         self._endpoints = endpoints
         self._read_max_bytes = read_max_bytes
 
@@ -163,23 +186,26 @@ class ConnecpyWSGIApplication(ABC):
                 raise HTTPException(HTTPStatus.NOT_FOUND, [])
 
             http_method = environ["REQUEST_METHOD"]
-            if http_method not in endpoint.allowed_methods:
-                raise HTTPException(
-                    HTTPStatus.METHOD_NOT_ALLOWED,
-                    [("Allow", ", ".join(endpoint.allowed_methods))],
-                )
+            _server_shared.verify_http_method(http_method, endpoint.method)
 
             headers = _process_headers(_normalize_wsgi_headers(environ))
-            ctx = ServiceContext(headers)
+            ctx = ServiceContext(endpoint.method, headers)
 
-            if isinstance(endpoint, _server_shared.EndpointUnarySync):
-                return self._handle_unary(
-                    environ, start_response, http_method, endpoint, ctx, headers
-                )
-            else:
-                return self._handle_stream(
-                    environ, start_response, headers, endpoint, ctx
-                )
+            match endpoint:
+                case _server_shared.EndpointUnarySync():
+                    return self._handle_unary(
+                        environ, start_response, http_method, endpoint, ctx, headers
+                    )
+                case (
+                    _server_shared.EndpointClientStreamSync()
+                    | _server_shared.EndpointServerStreamSync()
+                    | _server_shared.EndpointBidiStreamSync()
+                ):
+                    return self._handle_stream(
+                        environ, start_response, headers, endpoint, ctx
+                    )
+                case _:
+                    raise ConnecpyException(Code.INTERNAL, "Unknown endpoint type")
 
         except Exception as e:
             return self._handle_error(e, ctx, environ, start_response)
@@ -189,7 +215,7 @@ class ConnecpyWSGIApplication(ABC):
         environ: WSGIEnvironment,
         start_response: StartResponse,
         http_method: str,
-        endpoint: _server_shared.EndpointSync,
+        endpoint: _server_shared.EndpointUnarySync[_REQ, _RES],
         ctx: _server_shared.ServiceContext,
         headers: Headers,
     ):
@@ -200,8 +226,7 @@ class ConnecpyWSGIApplication(ABC):
             request, codec = self._handle_post_request(environ, endpoint, ctx, headers)
 
         # Process request
-        proc = endpoint.make_proc()
-        response = proc(request, ctx)
+        response = endpoint.function(request, ctx)
 
         # Encode response
         res_bytes = codec.encode(response)
@@ -239,10 +264,10 @@ class ConnecpyWSGIApplication(ABC):
     def _handle_post_request(
         self,
         environ: WSGIEnvironment,
-        endpoint: _server_shared.EndpointSync,
+        endpoint: _server_shared.EndpointSync[_REQ, _RES],
         ctx: _server_shared.ServiceContext,
         request_headers: Headers,
-    ) -> tuple[Any, Codec]:
+    ) -> tuple[_REQ, Codec]:
         """Handle POST request with body."""
 
         codec_name = codec_name_from_content_type(
@@ -296,7 +321,7 @@ class ConnecpyWSGIApplication(ABC):
                 )
 
             try:
-                return codec.decode(req_body, endpoint.input()), codec
+                return codec.decode(req_body, endpoint.method.input()), codec
             except Exception as e:
                 raise ConnecpyException(
                     Code.INVALID_ARGUMENT, f"Failed to decode request body: {str(e)}"
@@ -310,7 +335,9 @@ class ConnecpyWSGIApplication(ABC):
                 )
             raise
 
-    def _handle_get_request(self, environ, endpoint, ctx) -> tuple[Any, Codec]:
+    def _handle_get_request(
+        self, environ, endpoint: _server_shared.EndpointUnarySync[_REQ, _RES], ctx
+    ) -> tuple[_REQ, Codec]:
         """Handle GET request with query parameters."""
         try:
             query_string = environ.get("QUERY_STRING", "")
@@ -354,7 +381,7 @@ class ConnecpyWSGIApplication(ABC):
             # Handle GET request with proto decoder
             try:
                 # TODO - Use content type from queryparam
-                request = codec.decode(message, endpoint.input())
+                request = codec.decode(message, endpoint.method.input())
                 return request, codec
             except Exception as e:
                 raise ConnecpyException(
@@ -371,7 +398,9 @@ class ConnecpyWSGIApplication(ABC):
         environ: WSGIEnvironment,
         start_response: StartResponse,
         headers: Headers,
-        endpoint: _server_shared.EndpointSync,
+        endpoint: _server_shared.EndpointClientStreamSync[_REQ, _RES]
+        | _server_shared.EndpointServerStreamSync[_REQ, _RES]
+        | _server_shared.EndpointBidiStreamSync[_REQ, _RES],
         ctx: _server_shared.ServiceContext,
     ) -> Iterable[bytes]:
         accept_compression = headers.get(
@@ -400,20 +429,19 @@ class ConnecpyWSGIApplication(ABC):
             or _compression.IdentityCompression()
         )
         request_stream = _request_stream(
-            environ, endpoint.input, codec, req_compression, self._read_max_bytes
+            environ, endpoint.method.input, codec, req_compression, self._read_max_bytes
         )
         writer = EnvelopeWriter(codec, response_compression)
         try:
-            if isinstance(endpoint, _server_shared.EndpointResponseStreamSync):
-                request = _consume_single_request(request_stream)
-            else:
-                request = request_stream
-            proc = endpoint.make_proc()
-            response = proc(request, ctx)  # type:ignore # TODO
-            if isinstance(endpoint, _server_shared.EndpointRequestStreamSync):
-                response_stream = iter([response])
-            else:
-                response_stream = response
+            match endpoint:
+                case _server_shared.EndpointClientStreamSync():
+                    response = endpoint.function(request_stream, ctx)
+                    response_stream = iter([response])
+                case _server_shared.EndpointServerStreamSync():
+                    request = _consume_single_request(request_stream)
+                    response_stream = endpoint.function(request, ctx)
+                case _server_shared.EndpointBidiStreamSync():
+                    response_stream = endpoint.function(request_stream, ctx)
 
             # Trigger service logic by consuming the first (possibly only) response message.
             first_response = next(response_stream, None)
@@ -547,3 +575,40 @@ def _consume_single_request(stream: Iterator[_REQ]) -> _REQ:
     if req is None:
         raise ConnecpyException(Code.UNIMPLEMENTED, "unary request has zero messages")
     return req
+
+
+def _apply_interceptors(
+    endpoint: _server_shared.EndpointSync[_REQ, _RES],
+    interceptors: Sequence[InterceptorSync],
+) -> _server_shared.EndpointSync:
+    match endpoint:
+        case _server_shared.EndpointUnarySync():
+            func = endpoint.function
+            for interceptor in reversed(interceptors):
+                if not isinstance(interceptor, UnaryInterceptorSync):
+                    continue
+                func = functools.partial(interceptor.intercept_unary_sync, func)
+            return replace(endpoint, function=func)
+        case _server_shared.EndpointClientStreamSync():
+            func = endpoint.function
+            for interceptor in reversed(interceptors):
+                if not isinstance(interceptor, ClientStreamInterceptorSync):
+                    continue
+                func = functools.partial(interceptor.intercept_client_stream_sync, func)
+            return replace(endpoint, function=func)
+        case _server_shared.EndpointServerStreamSync():
+            func = endpoint.function
+            for interceptor in reversed(interceptors):
+                if not isinstance(interceptor, ServerStreamInterceptorSync):
+                    continue
+                func = functools.partial(interceptor.intercept_server_stream_sync, func)
+            return replace(endpoint, function=func)
+        case _server_shared.EndpointBidiStreamSync():
+            func = endpoint.function
+            for interceptor in reversed(interceptors):
+                if not isinstance(interceptor, BidiStreamInterceptorSync):
+                    continue
+                func = functools.partial(interceptor.intercept_bidi_stream_sync, func)
+            return replace(endpoint, function=func)
+        case _:
+            raise ValueError("Unknown endpoint type")
