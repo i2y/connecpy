@@ -1,4 +1,4 @@
-from typing import Any, ByteString, Optional, Protocol
+from typing import Any, ByteString, Optional, Protocol, TypeVar
 
 from google.protobuf.json_format import MessageToJson
 from google.protobuf.json_format import Parse as MessageFromJson
@@ -11,6 +11,9 @@ CODEC_NAME_JSON = "json"
 CODEC_NAME_JSON_CHARSET_UTF8 = "json; charset=utf-8"
 
 
+T = TypeVar("T")
+
+
 class Codec(Protocol):
     def name(self) -> str:
         """Returns the name of the codec."""
@@ -20,7 +23,7 @@ class Codec(Protocol):
         """Marshals the given message."""
         ...
 
-    def decode(self, data: ByteString, message: Any) -> Any:
+    def decode(self, data: ByteString, message: T) -> T:
         """Unmarshals the given message."""
         ...
 
@@ -36,7 +39,7 @@ class ProtoBinaryCodec(Codec):
             raise TypeError("Expected a protobuf Message instance")
         return message.SerializeToString()
 
-    def decode(self, data: ByteString, message: Any) -> Any:
+    def decode(self, data: ByteString, message: T) -> T:
         if not isinstance(message, Message):
             raise TypeError("Expected a protobuf Message instance")
         message.ParseFromString(data)  # pyright: ignore[reportArgumentType] - type is incorrect
@@ -54,7 +57,7 @@ class ProtoJSONCodec(Codec):
             raise TypeError("Expected a protobuf Message instance")
         return MessageToJson(message).encode()
 
-    def decode(self, data: ByteString, message: Any) -> Any:
+    def decode(self, data: ByteString, message: T) -> T:
         if not isinstance(message, Message):
             raise TypeError("Expected a protobuf Message instance")
         MessageFromJson(data, message)  # pyright: ignore[reportArgumentType] - type is incorrect

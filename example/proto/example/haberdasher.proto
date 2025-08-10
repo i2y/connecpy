@@ -34,6 +34,10 @@ service Haberdasher {
   rpc MakeHat(Size) returns (Hat) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
+
+  // MakeFlexibleHats produces a single hat adhering to many sizes.
+  rpc MakeFlexibleHat(stream Size) returns (Hat) {}
+
   // MakeSimilarHats produces hats of mysterious, randomly-selected color following a single order!
   rpc MakeSimilarHats(Size) returns (stream Hat) {
     option idempotency_level = NO_SIDE_EFFECTS;

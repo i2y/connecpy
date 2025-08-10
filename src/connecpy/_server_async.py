@@ -1,6 +1,8 @@
 import base64
+import functools
 from abc import ABC, abstractmethod
 from asyncio import CancelledError, sleep
+from dataclasses import replace
 from http import HTTPStatus
 from typing import (
     TYPE_CHECKING,
@@ -8,6 +10,7 @@ from typing import (
     Iterable,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     TypeVar,
 )
@@ -16,6 +19,15 @@ from urllib.parse import parse_qs
 from . import _compression, _server_shared
 from ._codec import Codec, get_codec
 from ._envelope import EnvelopeReader, EnvelopeWriter
+from ._interceptor_async import (
+    BidiStreamInterceptor,
+    ClientStreamInterceptor,
+    Interceptor,
+    MetadataInterceptor,
+    MetadataInterceptorInvoker,
+    ServerStreamInterceptor,
+    UnaryInterceptor,
+)
 from ._protocol import (
     CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
     CONNECT_STREAMING_HEADER_COMPRESSION,
@@ -59,13 +71,23 @@ class ConnecpyASGIApplication(ABC):
         self,
         *,
         endpoints: Mapping[str, _server_shared.Endpoint],
-        interceptors: Iterable[_server_shared.ServerInterceptor] = (),
+        interceptors: Iterable[Interceptor] = (),
         read_max_bytes: int | None = None,
     ):
         """Initialize the ASGI application."""
         super().__init__()
+        if interceptors:
+            interceptors = [
+                MetadataInterceptorInvoker(interceptor)
+                if isinstance(interceptor, MetadataInterceptor)
+                else interceptor
+                for interceptor in interceptors
+            ]
+            endpoints = {
+                path: _apply_interceptors(endpoint, interceptors)
+                for path, endpoint in endpoints.items()
+            }
         self._endpoints = endpoints
-        self._interceptors = interceptors
         self._read_max_bytes = read_max_bytes
 
     async def __call__(
@@ -94,11 +116,7 @@ class ConnecpyASGIApplication(ABC):
                 raise HTTPException(HTTPStatus.NOT_FOUND, [])
 
             http_method = scope["method"]
-            if http_method not in endpoint.allowed_methods:
-                raise HTTPException(
-                    HTTPStatus.METHOD_NOT_ALLOWED,
-                    [("allow", ", ".join(endpoint.allowed_methods))],
-                )
+            _server_shared.verify_http_method(http_method, endpoint.method)
 
             is_unary = isinstance(endpoint, _server_shared.EndpointUnary)
 
@@ -120,7 +138,7 @@ class ConnecpyASGIApplication(ABC):
                     [("Accept-Post", "application/json, application/proto")],
                 )
 
-            ctx = ServiceContext(headers)
+            ctx = ServiceContext(endpoint.method, headers)
 
             if is_unary:
                 return await self._handle_unary(
@@ -166,8 +184,7 @@ class ConnecpyASGIApplication(ABC):
         else:
             request = await self._read_post_request(endpoint, receive, codec, headers)
 
-        proc = endpoint.make_async_proc(self._interceptors)
-        response_data = await proc(request, ctx)
+        response_data = await endpoint.function(request, ctx)
 
         res_bytes = codec.encode(response_data)
         response_headers: dict[str, str] = {
@@ -245,7 +262,7 @@ class ConnecpyASGIApplication(ABC):
             message = compression.decompress(message)
 
         # Get the appropriate decoder for the endpoint
-        return codec.decode(message, endpoint.input())
+        return codec.decode(message, endpoint.method.input())
 
     async def _read_post_request(
         self,
@@ -280,7 +297,7 @@ class ConnecpyASGIApplication(ABC):
                 f"message is larger than configured max {self._read_max_bytes}",
             )
 
-        return codec.decode(req_body, endpoint.input())
+        return codec.decode(req_body, endpoint.method.input())
 
     async def _handle_stream(
         self,
@@ -311,26 +328,21 @@ class ConnecpyASGIApplication(ABC):
         try:
             request_stream = _request_stream(
                 receive,
-                endpoint.input,
+                endpoint.method.input,
                 codec,
                 req_compression,
                 self._read_max_bytes,
             )
 
-            if isinstance(endpoint, _server_shared.EndpointResponseStream):
-                request = await _consume_single_request(request_stream)
-            else:
-                request = request_stream
-            proc = endpoint.make_async_proc(self._interceptors)
-            response = await proc(request, ctx)  # type:ignore # TODO
-            if isinstance(endpoint, _server_shared.EndpointRequestStream):
-
-                async def yield_single_response(response: _RES) -> AsyncIterator[_RES]:
-                    yield response
-
-                response_stream = yield_single_response(response)
-            else:
-                response_stream = response
+            match endpoint:
+                case _server_shared.EndpointClientStream():
+                    response = await endpoint.function(request_stream, ctx)
+                    response_stream = _yield_single_response(response)
+                case _server_shared.EndpointServerStream():
+                    request = await _consume_single_request(request_stream)
+                    response_stream = endpoint.function(request, ctx)
+                case _server_shared.EndpointBidiStream():
+                    response_stream = endpoint.function(request_stream, ctx)
 
             async for message in response_stream:  # type:ignore # TODO
                 # Don't send headers until the first message to allow logic a chance to add
@@ -496,6 +508,10 @@ async def _consume_single_request(stream: AsyncIterator[_REQ]) -> _REQ:
     return req
 
 
+async def _yield_single_response(response: _RES) -> AsyncIterator[_RES]:
+    yield response
+
+
 def _process_headers(
     iterable: Iterable[Tuple[bytes, bytes]],
 ) -> Headers:
@@ -516,3 +532,39 @@ def _add_context_headers(
         (f"trailer-{key}".encode(), value.encode())
         for key, value in ctx.response_trailers().allitems()
     )
+
+
+def _apply_interceptors(
+    endpoint: _server_shared.Endpoint[_REQ, _RES], interceptors: Sequence[Interceptor]
+) -> _server_shared.Endpoint:
+    match endpoint:
+        case _server_shared.EndpointUnary():
+            func = endpoint.function
+            for interceptor in reversed(interceptors):
+                if not isinstance(interceptor, UnaryInterceptor):
+                    continue
+                func = functools.partial(interceptor.intercept_unary, func)
+            return replace(endpoint, function=func)
+        case _server_shared.EndpointClientStream():
+            func = endpoint.function
+            for interceptor in reversed(interceptors):
+                if not isinstance(interceptor, ClientStreamInterceptor):
+                    continue
+                func = functools.partial(interceptor.intercept_client_stream, func)
+            return replace(endpoint, function=func)
+        case _server_shared.EndpointServerStream():
+            func = endpoint.function
+            for interceptor in reversed(interceptors):
+                if not isinstance(interceptor, ServerStreamInterceptor):
+                    continue
+                func = functools.partial(interceptor.intercept_server_stream, func)
+            return replace(endpoint, function=func)
+        case _server_shared.EndpointBidiStream():
+            func = endpoint.function
+            for interceptor in reversed(interceptors):
+                if not isinstance(interceptor, BidiStreamInterceptor):
+                    continue
+                func = functools.partial(interceptor.intercept_bidi_stream, func)
+            return replace(endpoint, function=func)
+        case _:
+            raise ValueError("Unknown endpoint type")

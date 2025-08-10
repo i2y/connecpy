@@ -13,12 +13,13 @@ from connecpy.client import (
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
+from connecpy.interceptor import Interceptor, InterceptorSync
+from connecpy.method import IdempotencyLevel, MethodInfo
 from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
     EndpointSync,
-    ServerInterceptor,
     ServiceContext,
 )
 import connectrpc.conformance.v1.service_pb2 as connectrpc_dot_conformance_dot_v1_dot_service__pb2
@@ -81,73 +82,70 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
         self,
         service: ConformanceService,
         *,
-        interceptors: Iterable[ServerInterceptor] = (),
+        interceptors: Iterable[Interceptor] = (),
         read_max_bytes: int | None = None,
     ):
         super().__init__(
             endpoints={
-                "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
-                ].unary(
-                    service_name="ConformanceService",
-                    name="Unary",
+                "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint.unary(
+                    method=MethodInfo(
+                        name="Unary",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.Unary,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
-                    allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ServerStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
-                ].response_stream(
-                    service_name="ConformanceService",
-                    name="ServerStream",
+                "/connectrpc.conformance.v1.ConformanceService/ServerStream": Endpoint.server_stream(
+                    method=MethodInfo(
+                        name="ServerStream",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.ServerStream,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ClientStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
-                ].request_stream(
-                    service_name="ConformanceService",
-                    name="ClientStream",
+                "/connectrpc.conformance.v1.ConformanceService/ClientStream": Endpoint.client_stream(
+                    method=MethodInfo(
+                        name="ClientStream",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.ClientStream,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/BidiStream": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
-                ].bidi_stream(
-                    service_name="ConformanceService",
-                    name="BidiStream",
+                "/connectrpc.conformance.v1.ConformanceService/BidiStream": Endpoint.bidi_stream(
+                    method=MethodInfo(
+                        name="BidiStream",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.BidiStream,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
-                ].unary(
-                    service_name="ConformanceService",
-                    name="Unimplemented",
+                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": Endpoint.unary(
+                    method=MethodInfo(
+                        name="Unimplemented",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.Unimplemented,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
-                    allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": Endpoint[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
-                ].unary(
-                    service_name="ConformanceService",
-                    name="IdempotentUnary",
+                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": Endpoint.unary(
+                    method=MethodInfo(
+                        name="IdempotentUnary",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
+                        idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+                    ),
                     function=service.IdempotentUnary,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
-                    allowed_methods=("GET", "POST"),
                 ),
             },
             interceptors=interceptors,
@@ -321,74 +319,75 @@ class ConformanceServiceSync(Protocol):
 
 class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
     def __init__(
-        self, service: ConformanceServiceSync, read_max_bytes: int | None = None
+        self,
+        service: ConformanceServiceSync,
+        interceptors: Iterable[InterceptorSync] = (),
+        read_max_bytes: int | None = None,
     ):
         super().__init__(
             endpoints={
-                "/connectrpc.conformance.v1.ConformanceService/Unary": EndpointSync[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
-                ].unary(
-                    service_name="ConformanceService",
-                    name="Unary",
+                "/connectrpc.conformance.v1.ConformanceService/Unary": EndpointSync.unary(
+                    method=MethodInfo(
+                        name="Unary",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.Unary,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
-                    allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ServerStream": EndpointSync[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
-                ].response_stream(
-                    service_name="ConformanceService",
-                    name="ServerStream",
+                "/connectrpc.conformance.v1.ConformanceService/ServerStream": EndpointSync.server_stream(
+                    method=MethodInfo(
+                        name="ServerStream",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.ServerStream,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/ClientStream": EndpointSync[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
-                ].request_stream(
-                    service_name="ConformanceService",
-                    name="ClientStream",
+                "/connectrpc.conformance.v1.ConformanceService/ClientStream": EndpointSync.client_stream(
+                    method=MethodInfo(
+                        name="ClientStream",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.ClientStream,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/BidiStream": EndpointSync[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
-                ].bidi_stream(
-                    service_name="ConformanceService",
-                    name="BidiStream",
+                "/connectrpc.conformance.v1.ConformanceService/BidiStream": EndpointSync.bidi_stream(
+                    method=MethodInfo(
+                        name="BidiStream",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.BidiStream,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": EndpointSync[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
-                ].unary(
-                    service_name="ConformanceService",
-                    name="Unimplemented",
+                "/connectrpc.conformance.v1.ConformanceService/Unimplemented": EndpointSync.unary(
+                    method=MethodInfo(
+                        name="Unimplemented",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
                     function=service.Unimplemented,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
-                    allowed_methods=("POST",),
                 ),
-                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": EndpointSync[
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-                    connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
-                ].unary(
-                    service_name="ConformanceService",
-                    name="IdempotentUnary",
+                "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": EndpointSync.unary(
+                    method=MethodInfo(
+                        name="IdempotentUnary",
+                        service_name="ConformanceService",
+                        input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
+                        output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
+                        idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+                    ),
                     function=service.IdempotentUnary,
-                    input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-                    output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
-                    allowed_methods=("GET", "POST"),
                 ),
             },
+            interceptors=interceptors,
             read_max_bytes=read_max_bytes,
         )
 
