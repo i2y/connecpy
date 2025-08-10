@@ -1,24 +1,26 @@
-from typing import Any, Callable
+from typing import Awaitable, Callable, TypeVar
 
-from connecpy.server import ServiceContext, ServerInterceptor
+from connecpy.server import ServiceContext
 
 from . import haberdasher_connecpy
 from .service import HaberdasherService
 
+T = TypeVar("T")
+U = TypeVar("U")
 
-class MyInterceptor(ServerInterceptor):
+
+class MyInterceptor:
     def __init__(self, msg):
         self._msg = msg
 
-    async def intercept(
+    async def intercept_unary(
         self,
-        method: Callable,
-        request: Any,
+        next: Callable[[T, ServiceContext], Awaitable[U]],
+        request: T,
         ctx: ServiceContext,
-        method_name: str,
-    ) -> Any:
-        print("intercepting " + method_name + " with " + self._msg)
-        return await method(request, ctx)
+    ) -> U:
+        print(f"intercepting {ctx.method().name} with {self._msg}")
+        return await next(request, ctx)
 
 
 my_interceptor_a = MyInterceptor("A")

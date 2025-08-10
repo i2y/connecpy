@@ -81,29 +81,37 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 		methods := svc.Methods()
 		for j := 0; j < methods.Len(); j++ {
 			method := methods.Get(j)
+			idempotencyLevel := "UNKNOWN"
 			noSideEffects := false
 			if mo, ok := method.Options().(*descriptorpb.MethodOptions); ok {
-				noSideEffects = mo.GetIdempotencyLevel() == descriptorpb.MethodOptions_NO_SIDE_EFFECTS
+				switch mo.GetIdempotencyLevel() {
+				case descriptorpb.MethodOptions_NO_SIDE_EFFECTS:
+					idempotencyLevel = "NO_SIDE_EFFECTS"
+					noSideEffects = true
+				case descriptorpb.MethodOptions_IDEMPOTENT:
+					idempotencyLevel = "IDEMPOTENT"
+				}
 			}
 			endpointType := "unary"
 			if method.IsStreamingClient() && method.IsStreamingServer() {
 				endpointType = "bidi_stream"
 			} else if method.IsStreamingClient() {
-				endpointType = "request_stream"
+				endpointType = "client_stream"
 			} else if method.IsStreamingServer() {
-				endpointType = "response_stream"
+				endpointType = "server_stream"
 			}
 			connecpyMethod := &ConnecpyMethod{
-				Package:        packageName,
-				ServiceName:    connecpySvc.Name,
-				Name:           string(method.Name()),
-				InputType:      symbolName(method.Input()),
-				OutputType:     symbolName(method.Output()),
-				EndpointType:   endpointType,
-				Stream:         method.IsStreamingClient() || method.IsStreamingServer(),
-				RequestStream:  method.IsStreamingClient(),
-				ResponseStream: method.IsStreamingServer(),
-				NoSideEffects:  noSideEffects,
+				Package:          packageName,
+				ServiceName:      connecpySvc.Name,
+				Name:             string(method.Name()),
+				InputType:        symbolName(method.Input()),
+				OutputType:       symbolName(method.Output()),
+				EndpointType:     endpointType,
+				Stream:           method.IsStreamingClient() || method.IsStreamingServer(),
+				RequestStream:    method.IsStreamingClient(),
+				ResponseStream:   method.IsStreamingServer(),
+				NoSideEffects:    noSideEffects,
+				IdempotencyLevel: idempotencyLevel,
 			}
 
 			connecpySvc.Methods = append(connecpySvc.Methods, connecpyMethod)

@@ -22,17 +22,18 @@ type ConnecpyService struct {
 }
 
 type ConnecpyMethod struct {
-	Package        string
-	ServiceName    string
-	Name           string
-	Comment        string
-	InputType      string
-	OutputType     string
-	EndpointType   string
-	Stream         bool
-	RequestStream  bool
-	ResponseStream bool
-	NoSideEffects  bool
+	Package          string
+	ServiceName      string
+	Name             string
+	Comment          string
+	InputType        string
+	OutputType       string
+	EndpointType     string
+	IdempotencyLevel string
+	Stream           bool
+	RequestStream    bool
+	ResponseStream   bool
+	NoSideEffects    bool
 }
 
 // ConnecpyTemplate - Template for connecpy server and client
@@ -46,7 +47,9 @@ from connecpy.client import ConnecpyClient, ConnecpyClientSync, ResponseStream, 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.headers import Headers
-from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, EndpointSync, ServerInterceptor, ServiceContext
+from connecpy.interceptor import Interceptor, InterceptorSync
+from connecpy.method import IdempotencyLevel, MethodInfo
+from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, EndpointSync, ServiceContext
 
 {{- range .Imports }}
 import {{.Name}} as {{.Alias}}
@@ -61,16 +64,18 @@ class {{.Name}}(Protocol):{{- range .Methods }}
 {{ end }}
 
 class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: {{.Name}}, *, interceptors: Iterable[ServerInterceptor]=(), read_max_bytes: int | None = None):
+    def __init__(self, service: {{.Name}}, *, interceptors: Iterable[Interceptor]=(), read_max_bytes: int | None = None):
         super().__init__(
             endpoints={ {{- range .Methods }}
-                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint[{{.InputType}}, {{.OutputType}}].{{.EndpointType}}(
-                    service_name="{{.ServiceName}}",
-                    name="{{.Name}}",
+                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint.{{.EndpointType}}(
+                    method=MethodInfo(
+                        name="{{.Name}}",
+                        service_name="{{.ServiceName}}",
+                        input={{.InputType}},
+                        output={{.OutputType}},
+                        idempotency_level=IdempotencyLevel.{{.IdempotencyLevel}},
+                    ),
                     function=service.{{.Name}},
-                    input={{.InputType}},
-                    output={{.OutputType}},
-                    {{- if not .Stream }}allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},{{end}}
                 ),{{- end }}
             },
             interceptors=interceptors,
@@ -124,18 +129,21 @@ class {{.Name}}Sync(Protocol):{{- range .Methods }}
 
 
 class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: {{.Name}}Sync, read_max_bytes: int | None = None):
+    def __init__(self, service: {{.Name}}Sync, interceptors: Iterable[InterceptorSync]=(), read_max_bytes: int | None = None):
         super().__init__(
             endpoints={ {{- range .Methods }}
-                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": EndpointSync[{{.InputType}}, {{.OutputType}}].{{.EndpointType}}(
-                    service_name="{{.ServiceName}}",
-                    name="{{.Name}}",
+                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": EndpointSync.{{.EndpointType}}(
+                    method=MethodInfo(
+                        name="{{.Name}}",
+                        service_name="{{.ServiceName}}",
+                        input={{.InputType}},
+                        output={{.OutputType}},
+                        idempotency_level=IdempotencyLevel.{{.IdempotencyLevel}},
+                    ),
                     function=service.{{.Name}},
-                    input={{.InputType}},
-                    output={{.OutputType}},
-                    {{- if not .Stream }}allowed_methods={{if .NoSideEffects}}("GET", "POST"){{else}}("POST",){{end}},{{end}}
                 ),{{- end }}
             },
+            interceptors=interceptors,
             read_max_bytes=read_max_bytes,
         )
 
