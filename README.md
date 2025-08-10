@@ -707,45 +707,130 @@ app.wsgi_app = DispatcherMiddleware(
 )
 ```
 
-### Interceptor (Server Side)
+### Interceptors (Server Side)
 
-ConnecpyASGIApplication supports interceptors (ASGI only, not available for WSGI). You can add interceptors by passing `interceptors` to the application constructor:
+Connecpy supports server-side interceptors for both ASGI and WSGI applications. Interceptors allow you to add cross-cutting concerns like logging, authentication, and metrics to your services.
+
+#### Type-Safe Interceptors
+
+Connecpy provides type-safe interceptors for each RPC type:
 
 ```python
 # server.py
-from typing import Any, Callable
-
-from connecpy.server import ServerInterceptor, ServiceContext
+from typing import Awaitable, Callable, AsyncIterator
+from connecpy.server import ServiceContext
+from haberdasher_pb2 import Size, Hat
 
 import haberdasher_connecpy
 from service import HaberdasherService
 
-
-class MyInterceptor(ServerInterceptor):
-    def __init__(self, msg):
-        self._msg = msg
-
-    async def intercept(
+# Unary interceptor with specific types for MakeHat RPC
+class LoggingInterceptor:
+    async def intercept_unary(
         self,
-        method: Callable,
-        request: Any,
+        next: Callable[[Size, ServiceContext], Awaitable[Hat]],
+        request: Size,
         ctx: ServiceContext,
-        method_name: str,
-    ) -> Any:
-        print("intercepting " + method_name + " with " + self._msg)
-        return await method(request, ctx)
+    ) -> Hat:
+        print(f"Unary RPC: {ctx.method().name}, size={request.inches}")
+        response = await next(request, ctx)
+        print(f"Response sent: {response.color} hat")
+        return response
 
+# Server streaming interceptor for MakeSimilarHats RPC
+class StreamingInterceptor:
+    async def intercept_server_stream(
+        self,
+        next: Callable[[Size, ServiceContext], AsyncIterator[Hat]],
+        request: Size,
+        ctx: ServiceContext,
+    ) -> AsyncIterator[Hat]:
+        print(f"Server streaming RPC: {ctx.method().name}, size={request.inches}")
+        async for response in next(request, ctx):
+            print(f"Streaming: {response.color} hat (size {response.size})")
+            yield response
 
-my_interceptor_a = MyInterceptor("A")
-my_interceptor_b = MyInterceptor("B")
-
-service = haberdasher_connecpy.HaberdasherASGIApplication(
+# ASGI application with interceptors
+app = haberdasher_connecpy.HaberdasherASGIApplication(
     HaberdasherService(),
-    interceptors=[my_interceptor_a, my_interceptor_b]
+    interceptors=[LoggingInterceptor(), StreamingInterceptor()]
 )
 ```
 
-Btw, `ServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
+#### Metadata Interceptors
+
+For simple cross-cutting concerns that don't need access to request/response bodies, use `MetadataInterceptor`:
+
+```python
+import time
+from connecpy.interceptor import MetadataInterceptor
+
+# Simple timing interceptor
+class TimingInterceptor(MetadataInterceptor[float]):
+    async def on_start(self, ctx: ServiceContext) -> float:
+        print(f"Starting {ctx.method().name}")
+        return time.time()
+    
+    async def on_end(self, start_time: float, ctx: ServiceContext) -> None:
+        elapsed = time.time() - start_time
+        print(f"{ctx.method().name} took {elapsed:.3f}s")
+
+# Works with all RPC types!
+app = haberdasher_connecpy.HaberdasherASGIApplication(
+    HaberdasherService(),
+    interceptors=[TimingInterceptor()]
+)
+```
+
+#### Synchronous Interceptors (WSGI)
+
+WSGI applications support synchronous interceptors:
+
+```python
+from typing import Callable
+from connecpy.interceptor import MetadataInterceptorSync
+from connecpy.server import ServiceContext
+from haberdasher_pb2 import Size, Hat
+
+class LoggingInterceptorSync:
+    def intercept_unary_sync(
+        self,
+        next: Callable[[Size, ServiceContext], Hat],
+        request: Size,
+        ctx: ServiceContext,
+    ) -> Hat:
+        print(f"Sync RPC: {ctx.method().name}, size={request.inches}")
+        return next(request, ctx)
+
+class TimingInterceptorSync(MetadataInterceptorSync[float]):
+    def on_start_sync(self, ctx: ServiceContext) -> float:
+        return time.time()
+    
+    def on_end_sync(self, start_time: float, ctx: ServiceContext) -> None:
+        elapsed = time.time() - start_time
+        print(f"{ctx.method().name} took {elapsed:.3f}s")
+
+# WSGI application with interceptors
+wsgi_app = haberdasher_connecpy.HaberdasherWSGIApplication(
+    HaberdasherServiceSync(),
+    interceptors=[LoggingInterceptorSync(), TimingInterceptorSync()]
+)
+```
+
+#### Available Interceptor Types
+
+| Interceptor Type | Use Case | ASGI | WSGI |
+|-----------------|----------|------|------|
+| `UnaryInterceptor` / `UnaryInterceptorSync` | Unary RPCs | ✅ | ✅ |
+| `ClientStreamInterceptor` / `ClientStreamInterceptorSync` | Client streaming RPCs | ✅ | ✅ |
+| `ServerStreamInterceptor` / `ServerStreamInterceptorSync` | Server streaming RPCs | ✅ | ✅ |
+| `BidiStreamInterceptor` / `BidiStreamInterceptorSync` | Bidirectional streaming RPCs | ✅ | ✅ |
+| `MetadataInterceptor` / `MetadataInterceptorSync` | All RPC types (metadata only) | ✅ | ✅ |
+
+#### Interceptor Execution Order
+
+Interceptors are executed in the order they are provided. For example, if you provide `[A, B, C]`, the execution order will be:
+- A.on_start → B.on_start → C.on_start → handler → C.on_end → B.on_end → A.on_end
 
 ### Message Size Limits
 
