@@ -1,6 +1,4 @@
 import pytest
-from connecpy.code import Code
-from connecpy.exceptions import ConnecpyException
 from example.haberdasher_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
@@ -63,18 +61,18 @@ def test_invalid_compression_sync(compression: str):
             return Hat(size=req.inches, color="green")
 
     app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
-    with (
+
+    with pytest.raises(ValueError) as exc_info:
         HaberdasherClientSync(
             "http://localhost",
             session=Client(transport=WSGITransport(app=app)),
             send_compression=compression,
             accept_compression=[compression] if compression else None,
-        ) as client,
-        pytest.raises(ConnecpyException) as exc_info,
-    ):
-        client.MakeHat(request=Size(inches=10))
-    assert exc_info.value.code == Code.UNAVAILABLE
-    assert exc_info.value.message == f"Unsupported compression method: {compression}"
+        )
+    assert (
+        str(exc_info.value)
+        == f"Unsupported compression method: {compression}. Available methods: gzip, identity"
+    )
 
 
 @pytest.mark.parametrize("compression", ["br", "zstd"])
@@ -86,13 +84,14 @@ async def test_invalid_compression_async(compression: str):
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
-    async with HaberdasherClient(
-        "http://localhost",
-        session=AsyncClient(transport=transport),
-        send_compression=compression,
-        accept_compression=[compression] if compression else None,
-    ) as client:
-        with pytest.raises(ConnecpyException) as exc_info:
-            await client.MakeHat(request=Size(inches=10))
-    assert exc_info.value.code == Code.UNAVAILABLE
-    assert exc_info.value.message == f"Unsupported compression method: {compression}"
+    with pytest.raises(ValueError) as exc_info:
+        HaberdasherClient(
+            "http://localhost",
+            session=AsyncClient(transport=transport),
+            send_compression=compression,
+            accept_compression=[compression] if compression else None,
+        )
+    assert (
+        str(exc_info.value)
+        == f"Unsupported compression method: {compression}. Available methods: gzip, identity"
+    )
