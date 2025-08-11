@@ -10,7 +10,7 @@ from typing import AsyncIterator, Iterator, Literal, TypeVar
 from _util import create_standard_streams
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.server import ServiceContext
+from connecpy.request import RequestContext
 from connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
 from connectrpc.conformance.v1.server_compat_pb2 import (
     ServerCompatRequest,
@@ -92,7 +92,7 @@ RES = TypeVar(
 
 
 def _send_headers(
-    ctx: ServiceContext, definition: UnaryResponseDefinition | StreamResponseDefinition
+    ctx: RequestContext, definition: UnaryResponseDefinition | StreamResponseDefinition
 ):
     for header in definition.response_headers:
         for value in header.value:
@@ -103,7 +103,7 @@ def _send_headers(
 
 
 def _create_request_info(
-    ctx: ServiceContext, reqs: list[Any]
+    ctx: RequestContext, reqs: list[Any]
 ) -> ConformancePayload.RequestInfo:
     request_info = ConformancePayload.RequestInfo(requests=reqs)
     timeout_ms = ctx.timeout_ms()
@@ -120,7 +120,7 @@ async def _handle_unary_response(
     definition: UnaryResponseDefinition,
     reqs: list[Any],
     res: RES,
-    ctx: ServiceContext,
+    ctx: RequestContext,
 ) -> RES:
     _send_headers(ctx, definition)
     request_info = _create_request_info(ctx, reqs)
@@ -140,20 +140,20 @@ async def _handle_unary_response(
 
 
 class TestService(ConformanceService):
-    async def Unary(self, req: UnaryRequest, ctx: ServiceContext) -> UnaryResponse:
+    async def Unary(self, req: UnaryRequest, ctx: RequestContext) -> UnaryResponse:
         return await _handle_unary_response(
             req.response_definition, [pack(req)], UnaryResponse(), ctx
         )
 
     async def IdempotentUnary(
-        self, req: IdempotentUnaryRequest, ctx: ServiceContext
+        self, req: IdempotentUnaryRequest, ctx: RequestContext
     ) -> IdempotentUnaryResponse:
         return await _handle_unary_response(
             req.response_definition, [pack(req)], IdempotentUnaryResponse(), ctx
         )
 
     async def ClientStream(
-        self, req: AsyncIterator[ClientStreamRequest], ctx: ServiceContext
+        self, req: AsyncIterator[ClientStreamRequest], ctx: RequestContext
     ) -> ClientStreamResponse:
         requests: list[Any] = []
         definition: UnaryResponseDefinition | None = None
@@ -169,7 +169,7 @@ class TestService(ConformanceService):
         )
 
     async def ServerStream(
-        self, req: ServerStreamRequest, ctx: ServiceContext
+        self, req: ServerStreamRequest, ctx: RequestContext
     ) -> AsyncIterator[ServerStreamResponse]:
         definition = req.response_definition
         _send_headers(ctx, definition)
@@ -196,7 +196,7 @@ class TestService(ConformanceService):
             )
 
     async def BidiStream(
-        self, req: AsyncIterator[BidiStreamRequest], ctx: ServiceContext
+        self, req: AsyncIterator[BidiStreamRequest], ctx: RequestContext
     ) -> AsyncIterator[BidiStreamResponse]:
         definition: StreamResponseDefinition | None = None
         full_duplex = False
@@ -251,7 +251,7 @@ def _handle_unary_response_sync(
     definition: UnaryResponseDefinition,
     reqs: list[Any],
     res: RES,
-    ctx: ServiceContext,
+    ctx: RequestContext,
 ) -> RES:
     _send_headers(ctx, definition)
     request_info = _create_request_info(ctx, reqs)
@@ -271,20 +271,20 @@ def _handle_unary_response_sync(
 
 
 class TestServiceSync(ConformanceServiceSync):
-    def Unary(self, req: UnaryRequest, ctx: ServiceContext) -> UnaryResponse:
+    def Unary(self, req: UnaryRequest, ctx: RequestContext) -> UnaryResponse:
         return _handle_unary_response_sync(
             req.response_definition, [pack(req)], UnaryResponse(), ctx
         )
 
     def IdempotentUnary(
-        self, req: IdempotentUnaryRequest, ctx: ServiceContext
+        self, req: IdempotentUnaryRequest, ctx: RequestContext
     ) -> IdempotentUnaryResponse:
         return _handle_unary_response_sync(
             req.response_definition, [pack(req)], IdempotentUnaryResponse(), ctx
         )
 
     def ClientStream(
-        self, req: Iterator[ClientStreamRequest], ctx: ServiceContext
+        self, req: Iterator[ClientStreamRequest], ctx: RequestContext
     ) -> ClientStreamResponse:
         requests: list[Any] = []
         definition: UnaryResponseDefinition | None = None
@@ -300,7 +300,7 @@ class TestServiceSync(ConformanceServiceSync):
         )
 
     def ServerStream(
-        self, req: ServerStreamRequest, ctx: ServiceContext
+        self, req: ServerStreamRequest, ctx: RequestContext
     ) -> Iterator[ServerStreamResponse]:
         definition = req.response_definition
         _send_headers(ctx, definition)
@@ -327,7 +327,7 @@ class TestServiceSync(ConformanceServiceSync):
             )
 
     def BidiStream(
-        self, req: Iterator[BidiStreamRequest], ctx: ServiceContext
+        self, req: Iterator[BidiStreamRequest], ctx: RequestContext
     ) -> Iterator[BidiStreamResponse]:
         definition: StreamResponseDefinition | None = None
         full_duplex = False

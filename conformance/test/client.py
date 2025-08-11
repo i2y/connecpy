@@ -10,7 +10,7 @@ from _util import create_standard_streams
 from connecpy.client import ResponseMetadata
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.headers import Headers
+from connecpy.request import Headers
 from connectrpc.conformance.v1.client_compat_pb2 import (
     ClientCompatRequest,
     ClientCompatResponse,
@@ -348,7 +348,7 @@ async def _run_test(
                                     client: ConformanceServiceClient,
                                     request: AsyncIterator[BidiStreamRequest],
                                 ):
-                                    responses = await client.BidiStream(
+                                    responses = client.BidiStream(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -452,7 +452,7 @@ async def _run_test(
                                     client: ConformanceServiceClient,
                                     request: ServerStreamRequest,
                                 ):
-                                    async for message in await client.ServerStream(
+                                    async for message in client.ServerStream(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,

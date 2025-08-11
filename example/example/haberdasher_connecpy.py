@@ -4,23 +4,17 @@
 
 from typing import AsyncIterator, Iterable, Iterator, Mapping, Protocol
 
-from connecpy.client import (
-    ConnecpyClient,
-    ConnecpyClientSync,
-    ResponseStream,
-    ResponseStreamSync,
-)
+from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.headers import Headers
 from connecpy.interceptor import Interceptor, InterceptorSync
 from connecpy.method import IdempotencyLevel, MethodInfo
+from connecpy.request import Headers, RequestContext
 from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
     EndpointSync,
-    ServiceContext,
 )
 import example.haberdasher_pb2 as example_dot_haberdasher__pb2
 import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
@@ -28,27 +22,27 @@ import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 class Haberdasher(Protocol):
     async def MakeHat(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
+        self, req: example_dot_haberdasher__pb2.Size, ctx: RequestContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def MakeFlexibleHat(
-        self, req: AsyncIterator[example_dot_haberdasher__pb2.Size], ctx: ServiceContext
+        self, req: AsyncIterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeSimilarHats(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
+        self, req: example_dot_haberdasher__pb2.Size, ctx: RequestContext
     ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeVariousHats(
-        self, req: AsyncIterator[example_dot_haberdasher__pb2.Size], ctx: ServiceContext
+        self, req: AsyncIterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
     ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def DoNothing(
-        self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext
+        self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -66,7 +60,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 "/i2y.connecpy.example.Haberdasher/MakeHat": Endpoint.unary(
                     method=MethodInfo(
                         name="MakeHat",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=example_dot_haberdasher__pb2.Size,
                         output=example_dot_haberdasher__pb2.Hat,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
@@ -76,7 +70,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 "/i2y.connecpy.example.Haberdasher/MakeFlexibleHat": Endpoint.client_stream(
                     method=MethodInfo(
                         name="MakeFlexibleHat",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=example_dot_haberdasher__pb2.Size,
                         output=example_dot_haberdasher__pb2.Hat,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -86,7 +80,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 "/i2y.connecpy.example.Haberdasher/MakeSimilarHats": Endpoint.server_stream(
                     method=MethodInfo(
                         name="MakeSimilarHats",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=example_dot_haberdasher__pb2.Size,
                         output=example_dot_haberdasher__pb2.Hat,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
@@ -96,7 +90,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 "/i2y.connecpy.example.Haberdasher/MakeVariousHats": Endpoint.bidi_stream(
                     method=MethodInfo(
                         name="MakeVariousHats",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=example_dot_haberdasher__pb2.Size,
                         output=example_dot_haberdasher__pb2.Hat,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -106,7 +100,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 "/i2y.connecpy.example.Haberdasher/DoNothing": Endpoint.unary(
                     method=MethodInfo(
                         name="DoNothing",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=google_dot_protobuf_dot_empty__pb2.Empty,
                         output=google_dot_protobuf_dot_empty__pb2.Empty,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -133,13 +127,18 @@ class HaberdasherClient(ConnecpyClient):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat:
-        return await self._make_request(
-            url="/i2y.connecpy.example.Haberdasher/MakeHat",
-            method="GET" if use_get else "POST",
-            headers=headers,
+        return await self.execute_unary(
             request=request,
+            method=MethodInfo(
+                name="MakeHat",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=example_dot_haberdasher__pb2.Size,
+                output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=example_dot_haberdasher__pb2.Hat,
+            use_get=use_get,
         )
 
     async def MakeFlexibleHat(
@@ -149,47 +148,58 @@ class HaberdasherClient(ConnecpyClient):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> example_dot_haberdasher__pb2.Hat:
-        res = await self._make_request_stream(
-            url="/i2y.connecpy.example.Haberdasher/MakeFlexibleHat",
-            headers=headers,
+        return await self.execute_client_stream(
             request=request,
+            method=MethodInfo(
+                name="MakeFlexibleHat",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=example_dot_haberdasher__pb2.Size,
+                output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=example_dot_haberdasher__pb2.Hat,
         )
-        return await self._consume_single_response(res)
 
-    async def MakeSimilarHats(
+    def MakeSimilarHats(
         self,
         request: example_dot_haberdasher__pb2.Size,
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        use_get: bool = False,
-    ) -> ResponseStream[example_dot_haberdasher__pb2.Hat]:
-        res = await self._make_request_stream(
-            url="/i2y.connecpy.example.Haberdasher/MakeSimilarHats",
-            headers=headers,
+    ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat]:
+        return self.execute_server_stream(
             request=request,
+            method=MethodInfo(
+                name="MakeSimilarHats",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=example_dot_haberdasher__pb2.Size,
+                output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=example_dot_haberdasher__pb2.Hat,
         )
-        return res
 
-    async def MakeVariousHats(
+    def MakeVariousHats(
         self,
         request: AsyncIterator[example_dot_haberdasher__pb2.Size],
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> ResponseStream[example_dot_haberdasher__pb2.Hat]:
-        res = await self._make_request_stream(
-            url="/i2y.connecpy.example.Haberdasher/MakeVariousHats",
-            headers=headers,
+    ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat]:
+        return self.execute_bidi_stream(
             request=request,
+            method=MethodInfo(
+                name="MakeVariousHats",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=example_dot_haberdasher__pb2.Size,
+                output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=example_dot_haberdasher__pb2.Hat,
         )
-        return res
 
     async def DoNothing(
         self,
@@ -198,39 +208,43 @@ class HaberdasherClient(ConnecpyClient):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        return await self._make_request(
-            url="/i2y.connecpy.example.Haberdasher/DoNothing",
-            method="POST",
-            headers=headers,
+        return await self.execute_unary(
             request=request,
+            method=MethodInfo(
+                name="DoNothing",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=google_dot_protobuf_dot_empty__pb2.Empty,
+                output=google_dot_protobuf_dot_empty__pb2.Empty,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=google_dot_protobuf_dot_empty__pb2.Empty,
         )
 
 
 class HaberdasherSync(Protocol):
     def MakeHat(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
+        self, req: example_dot_haberdasher__pb2.Size, ctx: RequestContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeFlexibleHat(
-        self, req: Iterator[example_dot_haberdasher__pb2.Size], ctx: ServiceContext
+        self, req: Iterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeSimilarHats(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: ServiceContext
+        self, req: example_dot_haberdasher__pb2.Size, ctx: RequestContext
     ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeVariousHats(
-        self, req: Iterator[example_dot_haberdasher__pb2.Size], ctx: ServiceContext
+        self, req: Iterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
     ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def DoNothing(
-        self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: ServiceContext
+        self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -247,7 +261,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 "/i2y.connecpy.example.Haberdasher/MakeHat": EndpointSync.unary(
                     method=MethodInfo(
                         name="MakeHat",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=example_dot_haberdasher__pb2.Size,
                         output=example_dot_haberdasher__pb2.Hat,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
@@ -257,7 +271,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 "/i2y.connecpy.example.Haberdasher/MakeFlexibleHat": EndpointSync.client_stream(
                     method=MethodInfo(
                         name="MakeFlexibleHat",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=example_dot_haberdasher__pb2.Size,
                         output=example_dot_haberdasher__pb2.Hat,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -267,7 +281,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 "/i2y.connecpy.example.Haberdasher/MakeSimilarHats": EndpointSync.server_stream(
                     method=MethodInfo(
                         name="MakeSimilarHats",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=example_dot_haberdasher__pb2.Size,
                         output=example_dot_haberdasher__pb2.Hat,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
@@ -277,7 +291,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 "/i2y.connecpy.example.Haberdasher/MakeVariousHats": EndpointSync.bidi_stream(
                     method=MethodInfo(
                         name="MakeVariousHats",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=example_dot_haberdasher__pb2.Size,
                         output=example_dot_haberdasher__pb2.Hat,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -287,7 +301,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 "/i2y.connecpy.example.Haberdasher/DoNothing": EndpointSync.unary(
                     method=MethodInfo(
                         name="DoNothing",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example.Haberdasher",
                         input=google_dot_protobuf_dot_empty__pb2.Empty,
                         output=google_dot_protobuf_dot_empty__pb2.Empty,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -314,13 +328,18 @@ class HaberdasherClientSync(ConnecpyClientSync):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat:
-        return self._make_request(
-            url="/i2y.connecpy.example.Haberdasher/MakeHat",
-            method="GET" if use_get else "POST",
+        return self.execute_unary(
+            request=request,
+            method=MethodInfo(
+                name="MakeHat",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=example_dot_haberdasher__pb2.Size,
+                output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
             headers=headers,
             timeout_ms=timeout_ms,
-            request=request,
-            response_class=example_dot_haberdasher__pb2.Hat,
+            use_get=use_get,
         )
 
     def MakeFlexibleHat(
@@ -330,14 +349,18 @@ class HaberdasherClientSync(ConnecpyClientSync):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> example_dot_haberdasher__pb2.Hat:
-        res = self._make_request_stream(
-            url="/i2y.connecpy.example.Haberdasher/MakeFlexibleHat",
-            headers=headers,
+        return self.execute_client_stream(
             request=request,
+            method=MethodInfo(
+                name="MakeFlexibleHat",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=example_dot_haberdasher__pb2.Size,
+                output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=example_dot_haberdasher__pb2.Hat,
         )
-        return self._consume_single_response(res)
 
     def MakeSimilarHats(
         self,
@@ -346,15 +369,19 @@ class HaberdasherClientSync(ConnecpyClientSync):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         use_get: bool = False,
-    ) -> ResponseStreamSync[example_dot_haberdasher__pb2.Hat]:
-        res = self._make_request_stream(
-            url="/i2y.connecpy.example.Haberdasher/MakeSimilarHats",
-            headers=headers,
+    ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
+        return self.execute_server_stream(
             request=request,
+            method=MethodInfo(
+                name="MakeSimilarHats",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=example_dot_haberdasher__pb2.Size,
+                output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=example_dot_haberdasher__pb2.Hat,
         )
-        return res
 
     def MakeVariousHats(
         self,
@@ -362,15 +389,19 @@ class HaberdasherClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> ResponseStreamSync[example_dot_haberdasher__pb2.Hat]:
-        res = self._make_request_stream(
-            url="/i2y.connecpy.example.Haberdasher/MakeVariousHats",
-            headers=headers,
+    ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
+        return self.execute_bidi_stream(
             request=request,
+            method=MethodInfo(
+                name="MakeVariousHats",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=example_dot_haberdasher__pb2.Size,
+                output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=example_dot_haberdasher__pb2.Hat,
         )
-        return res
 
     def DoNothing(
         self,
@@ -379,11 +410,15 @@ class HaberdasherClientSync(ConnecpyClientSync):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
-        return self._make_request(
-            url="/i2y.connecpy.example.Haberdasher/DoNothing",
-            method="POST",
+        return self.execute_unary(
+            request=request,
+            method=MethodInfo(
+                name="DoNothing",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=google_dot_protobuf_dot_empty__pb2.Empty,
+                output=google_dot_protobuf_dot_empty__pb2.Empty,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
             headers=headers,
             timeout_ms=timeout_ms,
-            request=request,
-            response_class=google_dot_protobuf_dot_empty__pb2.Empty,
         )

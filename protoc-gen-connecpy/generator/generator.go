@@ -74,8 +74,9 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 	for i := 0; i < svcs.Len(); i++ {
 		svc := svcs.Get(i)
 		connecpySvc := &ConnecpyService{
-			Name:    string(svc.Name()),
-			Package: packageName,
+			Name:     string(svc.Name()),
+			FullName: string(svc.FullName()),
+			Package:  packageName,
 		}
 
 		methods := svc.Methods()
@@ -102,7 +103,7 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 			}
 			connecpyMethod := &ConnecpyMethod{
 				Package:          packageName,
-				ServiceName:      connecpySvc.Name,
+				ServiceName:      connecpySvc.FullName,
 				Name:             string(method.Name()),
 				InputType:        symbolName(method.Input()),
 				OutputType:       symbolName(method.Output()),

@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
-from connecpy.server import ServiceContext
+from connecpy.request import RequestContext
 from example.haberdasher_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
@@ -17,19 +17,20 @@ from example.haberdasher_pb2 import Hat, Size
 
 
 class RequestInterceptor:
-    result: str = ""
+    def __init__(self):
+        self.result = []
 
-    async def on_start(self, ctx: ServiceContext):
+    async def on_start(self, ctx: RequestContext):
         return self.on_start_sync(ctx)
 
-    async def on_end(self, token: str, ctx: ServiceContext):
+    async def on_end(self, token: str, ctx: RequestContext):
         self.on_end_sync(token, ctx)
 
-    def on_start_sync(self, ctx: ServiceContext):
+    def on_start_sync(self, ctx: RequestContext):
         return f"Hello {ctx.method().name}"
 
-    def on_end_sync(self, token: str, ctx: ServiceContext):
-        self.result = f"{token} and goodbye"
+    def on_end_sync(self, token: str, ctx: RequestContext):
+        self.result.append(f"{token} and goodbye")
 
 
 @pytest.fixture
@@ -62,6 +63,7 @@ async def client_async(interceptor: RequestInterceptor):
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
     async with HaberdasherClient(
         "http://localhost",
+        interceptors=(interceptor,),
         session=AsyncClient(transport=transport),
     ) as client:
         yield client
@@ -73,7 +75,7 @@ async def test_intercept_unary_async(
 ):
     result = await client_async.MakeHat(Size(inches=10))
     assert result == Hat(size=10, color="green")
-    assert interceptor.result == "Hello MakeHat and goodbye"
+    assert interceptor.result == ["Hello MakeHat and goodbye"] * 2
 
 
 @pytest.mark.asyncio
@@ -86,17 +88,17 @@ async def test_intercept_client_stream_async(
 
     result = await client_async.MakeFlexibleHat(requests())
     assert result == Hat(size=30, color="red")
-    assert interceptor.result == "Hello MakeFlexibleHat and goodbye"
+    assert interceptor.result == ["Hello MakeFlexibleHat and goodbye"] * 2
 
 
 @pytest.mark.asyncio
 async def test_intercept_server_stream_async(
     client_async: HaberdasherClient, interceptor: RequestInterceptor
 ):
-    result = [r async for r in await client_async.MakeSimilarHats(Size(inches=15))]
+    result = [r async for r in client_async.MakeSimilarHats(Size(inches=15))]
 
     assert result == [Hat(size=15, color="orange"), Hat(size=15, color="blue")]
-    assert interceptor.result == "Hello MakeSimilarHats and goodbye"
+    assert interceptor.result == ["Hello MakeSimilarHats and goodbye"] * 2
 
 
 @pytest.mark.asyncio
@@ -108,14 +110,14 @@ async def test_intercept_bidi_stream_async(
         yield Size(inches=35)
         yield Size(inches=45)
 
-    result = [r async for r in await client_async.MakeVariousHats(requests())]
+    result = [r async for r in client_async.MakeVariousHats(requests())]
 
     assert result == [
         Hat(size=25, color="black"),
         Hat(size=35, color="white"),
         Hat(size=45, color="gold"),
     ]
-    assert interceptor.result == "Hello MakeVariousHats and goodbye"
+    assert interceptor.result == ["Hello MakeVariousHats and goodbye"] * 2
 
 
 @pytest.fixture
@@ -146,6 +148,7 @@ def client_sync(interceptor: RequestInterceptor):
     transport = WSGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
     with HaberdasherClientSync(
         "http://localhost",
+        interceptors=(interceptor,),
         session=Client(transport=transport),
     ) as client:
         yield client
@@ -156,7 +159,7 @@ def test_intercept_unary_sync(
 ):
     result = client_sync.MakeHat(Size(inches=10))
     assert result == Hat(size=10, color="green")
-    assert interceptor.result == "Hello MakeHat and goodbye"
+    assert interceptor.result == ["Hello MakeHat and goodbye"] * 2
 
 
 def test_intercept_client_stream_sync(
@@ -168,7 +171,7 @@ def test_intercept_client_stream_sync(
 
     result = client_sync.MakeFlexibleHat(requests())
     assert result == Hat(size=30, color="red")
-    assert interceptor.result == "Hello MakeFlexibleHat and goodbye"
+    assert interceptor.result == ["Hello MakeFlexibleHat and goodbye"] * 2
 
 
 def test_intercept_server_stream_sync(
@@ -177,7 +180,7 @@ def test_intercept_server_stream_sync(
     result = [r for r in client_sync.MakeSimilarHats(Size(inches=15))]
 
     assert result == [Hat(size=15, color="orange"), Hat(size=15, color="blue")]
-    assert interceptor.result == "Hello MakeSimilarHats and goodbye"
+    assert interceptor.result == ["Hello MakeSimilarHats and goodbye"] * 2
 
 
 def test_intercept_bidi_stream_sync(
@@ -195,4 +198,4 @@ def test_intercept_bidi_stream_sync(
         Hat(size=35, color="white"),
         Hat(size=45, color="gold"),
     ]
-    assert interceptor.result == "Hello MakeVariousHats and goodbye"
+    assert interceptor.result == ["Hello MakeVariousHats and goodbye"] * 2

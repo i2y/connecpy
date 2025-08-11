@@ -1,6 +1,6 @@
 from typing import Awaitable, Callable, TypeVar
 
-from connecpy.server import ServiceContext
+from connecpy.request import RequestContext
 
 from . import haberdasher_connecpy
 from .service import HaberdasherService
@@ -15,9 +15,9 @@ class MyInterceptor:
 
     async def intercept_unary(
         self,
-        next: Callable[[T, ServiceContext], Awaitable[U]],
+        next: Callable[[T, RequestContext], Awaitable[U]],
         request: T,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> U:
         print(f"intercepting {ctx.method().name} with {self._msg}")
         return await next(request, ctx)

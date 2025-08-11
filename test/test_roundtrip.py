@@ -86,7 +86,7 @@ async def test_roundtrip_response_stream_async(proto_json: bool, compression: st
         accept_compression=[compression] if compression else None,
     ) as client:
         with pytest.raises(ConnecpyException) as exc_info:
-            async for h in await client.MakeSimilarHats(request=Size(inches=10)):
+            async for h in client.MakeSimilarHats(request=Size(inches=10)):
                 hats.append(h)
     assert hats[0].size == 10
     assert hats[0].color == "green"
@@ -220,7 +220,7 @@ async def test_message_limit_async(
                 yield good_size
                 yield bad_size if client_bad else good_size
 
-            async for h in await client.MakeVariousHats(request=request_stream()):
+            async for h in client.MakeVariousHats(request=request_stream()):
                 responses.append(h)
         assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
         assert exc_info.value.message == "message is larger than configured max 100"

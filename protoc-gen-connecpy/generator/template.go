@@ -15,10 +15,11 @@ type ConnecpyTemplateVariables struct {
 }
 
 type ConnecpyService struct {
-	Package string
-	Name    string
-	Comment string
-	Methods []*ConnecpyMethod
+	Package  string
+	Name     string
+	FullName string
+	Comment  string
+	Methods  []*ConnecpyMethod
 }
 
 type ConnecpyMethod struct {
@@ -43,13 +44,13 @@ var ConnecpyTemplate = template.Must(template.New("ConnecpyTemplate").Parse(`# -
 {{if .Services}}
 from typing import AsyncIterator, Iterable, Iterator, Mapping, Protocol
 
-from connecpy.client import ConnecpyClient, ConnecpyClientSync, ResponseStream, ResponseStreamSync
+from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.headers import Headers
 from connecpy.interceptor import Interceptor, InterceptorSync
 from connecpy.method import IdempotencyLevel, MethodInfo
-from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, EndpointSync, ServiceContext
+from connecpy.request import Headers, RequestContext
+from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, EndpointSync
 
 {{- range .Imports }}
 import {{.Name}} as {{.Alias}}
@@ -59,7 +60,7 @@ import {{.Name}} as {{.Alias}}
 
 
 class {{.Name}}(Protocol):{{- range .Methods }}
-    {{if not .ResponseStream }}async {{end}}def {{.Name}}(self, req: {{if .RequestStream}}AsyncIterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: ServiceContext) -> {{if .ResponseStream}}AsyncIterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
+    {{if not .ResponseStream }}async {{end}}def {{.Name}}(self, req: {{if .RequestStream}}AsyncIterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: RequestContext) -> {{if .ResponseStream}}AsyncIterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{ end }}
 
@@ -67,7 +68,7 @@ class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
     def __init__(self, service: {{.Name}}, *, interceptors: Iterable[Interceptor]=(), read_max_bytes: int | None = None):
         super().__init__(
             endpoints={ {{- range .Methods }}
-                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": Endpoint.{{.EndpointType}}(
+                "/{{.ServiceName}}/{{.Name}}": Endpoint.{{.EndpointType}}(
                     method=MethodInfo(
                         name="{{.Name}}",
                         service_name="{{.ServiceName}}",
@@ -85,45 +86,35 @@ class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
     @property
     def path(self):
         """Returns the URL path to mount the application to when serving multiple applications."""
-        return "/{{.Package}}.{{.Name}}"
+        return "/{{.FullName}}"
 
 
 class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
-    async def {{.Name}}(
+    {{if not .ResponseStream}}async {{end}}def {{.Name}}(
         self,
         request: {{if .RequestStream}}AsyncIterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}},
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        {{if .NoSideEffects}}use_get: bool = False,{{end}}
-    ) -> {{if .ResponseStream}}ResponseStream[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:
-        {{if .Stream -}}
-        res = await self._make_request_stream(
-            url="/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            headers=headers,
+        {{if not .Stream }}{{if .NoSideEffects}}use_get: bool = False,{{end}}{{end}}
+    ) -> {{if .ResponseStream}}AsyncIterator[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:
+        return {{if not .ResponseStream }}await {{end}}self.execute_{{.EndpointType}}(
             request=request,
-            timeout_ms=timeout_ms,
-            response_class={{.OutputType}},
-        )
-        {{if .ResponseStream -}}
-        return res
-        {{else -}}
-        return await self._consume_single_response(res)
-        {{end}}
-        {{else -}}
-        return await self._make_request(
-            url="/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            method={{if .NoSideEffects}}"GET" if use_get else "POST"{{else}}"POST"{{end}},
+            method=MethodInfo(
+                name="{{.Name}}",
+                service_name="{{.ServiceName}}",
+                input={{.InputType}},
+                output={{.OutputType}},
+                idempotency_level=IdempotencyLevel.{{.IdempotencyLevel}},
+            ),
             headers=headers,
-            request=request,
             timeout_ms=timeout_ms,
-            response_class={{.OutputType}},
+            {{if not .Stream}}{{if .NoSideEffects}}use_get=use_get,{{end}}{{end}}
         )
-        {{end}}
 {{end}}{{- end }}
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
-    def {{.Name}}(self, req: {{if .RequestStream}}Iterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: ServiceContext) -> {{if .ResponseStream}}Iterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
+    def {{.Name}}(self, req: {{if .RequestStream}}Iterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: RequestContext) -> {{if .ResponseStream}}Iterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{- end }}
 
@@ -132,7 +123,7 @@ class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
     def __init__(self, service: {{.Name}}Sync, interceptors: Iterable[InterceptorSync]=(), read_max_bytes: int | None = None):
         super().__init__(
             endpoints={ {{- range .Methods }}
-                "/{{.Package}}.{{.ServiceName}}/{{.Name}}": EndpointSync.{{.EndpointType}}(
+                "/{{.ServiceName}}/{{.Name}}": EndpointSync.{{.EndpointType}}(
                     method=MethodInfo(
                         name="{{.Name}}",
                         service_name="{{.ServiceName}}",
@@ -150,7 +141,7 @@ class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
     @property
     def path(self):
         """Returns the URL path to mount the application to when serving multiple applications."""
-        return "/{{.Package}}.{{.Name}}"
+        return "/{{.FullName}}"
 
 
 class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
@@ -161,28 +152,18 @@ class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{if .NoSideEffects}}use_get: bool = False,{{end}}
-    ) -> {{if .ResponseStream}}ResponseStreamSync[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:
-        {{if .Stream -}}
-        res = self._make_request_stream(
-            url="/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            headers=headers,
+    ) -> {{if .ResponseStream}}Iterator[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:
+        return self.execute_{{.EndpointType}}(
             request=request,
-            timeout_ms=timeout_ms,
-            response_class={{.OutputType}},
-        )
-        {{if .ResponseStream -}}
-        return res
-        {{else -}}
-        return self._consume_single_response(res)
-        {{end}}
-        {{else -}}
-        return self._make_request(
-            url="/{{.Package}}.{{.ServiceName}}/{{.Name}}",
-            method={{if .NoSideEffects}}"GET" if use_get else "POST"{{else}}"POST"{{end}},
+            method=MethodInfo(
+                name="{{.Name}}",
+                service_name="{{.ServiceName}}",
+                input={{.InputType}},
+                output={{.OutputType}},
+                idempotency_level=IdempotencyLevel.{{.IdempotencyLevel}},
+            ),
             headers=headers,
             timeout_ms=timeout_ms,
-            request=request,
-            response_class={{.OutputType}},
+            {{if not .Stream}}{{if .NoSideEffects}}use_get=use_get,{{end}}{{end}}
         )
-        {{end}}
 {{end}}{{end}}`))

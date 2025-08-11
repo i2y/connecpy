@@ -1,8 +1,6 @@
 from collections.abc import ItemsView, KeysView, Mapping, MutableMapping, ValuesView
 from typing import Iterator, Optional, Sequence
 
-__all__ = ["Headers"]
-
 
 class Headers(MutableMapping[str, str]):
     """Container of HTTP headers.
