@@ -2,17 +2,16 @@
 Basic test to verify Proto Editions 2023 files don't crash protoc-gen-connecpy.
 """
 
+from connecpy.request import RequestContext
 from example.haberdasher_edition_2023_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
+    HaberdasherClientSync,
     HaberdasherSync,
     HaberdasherWSGIApplication,
-    HaberdasherClientSync,
 )
 from example.haberdasher_edition_2023_pb2 import Hat, Size
-
-from connecpy.server import ServiceContext
 
 
 def test_edition_2023_service_generation():
@@ -20,7 +19,7 @@ def test_edition_2023_service_generation():
 
     # Create a simple service implementation
     class TestHaberdasher(Haberdasher):
-        async def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
+        async def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
             return Hat(size=req.inches, color="blue", name="test")
 
     # Verify the service can be instantiated
@@ -30,7 +29,7 @@ def test_edition_2023_service_generation():
 
     # Verify sync version works too
     class TestHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
+        def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
             return Hat(size=req.inches, color="red", name="test")
 
     sync_service = TestHaberdasherSync()

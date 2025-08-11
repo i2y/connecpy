@@ -65,7 +65,6 @@ func TestConnecpyTemplate(t *testing.T) {
 			},
 			contains: []string{
 				"use_get: bool = False",
-				`"GET" if use_get else "POST"`,
 			},
 		},
 	}

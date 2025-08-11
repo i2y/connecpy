@@ -2,14 +2,14 @@ import random
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.server import ServiceContext
+from connecpy.request import RequestContext
 
 from .haberdasher_connecpy import HaberdasherSync
 from .haberdasher_pb2 import Hat, Size
 
 
 class HaberdasherService(HaberdasherSync):
-    def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
+    def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
         print("remaining_time: ", ctx.timeout_ms())
         if req.inches <= 0:
             raise ConnecpyException(

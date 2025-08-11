@@ -3,12 +3,14 @@ from typing import (
     Awaitable,
     Callable,
     Generic,
+    Iterable,
     Protocol,
+    Sequence,
     TypeVar,
     runtime_checkable,
 )
 
-from ._server_shared import ServiceContext
+from .request import RequestContext
 
 REQ = TypeVar("REQ")
 RES = TypeVar("RES")
@@ -19,9 +21,9 @@ T = TypeVar("T")
 class UnaryInterceptor(Protocol):
     async def intercept_unary(
         self,
-        next: Callable[[REQ, ServiceContext], Awaitable[RES]],
+        next: Callable[[REQ, RequestContext], Awaitable[RES]],
         request: REQ,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> RES:
         """Intercepts a unary RPC."""
         ...
@@ -31,9 +33,9 @@ class UnaryInterceptor(Protocol):
 class ClientStreamInterceptor(Protocol):
     async def intercept_client_stream(
         self,
-        next: Callable[[AsyncIterator[REQ], ServiceContext], Awaitable[RES]],
+        next: Callable[[AsyncIterator[REQ], RequestContext], Awaitable[RES]],
         request: AsyncIterator[REQ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> RES:
         """Intercepts a client-streaming RPC."""
         ...
@@ -43,9 +45,9 @@ class ClientStreamInterceptor(Protocol):
 class ServerStreamInterceptor(Protocol):
     def intercept_server_stream(
         self,
-        next: Callable[[REQ, ServiceContext], AsyncIterator[RES]],
+        next: Callable[[REQ, RequestContext], AsyncIterator[RES]],
         request: REQ,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> AsyncIterator[RES]:
         """Intercepts a server-streaming RPC."""
         ...
@@ -55,9 +57,9 @@ class ServerStreamInterceptor(Protocol):
 class BidiStreamInterceptor(Protocol):
     def intercept_bidi_stream(
         self,
-        next: Callable[[AsyncIterator[REQ], ServiceContext], AsyncIterator[RES]],
+        next: Callable[[AsyncIterator[REQ], RequestContext], AsyncIterator[RES]],
         request: AsyncIterator[REQ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> AsyncIterator[RES]:
         """Intercepts a bidirectional-streaming RPC."""
         ...
@@ -72,16 +74,16 @@ class MetadataInterceptor(Protocol[T]):
     corresponding to the type of method such as UnaryInterceptor.
     """
 
-    async def on_start(self, ctx: ServiceContext) -> T:
+    async def on_start(self, ctx: RequestContext) -> T:
         """Called when the RPC starts. The return value will be passed to on_end as-is.
         For example, if measuring RPC invocation time, on_start may return the current
         time.
         """
         ...
 
-    async def on_end(self, token: T, ctx: ServiceContext) -> None:
+    async def on_end(self, token: T, ctx: RequestContext) -> None:
         """Called when the RPC ends."""
-        ...
+        return
 
 
 Interceptor = (
@@ -101,9 +103,9 @@ class MetadataInterceptorInvoker(Generic[T]):
 
     async def intercept_unary(
         self,
-        next: Callable[[REQ, ServiceContext], Awaitable[RES]],
+        next: Callable[[REQ, RequestContext], Awaitable[RES]],
         request: REQ,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> RES:
         token = await self._delegate.on_start(ctx)
         try:
@@ -113,9 +115,9 @@ class MetadataInterceptorInvoker(Generic[T]):
 
     async def intercept_client_stream(
         self,
-        next: Callable[[AsyncIterator[REQ], ServiceContext], Awaitable[RES]],
+        next: Callable[[AsyncIterator[REQ], RequestContext], Awaitable[RES]],
         request: AsyncIterator[REQ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> RES:
         token = await self._delegate.on_start(ctx)
         try:
@@ -125,9 +127,9 @@ class MetadataInterceptorInvoker(Generic[T]):
 
     async def intercept_server_stream(
         self,
-        next: Callable[[REQ, ServiceContext], AsyncIterator[RES]],
+        next: Callable[[REQ, RequestContext], AsyncIterator[RES]],
         request: REQ,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> AsyncIterator[RES]:
         token = await self._delegate.on_start(ctx)
         try:
@@ -138,9 +140,9 @@ class MetadataInterceptorInvoker(Generic[T]):
 
     async def intercept_bidi_stream(
         self,
-        next: Callable[[AsyncIterator[REQ], ServiceContext], AsyncIterator[RES]],
+        next: Callable[[AsyncIterator[REQ], RequestContext], AsyncIterator[RES]],
         request: AsyncIterator[REQ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> AsyncIterator[RES]:
         token = await self._delegate.on_start(ctx)
         try:
@@ -148,3 +150,19 @@ class MetadataInterceptorInvoker(Generic[T]):
                 yield response
         finally:
             await self._delegate.on_end(token, ctx)
+
+
+def resolve_interceptors(
+    interceptors: Iterable[Interceptor],
+) -> Sequence[
+    UnaryInterceptor
+    | ClientStreamInterceptor
+    | ServerStreamInterceptor
+    | BidiStreamInterceptor
+]:
+    return [
+        MetadataInterceptorInvoker(interceptor)
+        if isinstance(interceptor, MetadataInterceptor)
+        else interceptor
+        for interceptor in interceptors
+    ]

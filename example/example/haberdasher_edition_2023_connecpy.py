@@ -4,28 +4,24 @@
 
 from typing import Iterable, Mapping, Protocol
 
-from connecpy.client import (
-    ConnecpyClient,
-    ConnecpyClientSync,
-)
+from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.headers import Headers
 from connecpy.interceptor import Interceptor, InterceptorSync
 from connecpy.method import IdempotencyLevel, MethodInfo
+from connecpy.request import Headers, RequestContext
 from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
     EndpointSync,
-    ServiceContext,
 )
 import example.haberdasher_edition_2023_pb2 as example_dot_haberdasher__edition__2023__pb2
 
 
 class Haberdasher(Protocol):
     async def MakeHat(
-        self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: ServiceContext
+        self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: RequestContext
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -43,7 +39,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint.unary(
                     method=MethodInfo(
                         name="MakeHat",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example2023.Haberdasher",
                         input=example_dot_haberdasher__edition__2023__pb2.Size,
                         output=example_dot_haberdasher__edition__2023__pb2.Hat,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
@@ -70,19 +66,24 @@ class HaberdasherClient(ConnecpyClient):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
-        return await self._make_request(
-            url="/i2y.connecpy.example2023.Haberdasher/MakeHat",
-            method="GET" if use_get else "POST",
-            headers=headers,
+        return await self.execute_unary(
             request=request,
+            method=MethodInfo(
+                name="MakeHat",
+                service_name="i2y.connecpy.example2023.Haberdasher",
+                input=example_dot_haberdasher__edition__2023__pb2.Size,
+                output=example_dot_haberdasher__edition__2023__pb2.Hat,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=example_dot_haberdasher__edition__2023__pb2.Hat,
+            use_get=use_get,
         )
 
 
 class HaberdasherSync(Protocol):
     def MakeHat(
-        self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: ServiceContext
+        self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: RequestContext
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -99,7 +100,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": EndpointSync.unary(
                     method=MethodInfo(
                         name="MakeHat",
-                        service_name="Haberdasher",
+                        service_name="i2y.connecpy.example2023.Haberdasher",
                         input=example_dot_haberdasher__edition__2023__pb2.Size,
                         output=example_dot_haberdasher__edition__2023__pb2.Hat,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
@@ -126,11 +127,16 @@ class HaberdasherClientSync(ConnecpyClientSync):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
-        return self._make_request(
-            url="/i2y.connecpy.example2023.Haberdasher/MakeHat",
-            method="GET" if use_get else "POST",
+        return self.execute_unary(
+            request=request,
+            method=MethodInfo(
+                name="MakeHat",
+                service_name="i2y.connecpy.example2023.Haberdasher",
+                input=example_dot_haberdasher__edition__2023__pb2.Size,
+                output=example_dot_haberdasher__edition__2023__pb2.Hat,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
             headers=headers,
             timeout_ms=timeout_ms,
-            request=request,
-            response_class=example_dot_haberdasher__edition__2023__pb2.Hat,
+            use_get=use_get,
         )

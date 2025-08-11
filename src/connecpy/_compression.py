@@ -4,6 +4,10 @@ from typing import ByteString, Optional, Protocol
 
 
 class Compression(Protocol):
+    def name(self) -> str:
+        """Returns the name of the compression method."""
+        ...
+
     def compress(self, data: ByteString) -> bytes:
         """Compress the given data."""
         ...
@@ -21,6 +25,9 @@ _compressions: dict[str, Compression] = {}
 
 
 class GZipCompression(Compression):
+    def name(self) -> str:
+        return "gzip"
+
     def compress(self, data: ByteString) -> bytes:
         return gzip.compress(data)
 
@@ -37,6 +44,9 @@ try:
     import brotli
 
     class BrotliCompression(Compression):
+        def name(self) -> str:
+            return "br"
+
         def compress(self, data: ByteString) -> bytes:
             return brotli.compress(data)
 
@@ -54,6 +64,9 @@ try:
     import zstandard
 
     class ZstdCompression(Compression):
+        def name(self) -> str:
+            return "zstd"
+
         def compress(self, data: ByteString) -> bytes:
             return zstandard.ZstdCompressor().compress(data)
 
@@ -72,6 +85,9 @@ except ImportError:
 
 
 class IdentityCompression(Compression):
+    def name(self) -> str:
+        return "identity"
+
     def compress(self, data: ByteString) -> bytes:
         """Return data as-is without compression."""
         return bytes(data)

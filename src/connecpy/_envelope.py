@@ -8,7 +8,7 @@ from ._compression import Compression
 from ._protocol import ConnectWireError
 from .code import Code
 from .exceptions import ConnecpyException
-from .headers import Headers
+from .request import Headers
 
 _RES = TypeVar("_RES")
 
