@@ -4,23 +4,17 @@
 
 from typing import AsyncIterator, Iterable, Iterator, Mapping, Protocol
 
-from connecpy.client import (
-    ConnecpyClient,
-    ConnecpyClientSync,
-    ResponseStream,
-    ResponseStreamSync,
-)
+from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.headers import Headers
 from connecpy.interceptor import Interceptor, InterceptorSync
 from connecpy.method import IdempotencyLevel, MethodInfo
+from connecpy.request import Headers, RequestContext
 from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
     Endpoint,
     EndpointSync,
-    ServiceContext,
 )
 import connectrpc.conformance.v1.service_pb2 as connectrpc_dot_conformance_dot_v1_dot_service__pb2
 
@@ -29,14 +23,14 @@ class ConformanceService(Protocol):
     async def Unary(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def ServerStream(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> AsyncIterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse
     ]:
@@ -47,7 +41,7 @@ class ConformanceService(Protocol):
         req: AsyncIterator[
             connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest
         ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -56,7 +50,7 @@ class ConformanceService(Protocol):
         req: AsyncIterator[
             connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest
         ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> AsyncIterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse
     ]:
@@ -65,14 +59,14 @@ class ConformanceService(Protocol):
     async def Unimplemented(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def IdempotentUnary(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -90,7 +84,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint.unary(
                     method=MethodInfo(
                         name="Unary",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -100,7 +94,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/ServerStream": Endpoint.server_stream(
                     method=MethodInfo(
                         name="ServerStream",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -110,7 +104,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/ClientStream": Endpoint.client_stream(
                     method=MethodInfo(
                         name="ClientStream",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -120,7 +114,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/BidiStream": Endpoint.bidi_stream(
                     method=MethodInfo(
                         name="BidiStream",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -130,7 +124,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/Unimplemented": Endpoint.unary(
                     method=MethodInfo(
                         name="Unimplemented",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -140,7 +134,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": Endpoint.unary(
                     method=MethodInfo(
                         name="IdempotentUnary",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
@@ -166,32 +160,40 @@ class ConformanceServiceClient(ConnecpyClient):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
-        return await self._make_request(
-            url="/connectrpc.conformance.v1.ConformanceService/Unary",
-            method="POST",
-            headers=headers,
+        return await self.execute_unary(
             request=request,
+            method=MethodInfo(
+                name="Unary",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
         )
 
-    async def ServerStream(
+    def ServerStream(
         self,
         request: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> ResponseStream[
+    ) -> AsyncIterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse
     ]:
-        res = await self._make_request_stream(
-            url="/connectrpc.conformance.v1.ConformanceService/ServerStream",
-            headers=headers,
+        return self.execute_server_stream(
             request=request,
+            method=MethodInfo(
+                name="ServerStream",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
         )
-        return res
 
     async def ClientStream(
         self,
@@ -202,16 +204,20 @@ class ConformanceServiceClient(ConnecpyClient):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
-        res = await self._make_request_stream(
-            url="/connectrpc.conformance.v1.ConformanceService/ClientStream",
-            headers=headers,
+        return await self.execute_client_stream(
             request=request,
+            method=MethodInfo(
+                name="ClientStream",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
         )
-        return await self._consume_single_response(res)
 
-    async def BidiStream(
+    def BidiStream(
         self,
         request: AsyncIterator[
             connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest
@@ -219,17 +225,21 @@ class ConformanceServiceClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> ResponseStream[
+    ) -> AsyncIterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse
     ]:
-        res = await self._make_request_stream(
-            url="/connectrpc.conformance.v1.ConformanceService/BidiStream",
-            headers=headers,
+        return self.execute_bidi_stream(
             request=request,
+            method=MethodInfo(
+                name="BidiStream",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
         )
-        return res
 
     async def Unimplemented(
         self,
@@ -238,13 +248,17 @@ class ConformanceServiceClient(ConnecpyClient):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
-        return await self._make_request(
-            url="/connectrpc.conformance.v1.ConformanceService/Unimplemented",
-            method="POST",
-            headers=headers,
+        return await self.execute_unary(
             request=request,
+            method=MethodInfo(
+                name="Unimplemented",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
         )
 
     async def IdempotentUnary(
@@ -255,13 +269,18 @@ class ConformanceServiceClient(ConnecpyClient):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
-        return await self._make_request(
-            url="/connectrpc.conformance.v1.ConformanceService/IdempotentUnary",
-            method="GET" if use_get else "POST",
-            headers=headers,
+        return await self.execute_unary(
             request=request,
+            method=MethodInfo(
+                name="IdempotentUnary",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
+            use_get=use_get,
         )
 
 
@@ -269,14 +288,14 @@ class ConformanceServiceSync(Protocol):
     def Unary(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def ServerStream(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> Iterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse
     ]:
@@ -287,7 +306,7 @@ class ConformanceServiceSync(Protocol):
         req: Iterator[
             connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest
         ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -296,7 +315,7 @@ class ConformanceServiceSync(Protocol):
         req: Iterator[
             connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest
         ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> Iterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse
     ]:
@@ -305,14 +324,14 @@ class ConformanceServiceSync(Protocol):
     def Unimplemented(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def IdempotentUnary(
         self,
         req: connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -329,7 +348,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/Unary": EndpointSync.unary(
                     method=MethodInfo(
                         name="Unary",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -339,7 +358,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/ServerStream": EndpointSync.server_stream(
                     method=MethodInfo(
                         name="ServerStream",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -349,7 +368,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/ClientStream": EndpointSync.client_stream(
                     method=MethodInfo(
                         name="ClientStream",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -359,7 +378,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/BidiStream": EndpointSync.bidi_stream(
                     method=MethodInfo(
                         name="BidiStream",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -369,7 +388,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/Unimplemented": EndpointSync.unary(
                     method=MethodInfo(
                         name="Unimplemented",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
                         idempotency_level=IdempotencyLevel.UNKNOWN,
@@ -379,7 +398,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
                 "/connectrpc.conformance.v1.ConformanceService/IdempotentUnary": EndpointSync.unary(
                     method=MethodInfo(
                         name="IdempotentUnary",
-                        service_name="ConformanceService",
+                        service_name="connectrpc.conformance.v1.ConformanceService",
                         input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
                         output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
@@ -405,13 +424,17 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse:
-        return self._make_request(
-            url="/connectrpc.conformance.v1.ConformanceService/Unary",
-            method="POST",
+        return self.execute_unary(
+            request=request,
+            method=MethodInfo(
+                name="Unary",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
             headers=headers,
             timeout_ms=timeout_ms,
-            request=request,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnaryResponse,
         )
 
     def ServerStream(
@@ -420,17 +443,21 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> ResponseStreamSync[
+    ) -> Iterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse
     ]:
-        res = self._make_request_stream(
-            url="/connectrpc.conformance.v1.ConformanceService/ServerStream",
-            headers=headers,
+        return self.execute_server_stream(
             request=request,
+            method=MethodInfo(
+                name="ServerStream",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ServerStreamResponse,
         )
-        return res
 
     def ClientStream(
         self,
@@ -441,14 +468,18 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse:
-        res = self._make_request_stream(
-            url="/connectrpc.conformance.v1.ConformanceService/ClientStream",
-            headers=headers,
+        return self.execute_client_stream(
             request=request,
+            method=MethodInfo(
+                name="ClientStream",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.ClientStreamResponse,
         )
-        return self._consume_single_response(res)
 
     def BidiStream(
         self,
@@ -458,17 +489,21 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-    ) -> ResponseStreamSync[
+    ) -> Iterator[
         connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse
     ]:
-        res = self._make_request_stream(
-            url="/connectrpc.conformance.v1.ConformanceService/BidiStream",
-            headers=headers,
+        return self.execute_bidi_stream(
             request=request,
+            method=MethodInfo(
+                name="BidiStream",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
             timeout_ms=timeout_ms,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.BidiStreamResponse,
         )
-        return res
 
     def Unimplemented(
         self,
@@ -477,13 +512,17 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse:
-        return self._make_request(
-            url="/connectrpc.conformance.v1.ConformanceService/Unimplemented",
-            method="POST",
+        return self.execute_unary(
+            request=request,
+            method=MethodInfo(
+                name="Unimplemented",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
             headers=headers,
             timeout_ms=timeout_ms,
-            request=request,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.UnimplementedResponse,
         )
 
     def IdempotentUnary(
@@ -494,11 +533,16 @@ class ConformanceServiceClientSync(ConnecpyClientSync):
         timeout_ms: int | None = None,
         use_get: bool = False,
     ) -> connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse:
-        return self._make_request(
-            url="/connectrpc.conformance.v1.ConformanceService/IdempotentUnary",
-            method="GET" if use_get else "POST",
+        return self.execute_unary(
+            request=request,
+            method=MethodInfo(
+                name="IdempotentUnary",
+                service_name="connectrpc.conformance.v1.ConformanceService",
+                input=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryRequest,
+                output=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
             headers=headers,
             timeout_ms=timeout_ms,
-            request=request,
-            response_class=connectrpc_dot_conformance_dot_v1_dot_service__pb2.IdempotentUnaryResponse,
+            use_get=use_get,
         )

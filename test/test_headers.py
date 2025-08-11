@@ -1,6 +1,6 @@
 import pytest
 
-from connecpy.headers import Headers
+from connecpy.request import Headers
 
 
 def test_headers_no_duplicates():

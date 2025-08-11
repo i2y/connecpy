@@ -10,6 +10,7 @@ from google.protobuf.any_pb2 import Any
 from .code import Code
 from .exceptions import ConnecpyException
 
+CONNECT_HEADER_PROTOCOL_VERSION = "connect-protocol-version"
 CONNECT_PROTOCOL_VERSION = "1"
 CONNECT_UNARY_CONTENT_TYPE_PREFIX = "application/"
 CONNECT_STREAMING_CONTENT_TYPE_PREFIX = "application/connect+"
@@ -17,7 +18,9 @@ CONNECT_STREAMING_CONTENT_TYPE_PREFIX = "application/connect+"
 CONNECT_UNARY_HEADER_COMPRESSION = "content-encoding"
 CONNECT_UNARY_HEADER_ACCEPT_COMPRESSION = "accept-encoding"
 CONNECT_STREAMING_HEADER_COMPRESSION = "connect-content-encoding"
-CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION = "connect-accept-encoding"
+CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION = "connect-accept-encoding"
+
+CONNECT_HEADER_TIMEOUT = "connect-timeout-ms"
 
 
 # Define a custom class for HTTP Status to allow adding 499 status code

@@ -1,29 +1,36 @@
 import base64
 from contextvars import ContextVar, Token
 from http import HTTPStatus
-from typing import Iterable, Mapping, Optional, Sequence
+from typing import Iterable, Mapping, Optional, Sequence, TypeVar
 
 from httpx import Headers as HttpxHeaders
 
 from . import _compression
 from ._codec import CODEC_NAME_JSON, CODEC_NAME_JSON_CHARSET_UTF8, Codec
+from ._compression import Compression, get_available_compressions, get_compression
 from ._protocol import (
+    CONNECT_HEADER_PROTOCOL_VERSION,
+    CONNECT_HEADER_TIMEOUT,
     CONNECT_PROTOCOL_VERSION,
     CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
+    CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION,
     CONNECT_STREAMING_HEADER_COMPRESSION,
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
     CONNECT_UNARY_HEADER_ACCEPT_COMPRESSION,
     CONNECT_UNARY_HEADER_COMPRESSION,
-    CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION,
     ConnectWireError,
     codec_name_from_content_type,
 )
 from ._version import __version__
 from .code import Code
 from .exceptions import ConnecpyException
-from .headers import Headers
+from .method import MethodInfo
+from .request import Headers, RequestContext
 
 _DEFAULT_CONNECT_USER_AGENT = f"connecpy/{__version__}"
+
+REQ = TypeVar("REQ")
+RES = TypeVar("RES")
 
 
 def prepare_headers(
@@ -41,7 +48,7 @@ def prepare_headers(
     )
     if "user-agent" not in headers:
         headers["user-agent"] = _DEFAULT_CONNECT_USER_AGENT
-    headers["connect-protocol-version"] = CONNECT_PROTOCOL_VERSION
+    headers[CONNECT_HEADER_PROTOCOL_VERSION] = CONNECT_PROTOCOL_VERSION
 
     compression_header = (
         CONNECT_STREAMING_HEADER_COMPRESSION
@@ -49,7 +56,7 @@ def prepare_headers(
         else CONNECT_UNARY_HEADER_COMPRESSION
     )
     accept_compression_header = (
-        CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION
+        CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION
         if stream
         else CONNECT_UNARY_HEADER_ACCEPT_COMPRESSION
     )
@@ -66,25 +73,93 @@ def prepare_headers(
         f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX if stream else CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"
     )
     if timeout_ms is not None:
-        headers["connect-timeout-ms"] = str(timeout_ms)
+        headers[CONNECT_HEADER_TIMEOUT] = str(timeout_ms)
     return headers
 
 
-def maybe_compress_request(
-    request_data: bytes, headers: HttpxHeaders
-) -> tuple[bytes, bool]:
+def resolve_send_compression(compression_name: str | None) -> Compression | None:
+    if compression_name is None:
+        return None
+    compression = get_compression(compression_name)
+    if compression is None:
+        raise ValueError(
+            f"Unsupported compression method: {compression_name}. "
+            f"Available methods: {', '.join(get_available_compressions())}"
+        )
+    return compression
+
+
+def create_request_context(
+    *,
+    method: MethodInfo[REQ, RES],
+    http_method: str,
+    user_headers: Headers | Mapping[str, str] | None,
+    timeout_ms: int | None,
+    codec: Codec,
+    stream: bool,
+    accept_compression: Iterable[str] | None,
+    send_compression: Compression | None,
+) -> RequestContext:
+    match user_headers:
+        case Headers():
+            # Copy to prevent modification if user keeps reference
+            # TODO: Optimize
+            headers = Headers(tuple(user_headers.allitems()))
+        case None:
+            headers = Headers()
+        case _:
+            headers = Headers(user_headers)
+
+    if "user-agent" not in headers:
+        headers["user-agent"] = _DEFAULT_CONNECT_USER_AGENT
+    headers["connect-protocol-version"] = CONNECT_PROTOCOL_VERSION
+
+    compression_header = (
+        CONNECT_STREAMING_HEADER_COMPRESSION
+        if stream
+        else CONNECT_UNARY_HEADER_COMPRESSION
+    )
+    accept_compression_header = (
+        CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION
+        if stream
+        else CONNECT_UNARY_HEADER_ACCEPT_COMPRESSION
+    )
+
+    if accept_compression is not None:
+        headers[accept_compression_header] = ", ".join(accept_compression)
+    else:
+        headers[accept_compression_header] = "gzip, br, zstd"
+    if send_compression is not None:
+        headers[compression_header] = send_compression.name()
+    else:
+        headers.pop(compression_header, None)
+    headers["content-type"] = (
+        f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX if stream else CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"
+    )
+    if timeout_ms is not None:
+        headers["connect-timeout-ms"] = str(timeout_ms)
+
+    return RequestContext(
+        method=method,
+        http_method=http_method,
+        request_headers=headers,
+        timeout_ms=timeout_ms,
+    )
+
+
+def maybe_compress_request(request_data: bytes, headers: HttpxHeaders) -> bytes:
     if "content-encoding" not in headers:
-        return request_data, False
+        return request_data
 
     compression_name = headers["content-encoding"].lower()
     if compression_name == "identity":
-        return request_data, False
+        return request_data
     compression = _compression.get_compression(compression_name)
     if not compression:
         # TODO: Validate within client construction instead of request
         raise ValueError(f"Unsupported compression method: {compression_name}")
     try:
-        return compression.compress(request_data), True
+        return compression.compress(request_data)
     except Exception as e:
         raise Exception(f"Failed to compress request with {compression_name}: {str(e)}")
 

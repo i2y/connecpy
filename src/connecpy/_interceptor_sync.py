@@ -1,13 +1,15 @@
 from typing import (
     Callable,
     Generic,
+    Iterable,
     Iterator,
     Protocol,
+    Sequence,
     TypeVar,
     runtime_checkable,
 )
 
-from ._server_shared import ServiceContext
+from .request import RequestContext
 
 REQ = TypeVar("REQ")
 RES = TypeVar("RES")
@@ -18,9 +20,9 @@ T = TypeVar("T")
 class UnaryInterceptorSync(Protocol):
     def intercept_unary_sync(
         self,
-        next: Callable[[REQ, ServiceContext], RES],
+        next: Callable[[REQ, RequestContext], RES],
         request: REQ,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> RES:
         """Intercepts a unary RPC."""
         ...
@@ -30,9 +32,9 @@ class UnaryInterceptorSync(Protocol):
 class ClientStreamInterceptorSync(Protocol):
     def intercept_client_stream_sync(
         self,
-        next: Callable[[Iterator[REQ], ServiceContext], RES],
+        next: Callable[[Iterator[REQ], RequestContext], RES],
         request: Iterator[REQ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> RES:
         """Intercepts a client-streaming RPC."""
         ...
@@ -42,9 +44,9 @@ class ClientStreamInterceptorSync(Protocol):
 class ServerStreamInterceptorSync(Protocol):
     def intercept_server_stream_sync(
         self,
-        next: Callable[[REQ, ServiceContext], Iterator[RES]],
+        next: Callable[[REQ, RequestContext], Iterator[RES]],
         request: REQ,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> Iterator[RES]:
         """Intercepts a server-streaming RPC."""
         ...
@@ -54,9 +56,9 @@ class ServerStreamInterceptorSync(Protocol):
 class BidiStreamInterceptorSync(Protocol):
     def intercept_bidi_stream_sync(
         self,
-        next: Callable[[Iterator[REQ], ServiceContext], Iterator[RES]],
+        next: Callable[[Iterator[REQ], RequestContext], Iterator[RES]],
         request: Iterator[REQ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> Iterator[RES]:
         """Intercepts a bidirectional-streaming RPC."""
         ...
@@ -71,16 +73,16 @@ class MetadataInterceptorSync(Protocol[T]):
     corresponding to the type of method such as UnaryInterceptor.
     """
 
-    def on_start_sync(self, ctx: ServiceContext) -> T:
+    def on_start_sync(self, ctx: RequestContext) -> T:
         """Called when the RPC starts. The return value will be passed to on_end as-is.
         For example, if measuring RPC invocation time, on_start may return the current
         time.
         """
         ...
 
-    def on_end_sync(self, token: T, ctx: ServiceContext) -> None:
+    def on_end_sync(self, token: T, ctx: RequestContext) -> None:
         """Called when the RPC ends."""
-        ...
+        return
 
 
 InterceptorSync = (
@@ -100,9 +102,9 @@ class MetadataInterceptorInvokerSync(Generic[T]):
 
     def intercept_unary_sync(
         self,
-        next: Callable[[REQ, ServiceContext], RES],
+        next: Callable[[REQ, RequestContext], RES],
         request: REQ,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> RES:
         token = self._delegate.on_start_sync(ctx)
         try:
@@ -112,9 +114,9 @@ class MetadataInterceptorInvokerSync(Generic[T]):
 
     def intercept_client_stream_sync(
         self,
-        next: Callable[[Iterator[REQ], ServiceContext], RES],
+        next: Callable[[Iterator[REQ], RequestContext], RES],
         request: Iterator[REQ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> RES:
         token = self._delegate.on_start_sync(ctx)
         try:
@@ -124,9 +126,9 @@ class MetadataInterceptorInvokerSync(Generic[T]):
 
     def intercept_server_stream_sync(
         self,
-        next: Callable[[REQ, ServiceContext], Iterator[RES]],
+        next: Callable[[REQ, RequestContext], Iterator[RES]],
         request: REQ,
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> Iterator[RES]:
         token = self._delegate.on_start_sync(ctx)
         try:
@@ -136,12 +138,28 @@ class MetadataInterceptorInvokerSync(Generic[T]):
 
     def intercept_bidi_stream_sync(
         self,
-        next: Callable[[Iterator[REQ], ServiceContext], Iterator[RES]],
+        next: Callable[[Iterator[REQ], RequestContext], Iterator[RES]],
         request: Iterator[REQ],
-        ctx: ServiceContext,
+        ctx: RequestContext,
     ) -> Iterator[RES]:
         token = self._delegate.on_start_sync(ctx)
         try:
             yield from next(request, ctx)
         finally:
             self._delegate.on_end_sync(token, ctx)
+
+
+def resolve_interceptors(
+    interceptors: Iterable[InterceptorSync],
+) -> Sequence[
+    UnaryInterceptorSync
+    | ClientStreamInterceptorSync
+    | ServerStreamInterceptorSync
+    | BidiStreamInterceptorSync
+]:
+    return [
+        MetadataInterceptorInvokerSync(interceptor)
+        if isinstance(interceptor, MetadataInterceptorSync)
+        else interceptor
+        for interceptor in interceptors
+    ]

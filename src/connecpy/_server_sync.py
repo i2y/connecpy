@@ -22,17 +22,16 @@ from ._interceptor_sync import (
 )
 from ._protocol import (
     CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
+    CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION,
     CONNECT_STREAMING_HEADER_COMPRESSION,
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
-    CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION,
     ConnectWireError,
     HTTPException,
     codec_name_from_content_type,
 )
-from ._server_shared import ServiceContext
 from .code import Code
 from .exceptions import ConnecpyException
-from .headers import Headers
+from .request import Headers, RequestContext
 
 _REQ = TypeVar("_REQ")
 _RES = TypeVar("_RES")
@@ -171,7 +170,7 @@ class ConnecpyWSGIApplication(ABC):
         self, environ: WSGIEnvironment, start_response: StartResponse
     ) -> Iterable[bytes]:
         """Handle incoming WSGI requests."""
-        ctx: Optional[ServiceContext] = None
+        ctx: Optional[RequestContext] = None
         try:
             path = environ["PATH_INFO"]
             if not path:
@@ -186,10 +185,11 @@ class ConnecpyWSGIApplication(ABC):
                 raise HTTPException(HTTPStatus.NOT_FOUND, [])
 
             http_method = environ["REQUEST_METHOD"]
-            _server_shared.verify_http_method(http_method, endpoint.method)
-
             headers = _process_headers(_normalize_wsgi_headers(environ))
-            ctx = ServiceContext(endpoint.method, headers)
+
+            ctx = _server_shared.create_request_context(
+                endpoint.method, http_method, headers
+            )
 
             match endpoint:
                 case _server_shared.EndpointUnarySync():
@@ -216,14 +216,14 @@ class ConnecpyWSGIApplication(ABC):
         start_response: StartResponse,
         http_method: str,
         endpoint: _server_shared.EndpointUnarySync[_REQ, _RES],
-        ctx: _server_shared.ServiceContext,
+        ctx: _server_shared.RequestContext[_REQ, _RES],
         headers: Headers,
     ):
         # Handle request based on method
         if http_method == "GET":
-            request, codec = self._handle_get_request(environ, endpoint, ctx)
+            request, codec = self._handle_get_request(environ, endpoint)
         else:
-            request, codec = self._handle_post_request(environ, endpoint, ctx, headers)
+            request, codec = self._handle_post_request(environ, endpoint, headers)
 
         # Process request
         response = endpoint.function(request, ctx)
@@ -265,7 +265,6 @@ class ConnecpyWSGIApplication(ABC):
         self,
         environ: WSGIEnvironment,
         endpoint: _server_shared.EndpointSync[_REQ, _RES],
-        ctx: _server_shared.ServiceContext,
         request_headers: Headers,
     ) -> tuple[_REQ, Codec]:
         """Handle POST request with body."""
@@ -336,7 +335,7 @@ class ConnecpyWSGIApplication(ABC):
             raise
 
     def _handle_get_request(
-        self, environ, endpoint: _server_shared.EndpointUnarySync[_REQ, _RES], ctx
+        self, environ, endpoint: _server_shared.EndpointUnarySync[_REQ, _RES]
     ) -> tuple[_REQ, Codec]:
         """Handle GET request with query parameters."""
         try:
@@ -401,10 +400,10 @@ class ConnecpyWSGIApplication(ABC):
         endpoint: _server_shared.EndpointClientStreamSync[_REQ, _RES]
         | _server_shared.EndpointServerStreamSync[_REQ, _RES]
         | _server_shared.EndpointBidiStreamSync[_REQ, _RES],
-        ctx: _server_shared.ServiceContext,
+        ctx: _server_shared.RequestContext[_REQ, _RES],
     ) -> Iterable[bytes]:
         accept_compression = headers.get(
-            CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
+            CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
         )
         response_compression_name = _compression.select_encoding(accept_compression)
         response_compression = _compression.get_compression(response_compression_name)
@@ -476,7 +475,7 @@ class ConnecpyWSGIApplication(ABC):
             ]
 
     def _handle_error(
-        self, exc, ctx: Optional[ServiceContext], _environ, start_response
+        self, exc, ctx: Optional[RequestContext], _environ, start_response
     ):
         """Handle and log errors with detailed information."""
         headers: list[tuple[str, str]]
@@ -500,7 +499,7 @@ class ConnecpyWSGIApplication(ABC):
         return body
 
 
-def _add_context_headers(headers: list[tuple[str, str]], ctx: ServiceContext) -> None:
+def _add_context_headers(headers: list[tuple[str, str]], ctx: RequestContext) -> None:
     headers.extend((key, value) for key, value in ctx.response_headers().allitems())
     headers.extend(
         (f"trailer-{key}", value) for key, value in ctx.response_trailers().allitems()
@@ -511,7 +510,7 @@ def _send_stream_response_headers(
     start_response: StartResponse,
     codec: Codec,
     compression_name: str,
-    ctx: ServiceContext,
+    ctx: RequestContext,
 ):
     response_headers = [
         (
@@ -546,7 +545,7 @@ def _response_stream(
     first_response: _RES,
     response_stream: Iterator[_RES],
     writer: EnvelopeWriter,
-    ctx: ServiceContext,
+    ctx: RequestContext,
 ) -> Iterable[bytes]:
     error: Exception | None = None
     try:

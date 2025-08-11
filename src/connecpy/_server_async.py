@@ -23,24 +23,22 @@ from ._interceptor_async import (
     BidiStreamInterceptor,
     ClientStreamInterceptor,
     Interceptor,
-    MetadataInterceptor,
-    MetadataInterceptorInvoker,
     ServerStreamInterceptor,
     UnaryInterceptor,
+    resolve_interceptors,
 )
 from ._protocol import (
     CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
+    CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION,
     CONNECT_STREAMING_HEADER_COMPRESSION,
     CONNECT_UNARY_CONTENT_TYPE_PREFIX,
-    CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION,
     ConnectWireError,
     HTTPException,
     codec_name_from_content_type,
 )
-from ._server_shared import ServiceContext
 from .code import Code
 from .exceptions import ConnecpyException
-from .headers import Headers
+from .request import Headers, RequestContext
 
 if TYPE_CHECKING:
     # We don't use asgiref code so only import from it for type checking
@@ -77,12 +75,7 @@ class ConnecpyASGIApplication(ABC):
         """Initialize the ASGI application."""
         super().__init__()
         if interceptors:
-            interceptors = [
-                MetadataInterceptorInvoker(interceptor)
-                if isinstance(interceptor, MetadataInterceptor)
-                else interceptor
-                for interceptor in interceptors
-            ]
+            interceptors = resolve_interceptors(interceptors)
             endpoints = {
                 path: _apply_interceptors(endpoint, interceptors)
                 for path, endpoint in endpoints.items()
@@ -103,7 +96,7 @@ class ConnecpyASGIApplication(ABC):
         """
         assert scope["type"] == "http"
 
-        ctx: Optional[ServiceContext] = None
+        ctx: Optional[RequestContext] = None
         try:
             path = scope["path"]
             endpoint = self._endpoints.get(path)
@@ -116,11 +109,13 @@ class ConnecpyASGIApplication(ABC):
                 raise HTTPException(HTTPStatus.NOT_FOUND, [])
 
             http_method = scope["method"]
-            _server_shared.verify_http_method(http_method, endpoint.method)
+            headers = _process_headers(scope.get("headers", ()))
+
+            ctx = _server_shared.create_request_context(
+                endpoint.method, http_method, headers
+            )
 
             is_unary = isinstance(endpoint, _server_shared.EndpointUnary)
-
-            headers = _process_headers(scope.get("headers", ()))
 
             if http_method == "GET":
                 query_string = scope.get("query_string", b"").decode("utf-8")
@@ -137,8 +132,6 @@ class ConnecpyASGIApplication(ABC):
                     HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
                     [("Accept-Post", "application/json, application/proto")],
                 )
-
-            ctx = ServiceContext(endpoint.method, headers)
 
             if is_unary:
                 return await self._handle_unary(
@@ -174,7 +167,7 @@ class ConnecpyASGIApplication(ABC):
         endpoint: _server_shared.EndpointUnary[_REQ, _RES],
         receive: ASGIReceiveCallable,
         send: ASGISendCallable,
-        ctx: _server_shared.ServiceContext,
+        ctx: _server_shared.RequestContext,
     ):
         accept_encoding = headers.get("accept-encoding", "")
         selected_encoding = _compression.select_encoding(accept_encoding)
@@ -187,28 +180,29 @@ class ConnecpyASGIApplication(ABC):
         response_data = await endpoint.function(request, ctx)
 
         res_bytes = codec.encode(response_data)
-        response_headers: dict[str, str] = {
-            "content-type": f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"
-        }
-
+        response_headers: list[tuple[bytes, bytes]] = [
+            (
+                b"content-type",
+                f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}".encode(),
+            )
+        ]
         # Compress response if needed
         if selected_encoding != "identity":
             compressor = _compression.get_compression(selected_encoding)
             if compressor:
                 res_bytes = compressor.compress(res_bytes)
-                response_headers["content-encoding"] = selected_encoding
-                response_headers["vary"] = "Accept-Encoding"
+                response_headers.append(
+                    (b"content-encoding", selected_encoding.encode())
+                )
+                response_headers.append((b"vary", b"Accept-Encoding"))
 
-        final_headers: list[tuple[bytes, bytes]] = []
-        for key, value in response_headers.items():
-            final_headers.append((key.lower().encode(), value.encode()))
-        _add_context_headers(final_headers, ctx)
+        _add_context_headers(response_headers, ctx)
 
         await send(
             {
                 "type": "http.response.start",
                 "status": 200,
-                "headers": final_headers,
+                "headers": response_headers,
                 "trailers": False,
             }
         )
@@ -306,7 +300,7 @@ class ConnecpyASGIApplication(ABC):
         endpoint: _server_shared.Endpoint[_REQ, _RES],
         codec: Codec,
         headers: Headers,
-        ctx: _server_shared.ServiceContext,
+        ctx: _server_shared.RequestContext,
     ):
         req_compression_name = headers.get(
             CONNECT_STREAMING_HEADER_COMPRESSION, "identity"
@@ -316,7 +310,7 @@ class ConnecpyASGIApplication(ABC):
             or _compression.IdentityCompression()
         )
         accept_compression = headers.get(
-            CONNECTS_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
+            CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
         )
         response_compression_name = _compression.select_encoding(accept_compression)
         response_compression = _compression.get_compression(response_compression_name)
@@ -385,7 +379,7 @@ class ConnecpyASGIApplication(ABC):
     async def _handle_error(
         self,
         exc,
-        ctx: Optional[ServiceContext],
+        ctx: Optional[RequestContext],
         send: ASGISendCallable,
     ) -> None:
         """Handle errors that occur during request processing."""
@@ -428,7 +422,7 @@ async def _send_stream_response_headers(
     send: ASGISendCallable,
     codec: Codec,
     compression_name: str,
-    ctx: ServiceContext,
+    ctx: RequestContext,
 ):
     response_headers = [
         (
@@ -522,7 +516,7 @@ def _process_headers(
 
 
 def _add_context_headers(
-    headers: list[tuple[bytes, bytes]], ctx: ServiceContext
+    headers: list[tuple[bytes, bytes]], ctx: RequestContext
 ) -> None:
     headers.extend(
         (key.encode(), value.encode())
