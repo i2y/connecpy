@@ -28,7 +28,7 @@ class HaberdasherService(Haberdasher):
         return response
 
     async def MakeSimilarHats(
-        self, req: Size, ctx: ServiceContext
+        self, req: Size, ctx: RequestContext
     ) -> AsyncIterator[Hat]:
         """Server Streaming RPC: Returns multiple hats of similar size"""
         if req.inches <= 0:
