@@ -5,14 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 from http import HTTPStatus
 from io import BytesIO
-from typing import (
-    Iterable,
-    Iterator,
-    Mapping,
-    Optional,
-    Sequence,
-    TypeVar,
-)
+from typing import Iterable, Iterator, Mapping, Optional, Sequence, TypeVar
 from urllib.parse import parse_qs
 
 from . import _compression, _server_shared
