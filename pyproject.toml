@@ -52,6 +52,8 @@ extend-ignore = [
     "AIR",
     # Dangerous false positives https://github.com/astral-sh/ruff/issues/4845
     "ERA",
+    # Not Applicable
+    "FAST",
     # Important to call user callbacks safely
     "BLE",
     # stdlib includes a module named code. This is less of an issue since users need to import a module so allow it
