@@ -1,11 +1,12 @@
+__all__ = ["ConnecpyException"]
+
+
 from typing import Iterable, Sequence
 
 from google.protobuf.any import Any, pack
 from google.protobuf.message import Message
 
 from .code import Code
-
-__all__ = ["ConnecpyException"]
 
 
 class ConnecpyException(Exception):
