@@ -381,7 +381,7 @@ class ConnecpyClient:
                     await resp.aclose()
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError):
+        except (httpx.TimeoutException, TimeoutError, asyncio.TimeoutError):
             raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out")
         except ConnecpyException:
             raise
