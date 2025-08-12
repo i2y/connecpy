@@ -20,9 +20,14 @@ jobs:
           - windows-2025
         python:
           - "3.10"
-          - "3.11"
-          - "3.12"
           - "3.13"
+        # Test oldest and newest on all OS's, but others only on one
+        # to save CI load.
+        include:
+          - os: ubuntu-24.04
+            python: "3.11"
+          - os: ubuntu-24.04
+            python: "3.12"
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
