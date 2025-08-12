@@ -25,8 +25,8 @@ from example.haberdasher_pb2 import Hat, Size
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity", None])
 def test_roundtrip_sync(proto_json: bool, compression: str):
     class RoundtripHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req, ctx):
-            return Hat(size=req.inches, color="green")
+        def MakeHat(self, request, ctx):
+            return Hat(size=request.inches, color="green")
 
     app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
     with HaberdasherClientSync(
@@ -46,8 +46,8 @@ def test_roundtrip_sync(proto_json: bool, compression: str):
 @pytest.mark.asyncio
 async def test_roundtrip_async(proto_json: bool, compression: str):
     class DetailsHaberdasher(Haberdasher):
-        async def MakeHat(self, req, ctx):
-            return Hat(size=req.inches, color="green")
+        async def MakeHat(self, request, ctx):
+            return Hat(size=request.inches, color="green")
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
@@ -68,10 +68,10 @@ async def test_roundtrip_async(proto_json: bool, compression: str):
 @pytest.mark.asyncio
 async def test_roundtrip_response_stream_async(proto_json: bool, compression: str):
     class StreamingHaberdasher(Haberdasher):
-        async def MakeSimilarHats(self, req, ctx):
-            yield Hat(size=req.inches, color="green")
-            yield Hat(size=req.inches, color="red")
-            yield Hat(size=req.inches, color="blue")
+        async def MakeSimilarHats(self, request, ctx):
+            yield Hat(size=request.inches, color="green")
+            yield Hat(size=request.inches, color="red")
+            yield Hat(size=request.inches, color="blue")
             raise ConnecpyException(Code.RESOURCE_EXHAUSTED, "No more hats available")
 
     app = HaberdasherASGIApplication(StreamingHaberdasher())
@@ -114,12 +114,12 @@ def test_message_limit_sync(
     bad_hat = Hat(color="X" * 1000)
 
     class LargeHaberdasher(HaberdasherSync):
-        def MakeHat(self, req, ctx):
-            requests.append(req)
+        def MakeHat(self, request, ctx):
+            requests.append(request)
             return good_hat if client_bad else bad_hat
 
-        def MakeVariousHats(self, req: Iterator[Size], ctx) -> Iterator[Hat]:
-            for size in req:
+        def MakeVariousHats(self, request: Iterator[Size], ctx) -> Iterator[Hat]:
+            for size in request:
                 requests.append(size)
             yield Hat(color="good")
             yield good_hat if client_bad else bad_hat
@@ -180,14 +180,14 @@ async def test_message_limit_async(
     bad_hat = Hat(color="X" * 1000)
 
     class LargeHaberdasher(Haberdasher):
-        async def MakeHat(self, req, ctx):
-            requests.append(req)
+        async def MakeHat(self, request, ctx):
+            requests.append(request)
             return good_hat if client_bad else bad_hat
 
         async def MakeVariousHats(
-            self, req: AsyncIterator[Size], ctx
+            self, request: AsyncIterator[Size], ctx
         ) -> AsyncIterator[Hat]:
-            async for size in req:
+            async for size in request:
                 requests.append(size)
             yield Hat(color="good")
             yield good_hat if client_bad else bad_hat

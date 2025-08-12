@@ -9,8 +9,6 @@ from . import _compression
 from ._codec import CODEC_NAME_JSON, CODEC_NAME_JSON_CHARSET_UTF8, Codec
 from ._compression import Compression, get_available_compressions, get_compression
 from ._protocol import (
-    CONNECT_HEADER_PROTOCOL_VERSION,
-    CONNECT_HEADER_TIMEOUT,
     CONNECT_PROTOCOL_VERSION,
     CONNECT_STREAMING_CONTENT_TYPE_PREFIX,
     CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION,
@@ -31,50 +29,6 @@ _DEFAULT_CONNECT_USER_AGENT = f"connecpy/{__version__}"
 
 REQ = TypeVar("REQ")
 RES = TypeVar("RES")
-
-
-def prepare_headers(
-    codec: Codec,
-    stream: bool,
-    user_headers: Headers | Mapping[str, str] | None,
-    timeout_ms: Optional[int],
-    accept_compression: Optional[Iterable[str]],
-    send_compression: Optional[str],
-) -> HttpxHeaders:
-    headers = HttpxHeaders(
-        list(user_headers.allitems())
-        if isinstance(user_headers, Headers)
-        else user_headers
-    )
-    if "user-agent" not in headers:
-        headers["user-agent"] = _DEFAULT_CONNECT_USER_AGENT
-    headers[CONNECT_HEADER_PROTOCOL_VERSION] = CONNECT_PROTOCOL_VERSION
-
-    compression_header = (
-        CONNECT_STREAMING_HEADER_COMPRESSION
-        if stream
-        else CONNECT_UNARY_HEADER_COMPRESSION
-    )
-    accept_compression_header = (
-        CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION
-        if stream
-        else CONNECT_UNARY_HEADER_ACCEPT_COMPRESSION
-    )
-
-    if accept_compression is not None:
-        headers[accept_compression_header] = ", ".join(accept_compression)
-    else:
-        headers[accept_compression_header] = "gzip, br, zstd"
-    if send_compression is not None:
-        headers[compression_header] = send_compression
-    else:
-        headers.pop(compression_header, None)
-    headers["content-type"] = (
-        f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX if stream else CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}"
-    )
-    if timeout_ms is not None:
-        headers[CONNECT_HEADER_TIMEOUT] = str(timeout_ms)
-    return headers
 
 
 def resolve_send_compression(compression_name: str | None) -> Compression | None:
@@ -161,7 +115,9 @@ def maybe_compress_request(request_data: bytes, headers: HttpxHeaders) -> bytes:
     try:
         return compression.compress(request_data)
     except Exception as e:
-        raise Exception(f"Failed to compress request with {compression_name}: {str(e)}")
+        raise Exception(
+            f"Failed to compress request with {compression_name}: {str(e)}"
+        ) from e
 
 
 def prepare_get_params(codec: Codec, request_data, headers):
@@ -212,7 +168,9 @@ def validate_response_content_type(
             f"invalid content-type: '{response_content_type}'; expecting '{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{request_codec_name}'",
         )
 
-    response_codec_name = codec_name_from_content_type(response_content_type, False)
+    response_codec_name = codec_name_from_content_type(
+        response_content_type, stream=False
+    )
     if response_codec_name == request_codec_name:
         return
 
@@ -313,7 +271,7 @@ class ResponseMetadata:
         if self._token:
             try:
                 _current_response.reset(self._token)
-            except Exception:
+            except Exception:  # noqa: S110
                 # Normal usage with context manager will always work but it is
                 # theoretically possible for user to move to another thread
                 # and this fails, it is fine to ignore it.
