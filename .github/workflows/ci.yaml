@@ -8,11 +8,15 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  # Cancel in-progress jobs for PRs only
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os:
           - macos-15
