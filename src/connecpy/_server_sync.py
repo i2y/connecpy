@@ -5,7 +5,15 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 from http import HTTPStatus
 from io import BytesIO
-from typing import Iterable, Iterator, Mapping, Optional, Sequence, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Iterable,
+    Iterator,
+    Mapping,
+    Optional,
+    Sequence,
+    TypeVar,
+)
 from urllib.parse import parse_qs
 
 from . import _compression, _server_shared
@@ -33,8 +41,11 @@ from .code import Code
 from .exceptions import ConnecpyException
 from .request import Headers, RequestContext
 
-if sys.version_info >= (3, 11):
-    from wsgiref.types import StartResponse, WSGIEnvironment
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 11):
+        from wsgiref.types import StartResponse, WSGIEnvironment
+    else:
+        from _typeshed.wsgi import StartResponse, WSGIEnvironment
 else:
     StartResponse = "wsgiref.types.StartResponse"
     WSGIEnvironment = "wsgiref.types.WSGIEnvironment"

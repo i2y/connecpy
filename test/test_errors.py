@@ -1,6 +1,6 @@
 import threading
 import time
-from http import HTTPMethod, HTTPStatus
+from http import HTTPStatus
 from typing import Optional
 from wsgiref.simple_server import WSGIServer, make_server
 
@@ -202,7 +202,7 @@ async def test_async_http_errors(response_status, response_kwargs, code, message
 
 _client_errors = [
     p(
-        HTTPMethod.PUT,
+        "PUT",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -211,7 +211,7 @@ _client_errors = [
         id="bad method",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/notservicemethod",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -220,7 +220,7 @@ _client_errors = [
         id="not found",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/notservice/method",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -229,7 +229,7 @@ _client_errors = [
         id="not present service",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/i2y.connecpy.example.Haberdasher/notmethod",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -238,7 +238,7 @@ _client_errors = [
         id="not present method",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "text/html"},
         Size(inches=10).SerializeToString(),
@@ -247,7 +247,7 @@ _client_errors = [
         id="bad content type",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto", "connect-protocol-version": "2"},
         Size(inches=10).SerializeToString(),
