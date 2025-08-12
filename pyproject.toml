@@ -13,11 +13,13 @@ dev-dependencies = [
     "asgiref",
     "brotli",
     "connecpy-example",
+    "coverage",
     "flask",
     "pip>=24.0",
     "pyright[nodejs]",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.2",
+    "pytest-cov",
     "ruff>=0.9.4",
     "zstandard",
 ]
