@@ -1,12 +1,19 @@
 import base64
 import functools
+import sys
 from abc import ABC, abstractmethod
 from dataclasses import replace
 from http import HTTPStatus
 from io import BytesIO
-from typing import Iterable, Iterator, Mapping, Optional, Sequence, TypeVar
+from typing import (
+    Iterable,
+    Iterator,
+    Mapping,
+    Optional,
+    Sequence,
+    TypeVar,
+)
 from urllib.parse import parse_qs
-from wsgiref.types import StartResponse, WSGIEnvironment
 
 from . import _compression, _server_shared
 from ._codec import Codec, get_codec
@@ -32,6 +39,13 @@ from ._protocol import (
 from .code import Code
 from .exceptions import ConnecpyException
 from .request import Headers, RequestContext
+
+if sys.version_info >= (3, 11):
+    from wsgiref.types import StartResponse, WSGIEnvironment
+else:
+    StartResponse = "wsgiref.types.StartResponse"
+    WSGIEnvironment = "wsgiref.types.WSGIEnvironment"
+
 
 _REQ = TypeVar("_REQ")
 _RES = TypeVar("_RES")
