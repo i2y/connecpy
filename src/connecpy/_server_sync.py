@@ -288,7 +288,7 @@ class ConnecpyWSGIApplication(ABC):
         """Handle POST request with body."""
 
         codec_name = codec_name_from_content_type(
-            request_headers.get("content-type", ""), False
+            request_headers.get("content-type", ""), stream=False
         )
         codec = get_codec(codec_name)
         if not codec:
@@ -326,7 +326,7 @@ class ConnecpyWSGIApplication(ABC):
                     raise ConnecpyException(
                         Code.INVALID_ARGUMENT,
                         f"Failed to decompress request body: {str(e)}",
-                    )
+                    ) from e
 
             if (
                 self._read_max_bytes is not None
@@ -342,14 +342,14 @@ class ConnecpyWSGIApplication(ABC):
             except Exception as e:
                 raise ConnecpyException(
                     Code.INVALID_ARGUMENT, f"Failed to decode request body: {str(e)}"
-                )
+                ) from e
 
         except Exception as e:
             if not isinstance(e, ConnecpyException):
                 raise ConnecpyException(
                     Code.INTERNAL,
                     str(e),  # TODO
-                )
+                ) from e
             raise
 
     def _handle_get_request(
@@ -374,7 +374,7 @@ class ConnecpyWSGIApplication(ABC):
                 except Exception as e:
                     raise ConnecpyException(
                         Code.INVALID_ARGUMENT, f"Invalid base64 encoding: {str(e)}"
-                    )
+                    ) from e
             else:
                 message = message.encode("utf-8")
 
@@ -403,11 +403,11 @@ class ConnecpyWSGIApplication(ABC):
             except Exception as e:
                 raise ConnecpyException(
                     Code.INVALID_ARGUMENT, f"Failed to decode message: {str(e)}"
-                )
+                ) from e
 
         except Exception as e:
             if not isinstance(e, ConnecpyException):
-                raise ConnecpyException(Code.INTERNAL, str(e))
+                raise ConnecpyException(Code.INTERNAL, str(e)) from e
             raise
 
     def _handle_stream(
@@ -426,7 +426,9 @@ class ConnecpyWSGIApplication(ABC):
         response_compression_name = _compression.select_encoding(accept_compression)
         response_compression = _compression.get_compression(response_compression_name)
 
-        codec_name = codec_name_from_content_type(headers.get("content-type", ""), True)
+        codec_name = codec_name_from_content_type(
+            headers.get("content-type", ""), stream=True
+        )
         codec = get_codec(codec_name)
         if not codec:
             raise HTTPException(

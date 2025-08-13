@@ -19,8 +19,8 @@ def test_edition_2023_service_generation():
 
     # Create a simple service implementation
     class TestHaberdasher(Haberdasher):
-        async def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
-            return Hat(size=req.inches, color="blue", name="test")
+        async def MakeHat(self, request: Size, ctx: RequestContext) -> Hat:
+            return Hat(size=request.inches, color="blue", name="test")
 
     # Verify the service can be instantiated
     service = TestHaberdasher()
@@ -29,8 +29,8 @@ def test_edition_2023_service_generation():
 
     # Verify sync version works too
     class TestHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
-            return Hat(size=req.inches, color="red", name="test")
+        def MakeHat(self, request: Size, ctx: RequestContext) -> Hat:
+            return Hat(size=request.inches, color="red", name="test")
 
     sync_service = TestHaberdasherSync()
     sync_app = HaberdasherWSGIApplication(sync_service)

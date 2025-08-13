@@ -60,7 +60,7 @@ import {{.Name}} as {{.Alias}}
 
 
 class {{.Name}}(Protocol):{{- range .Methods }}
-    {{if not .ResponseStream }}async {{end}}def {{.Name}}(self, req: {{if .RequestStream}}AsyncIterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: RequestContext) -> {{if .ResponseStream}}AsyncIterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
+    {{if not .ResponseStream }}async {{end}}def {{.Name}}(self, request: {{if .RequestStream}}AsyncIterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: RequestContext) -> {{if .ResponseStream}}AsyncIterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{ end }}
 
@@ -114,7 +114,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
 {{end}}{{- end }}
 {{range .Services}}
 class {{.Name}}Sync(Protocol):{{- range .Methods }}
-    def {{.Name}}(self, req: {{if .RequestStream}}Iterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: RequestContext) -> {{if .ResponseStream}}Iterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
+    def {{.Name}}(self, request: {{if .RequestStream}}Iterator[{{end}}{{.InputType}}{{if .RequestStream}}]{{end}}, ctx: RequestContext) -> {{if .ResponseStream}}Iterator[{{end}}{{.OutputType}}{{if .ResponseStream}}]{{end}}:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 {{- end }}
 
