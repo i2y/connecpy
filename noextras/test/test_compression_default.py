@@ -19,8 +19,8 @@ from httpx import (
 @pytest.mark.parametrize("compression", ["gzip", "identity", None])
 def test_roundtrip_sync(compression: str):
     class RoundtripHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req, ctx):
-            return Hat(size=req.inches, color="green")
+        def MakeHat(self, request, ctx):
+            return Hat(size=request.inches, color="green")
 
     app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
     with HaberdasherClientSync(
@@ -38,8 +38,8 @@ def test_roundtrip_sync(compression: str):
 @pytest.mark.asyncio
 async def test_roundtrip_async(compression: str):
     class DetailsHaberdasher(Haberdasher):
-        async def MakeHat(self, req, ctx):
-            return Hat(size=req.inches, color="green")
+        async def MakeHat(self, request, ctx):
+            return Hat(size=request.inches, color="green")
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
@@ -57,8 +57,8 @@ async def test_roundtrip_async(compression: str):
 @pytest.mark.parametrize("compression", ["br", "zstd"])
 def test_invalid_compression_sync(compression: str):
     class RoundtripHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req, ctx):
-            return Hat(size=req.inches, color="green")
+        def MakeHat(self, request, ctx):
+            return Hat(size=request.inches, color="green")
 
     app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
 
@@ -79,8 +79,8 @@ def test_invalid_compression_sync(compression: str):
 @pytest.mark.asyncio
 async def test_invalid_compression_async(compression: str):
     class DetailsHaberdasher(Haberdasher):
-        async def MakeHat(self, req, ctx):
-            return Hat(size=req.inches, color="green")
+        async def MakeHat(self, request, ctx):
+            return Hat(size=request.inches, color="green")
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete

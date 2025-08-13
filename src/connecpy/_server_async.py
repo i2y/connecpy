@@ -94,7 +94,7 @@ class ConnecpyASGIApplication(ABC):
             receive (callable): The ASGI receive function.
             send (callable): The ASGI send function.
         """
-        assert scope["type"] == "http"
+        assert scope["type"] == "http"  # noqa: S101 - only for type narrowing, in practice always true
 
         ctx: Optional[RequestContext] = None
         try:
@@ -124,7 +124,7 @@ class ConnecpyASGIApplication(ABC):
             else:
                 query_params = _UNSET_QUERY_PARAMS
                 codec_name = codec_name_from_content_type(
-                    headers.get("content-type", ""), not is_unary
+                    headers.get("content-type", ""), stream=not is_unary
                 )
             codec = get_codec(codec_name.lower())
             if not codec:
@@ -235,10 +235,10 @@ class ConnecpyASGIApplication(ABC):
         if is_base64:
             try:
                 message = base64.urlsafe_b64decode(message + "===")
-            except Exception:
+            except Exception as e:
                 raise ConnecpyException(
                     Code.INVALID_ARGUMENT, "Invalid base64 encoding"
-                )
+                ) from e
         else:
             message = message.encode("utf-8")
 

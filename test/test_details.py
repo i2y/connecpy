@@ -23,7 +23,7 @@ from example.haberdasher_pb2 import Size
 
 def test_details_sync():
     class DetailsHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req, ctx):
+        def MakeHat(self, request, ctx):
             raise ConnecpyException(
                 Code.RESOURCE_EXHAUSTED,
                 "Resource exhausted",
@@ -55,7 +55,7 @@ def test_details_sync():
 @pytest.mark.asyncio
 async def test_details_async():
     class DetailsHaberdasher(Haberdasher):
-        async def MakeHat(self, req, ctx):
+        async def MakeHat(self, request, ctx):
             raise ConnecpyException(
                 Code.RESOURCE_EXHAUSTED,
                 "Resource exhausted",

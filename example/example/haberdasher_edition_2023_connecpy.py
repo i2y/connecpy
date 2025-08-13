@@ -21,7 +21,9 @@ import example.haberdasher_edition_2023_pb2 as example_dot_haberdasher__edition_
 
 class Haberdasher(Protocol):
     async def MakeHat(
-        self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: RequestContext
+        self,
+        request: example_dot_haberdasher__edition__2023__pb2.Size,
+        ctx: RequestContext,
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -83,7 +85,9 @@ class HaberdasherClient(ConnecpyClient):
 
 class HaberdasherSync(Protocol):
     def MakeHat(
-        self, req: example_dot_haberdasher__edition__2023__pb2.Size, ctx: RequestContext
+        self,
+        request: example_dot_haberdasher__edition__2023__pb2.Size,
+        ctx: RequestContext,
     ) -> example_dot_haberdasher__edition__2023__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
