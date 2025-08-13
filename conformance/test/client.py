@@ -137,13 +137,13 @@ async def _run_test(
                 )
                 if test_request.HasField("client_tls_creds"):
                     with (
-                        NamedTemporaryFile(delete_on_close=False) as cert_file,
-                        NamedTemporaryFile(delete_on_close=False) as key_file,
+                        NamedTemporaryFile() as cert_file,
+                        NamedTemporaryFile() as key_file,
                     ):
                         cert_file.write(test_request.client_tls_creds.cert)
-                        cert_file.close()
+                        cert_file.flush()
                         key_file.write(test_request.client_tls_creds.key)
-                        key_file.close()
+                        key_file.flush()
                         ctx.load_cert_chain(
                             certfile=cert_file.name, keyfile=key_file.name
                         )
@@ -557,7 +557,7 @@ async def main():
             size_buf = await stdin.readexactly(4)
         except asyncio.IncompleteReadError:
             return
-        size = int.from_bytes(size_buf)
+        size = int.from_bytes(size_buf, byteorder="big")
         # Allow to raise even on EOF since we always should have a message
         request_buf = await stdin.readexactly(size)
         request = ClientCompatRequest()
@@ -566,7 +566,7 @@ async def main():
         response = await _run_test(args.mode, request)
 
         response_buf = response.SerializeToString()
-        size_buf = len(response_buf).to_bytes(4)
+        size_buf = len(response_buf).to_bytes(4, byteorder="big")
         stdout.write(size_buf)
         stdout.write(response_buf)
         await stdout.drain()

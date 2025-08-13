@@ -1,3 +1,4 @@
+import asyncio
 import functools
 from asyncio import CancelledError, sleep, wait_for
 from typing import (
@@ -302,7 +303,7 @@ class ConnecpyClient:
                 return response
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError) as e:
+        except (httpx.TimeoutException, TimeoutError, asyncio.TimeoutError) as e:
             raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:
             raise
@@ -380,7 +381,7 @@ class ConnecpyClient:
                     await resp.aclose()
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError) as e:
+        except (httpx.TimeoutException, TimeoutError, asyncio.TimeoutError) as e:
             raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:
             raise

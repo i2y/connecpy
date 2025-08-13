@@ -1,9 +1,10 @@
-from enum import StrEnum
-
 __all__ = ["Code"]
 
 
-class Code(StrEnum):
+from enum import Enum
+
+
+class Code(Enum):
     """
     Enum class representing different error codes and their corresponding status codes.
     """
