@@ -1,3 +1,19 @@
+__all__ = [
+    "BidiStreamInterceptor",
+    "BidiStreamInterceptorSync",
+    "ClientStreamInterceptor",
+    "ClientStreamInterceptorSync",
+    "Interceptor",
+    "InterceptorSync",
+    "MetadataInterceptor",
+    "MetadataInterceptorSync",
+    "ServerStreamInterceptor",
+    "ServerStreamInterceptorSync",
+    "UnaryInterceptor",
+    "UnaryInterceptorSync",
+]
+
+
 from ._interceptor_async import (
     BidiStreamInterceptor,
     ClientStreamInterceptor,
@@ -14,18 +30,3 @@ from ._interceptor_sync import (
     ServerStreamInterceptorSync,
     UnaryInterceptorSync,
 )
-
-__all__ = [
-    "UnaryInterceptor",
-    "ClientStreamInterceptor",
-    "ServerStreamInterceptor",
-    "BidiStreamInterceptor",
-    "Interceptor",
-    "MetadataInterceptor",
-    "BidiStreamInterceptorSync",
-    "ClientStreamInterceptorSync",
-    "InterceptorSync",
-    "MetadataInterceptorSync",
-    "ServerStreamInterceptorSync",
-    "UnaryInterceptorSync",
-]
