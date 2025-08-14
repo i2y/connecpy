@@ -88,5 +88,8 @@ jobs:
           version: "~> v2"
           args: release --snapshot --clean
 
+      # Dependency removal above can remove coverage dependencies, restore to original
+      - run: uv sync
+
       - uses: codecov/codecov-action@v5
         if: ${{ matrix.coverage == 'cov' }}
