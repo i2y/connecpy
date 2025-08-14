@@ -26,20 +26,20 @@ jobs:
           - "3.10"
           - "3.13"
         coverage:
-          - "off"
+          - "nocov"
         # Test oldest and newest on all OS's, but others only on one
         # to save CI load.
         include:
           - os: ubuntu-24.04
             python: "3.11"
-            coverage: "off"
+            coverage: "nocov"
           - os: ubuntu-24.04
             python: "3.12"
-            coverage: "off"
+            coverage: "nocov"
           # Enable coverage on just one job
           - os: ubuntu-24.04
             python: "3.13"
-            coverage: "on"
+            coverage: "cov"
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -65,16 +65,16 @@ jobs:
           uv run pyright
 
       - name: run python tests
-        run: uv run pytest ${{ matrix.coverage == 'on' && '--cov=connecpy' || '' }}
+        run: uv run pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy' || '' }}
 
       - name: run conformance tests
         # TODO: Debug stdin/stdout issues on Windows
         if: ${{ !startsWith(matrix.os, 'windows-') }}
-        run: uv run pytest ${{ matrix.coverage == 'on' && '--cov=connecpy' || '' }}
+        run: uv run pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy' || '' }}
         working-directory: conformance
 
       - name: run tests with minimal dependencies
-        run: uv run --exact pytest ${{ matrix.coverage == 'on' && '--cov=connecpy' || '' }}
+        run: uv run --exact pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy' || '' }}
         working-directory: noextras
 
       - name: run Go tests
@@ -89,4 +89,4 @@ jobs:
           args: release --snapshot --clean
 
       - uses: codecov/codecov-action@v5
-        if: ${{ matrix.coverage == 'on' }}
+        if: ${{ matrix.coverage == 'cov' }}
