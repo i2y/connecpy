@@ -65,16 +65,16 @@ jobs:
           uv run pyright
 
       - name: run python tests
-        run: uv run pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy' || '' }}
+        run: uv run pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy --cov-report=xml' || '' }}
 
       - name: run conformance tests
         # TODO: Debug stdin/stdout issues on Windows
         if: ${{ !startsWith(matrix.os, 'windows-') }}
-        run: uv run pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy' || '' }}
+        run: uv run pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy --cov-report=xml' || '' }}
         working-directory: conformance
 
       - name: run tests with minimal dependencies
-        run: uv run --exact pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy' || '' }}
+        run: uv run --exact pytest ${{ matrix.coverage == 'cov' && '--cov=connecpy --cov-report=xml' || '' }}
         working-directory: noextras
 
       - name: run Go tests
@@ -87,9 +87,6 @@ jobs:
         with:
           version: "~> v2"
           args: release --snapshot --clean
-
-      # Dependency removal above can remove coverage dependencies, restore to original
-      - run: uv sync
 
       - uses: codecov/codecov-action@v5
         if: ${{ matrix.coverage == 'cov' }}
