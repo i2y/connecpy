@@ -1,10 +1,7 @@
 import functools
+from collections.abc import Iterable, Iterator, Mapping
 from typing import (
     Any,
-    Iterable,
-    Iterator,
-    Mapping,
-    Optional,
     Protocol,
     TypeVar,
 )
@@ -69,12 +66,12 @@ class ConnecpyClientSync:
         address: str,
         *,
         proto_json: bool = False,
-        accept_compression: Optional[Iterable[str]] = None,
-        send_compression: Optional[str] = None,
-        timeout_ms: Optional[int] = None,
-        read_max_bytes: Optional[int] = None,
+        accept_compression: Iterable[str] | None = None,
+        send_compression: str | None = None,
+        timeout_ms: int | None = None,
+        read_max_bytes: int | None = None,
         interceptors: Iterable[InterceptorSync] = (),
-        session: Optional[httpx.Client] = None,
+        session: httpx.Client | None = None,
     ):
         """Creates a new synchronous Connecpy client.
 
@@ -297,8 +294,7 @@ class ConnecpyClientSync:
                 response = ctx.method().output()
                 self._codec.decode(resp.content, response)
                 return response
-            else:
-                raise ConnectWireError.from_response(resp).to_exception()
+            raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError) as e:
             raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:
@@ -377,7 +373,7 @@ class ConnecpyClientSync:
 # to do cross-platform. For now, we just apply the timeout to all httpx timeouts
 # if provided, or default to no read/write timeouts but with a connect timeout if
 # not provided to match connect-go behavior as closely as possible.
-def _convert_connect_timeout(timeout_ms: Optional[float]) -> Timeout:
+def _convert_connect_timeout(timeout_ms: float | None) -> Timeout:
     if timeout_ms is None:
         return Timeout(None, connect=30.0)
     return Timeout(timeout_ms / 1000.0)

@@ -2,16 +2,11 @@ import base64
 import functools
 from abc import ABC, abstractmethod
 from asyncio import CancelledError, sleep
+from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
 from dataclasses import replace
 from http import HTTPStatus
 from typing import (
     TYPE_CHECKING,
-    AsyncIterator,
-    Iterable,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
     TypeVar,
 )
 from urllib.parse import parse_qs
@@ -62,8 +57,7 @@ class ConnecpyASGIApplication(ABC):
 
     @property
     @abstractmethod
-    def path(self) -> str:
-        raise NotImplementedError()
+    def path(self) -> str: ...
 
     def __init__(
         self,
@@ -96,7 +90,7 @@ class ConnecpyASGIApplication(ABC):
         """
         assert scope["type"] == "http"  # noqa: S101 - only for type narrowing, in practice always true
 
-        ctx: Optional[RequestContext] = None
+        ctx: RequestContext | None = None
         try:
             path = scope["path"]
             endpoint = self._endpoints.get(path)
@@ -145,11 +139,10 @@ class ConnecpyASGIApplication(ABC):
                     ctx,
                 )
         except Exception as e:
-            await self._handle_error(e, ctx, send)
-            return
+            return await self._handle_error(e, ctx, send)
 
         # Streams have their own error handling so move out of the try block.
-        await self._handle_stream(
+        return await self._handle_stream(
             receive,
             send,
             endpoint,
@@ -268,9 +261,7 @@ class ConnecpyASGIApplication(ABC):
         """Handle POST request with body."""
 
         # Get request body
-        chunks: list[bytes] = []
-        async for chunk in _read_body(receive):
-            chunks.append(chunk)
+        chunks: list[bytes] = [chunk async for chunk in _read_body(receive)]
         req_body = b"".join(chunks)
 
         # Handle compression if specified
@@ -337,8 +328,11 @@ class ConnecpyASGIApplication(ABC):
                     response_stream = endpoint.function(request, ctx)
                 case _server_shared.EndpointBidiStream():
                     response_stream = endpoint.function(request_stream, ctx)
+                case _:
+                    msg = "Unknown endpoint type"
+                    raise ValueError(msg)
 
-            async for message in response_stream:  # type:ignore # TODO
+            async for message in response_stream:
                 # Don't send headers until the first message to allow logic a chance to add
                 # response headers.
                 if not sent_headers:
@@ -379,7 +373,7 @@ class ConnecpyASGIApplication(ABC):
     async def _handle_error(
         self,
         exc,
-        ctx: Optional[RequestContext],
+        ctx: RequestContext | None,
         send: ASGISendCallable,
     ) -> None:
         """Handle errors that occur during request processing."""
@@ -507,7 +501,7 @@ async def _yield_single_response(response: _RES) -> AsyncIterator[_RES]:
 
 
 def _process_headers(
-    iterable: Iterable[Tuple[bytes, bytes]],
+    iterable: Iterable[tuple[bytes, bytes]],
 ) -> Headers:
     result = Headers()
     for key, value in iterable:
@@ -561,4 +555,5 @@ def _apply_interceptors(
                 func = functools.partial(interceptor.intercept_bidi_stream, func)
             return replace(endpoint, function=func)
         case _:
-            raise ValueError("Unknown endpoint type")
+            msg = "Unknown endpoint type"
+            raise ValueError(msg)

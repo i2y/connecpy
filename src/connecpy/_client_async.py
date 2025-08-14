@@ -1,12 +1,9 @@
 import asyncio
 import functools
 from asyncio import CancelledError, sleep, wait_for
+from collections.abc import AsyncIterator, Iterable, Mapping
 from typing import (
     Any,
-    AsyncIterator,
-    Iterable,
-    Mapping,
-    Optional,
     Protocol,
     TypeVar,
 )
@@ -69,12 +66,12 @@ class ConnecpyClient:
         address: str,
         *,
         proto_json: bool = False,
-        accept_compression: Optional[Iterable[str]] = None,
-        send_compression: Optional[str] = None,
-        timeout_ms: Optional[int] = None,
-        read_max_bytes: Optional[int] = None,
+        accept_compression: Iterable[str] | None = None,
+        send_compression: str | None = None,
+        timeout_ms: int | None = None,
+        read_max_bytes: int | None = None,
         interceptors: Iterable[Interceptor] = (),
-        session: Optional[httpx.AsyncClient] = None,
+        session: httpx.AsyncClient | None = None,
     ) -> None:
         """Creates a new asynchronous Connecpy client.
 
@@ -303,8 +300,7 @@ class ConnecpyClient:
                 response = ctx.method().output()
                 self._codec.decode(resp.content, response)
                 return response
-            else:
-                raise ConnectWireError.from_response(resp).to_exception()
+            raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError, asyncio.TimeoutError) as e:
             raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:
@@ -393,7 +389,7 @@ class ConnecpyClient:
             raise ConnecpyException(Code.UNAVAILABLE, str(e)) from e
 
 
-def _convert_connect_timeout(timeout_ms: Optional[float]) -> Timeout:
+def _convert_connect_timeout(timeout_ms: float | None) -> Timeout:
     if timeout_ms is None:
         # If no timeout provided, match connect-go's default behavior of a 30s connect timeout
         # and no read/write timeouts.
@@ -406,7 +402,7 @@ def _convert_connect_timeout(timeout_ms: Optional[float]) -> Timeout:
 async def _streaming_request_content(
     msgs: AsyncIterator[Any],
     codec: Codec,
-    compression: Optional[Compression],
+    compression: Compression | None,
 ) -> AsyncIterator[bytes]:
     writer = EnvelopeWriter(codec, compression)
     async for msg in msgs:

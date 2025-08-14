@@ -62,7 +62,9 @@ def test_invalid_compression_sync(compression: str):
 
     app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(
+        ValueError, match=r"Unsupported compression method: .*"
+    ) as exc_info:
         HaberdasherClientSync(
             "http://localhost",
             session=Client(transport=WSGITransport(app=app)),
@@ -84,7 +86,9 @@ async def test_invalid_compression_async(compression: str):
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(
+        ValueError, match=r"Unsupported compression method: .*"
+    ) as exc_info:
         HaberdasherClient(
             "http://localhost",
             session=AsyncClient(transport=transport),
