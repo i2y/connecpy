@@ -62,8 +62,7 @@ class ConnecpyASGIApplication(ABC):
 
     @property
     @abstractmethod
-    def path(self) -> str:
-        raise NotImplementedError()
+    def path(self) -> str: ...
 
     def __init__(
         self,
@@ -145,11 +144,10 @@ class ConnecpyASGIApplication(ABC):
                     ctx,
                 )
         except Exception as e:
-            await self._handle_error(e, ctx, send)
-            return
+            return await self._handle_error(e, ctx, send)
 
         # Streams have their own error handling so move out of the try block.
-        await self._handle_stream(
+        return await self._handle_stream(
             receive,
             send,
             endpoint,
@@ -561,4 +559,5 @@ def _apply_interceptors(
                 func = functools.partial(interceptor.intercept_bidi_stream, func)
             return replace(endpoint, function=func)
         case _:
-            raise ValueError("Unknown endpoint type")
+            msg = "Unknown endpoint type"
+            raise ValueError(msg)

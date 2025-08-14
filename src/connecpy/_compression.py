@@ -1,6 +1,6 @@
 import gzip
 from collections.abc import KeysView
-from typing import ByteString, Optional, Protocol
+from typing import Optional, Protocol
 
 
 class Compression(Protocol):
@@ -8,11 +8,11 @@ class Compression(Protocol):
         """Returns the name of the compression method."""
         ...
 
-    def compress(self, data: ByteString) -> bytes:
+    def compress(self, data: bytes | bytearray) -> bytes:
         """Compress the given data."""
         ...
 
-    def decompress(self, data: ByteString) -> bytes:
+    def decompress(self, data: bytes | bytearray) -> bytes:
         """Decompress the given data."""
         ...
 
@@ -28,10 +28,10 @@ class GZipCompression(Compression):
     def name(self) -> str:
         return "gzip"
 
-    def compress(self, data: ByteString) -> bytes:
+    def compress(self, data: bytes | bytearray) -> bytes:
         return gzip.compress(data)
 
-    def decompress(self, data: ByteString) -> bytes:
+    def decompress(self, data: bytes | bytearray) -> bytes:
         return gzip.decompress(data)
 
     def is_identity(self) -> bool:
@@ -47,10 +47,10 @@ try:
         def name(self) -> str:
             return "br"
 
-        def compress(self, data: ByteString) -> bytes:
+        def compress(self, data: bytes | bytearray) -> bytes:
             return brotli.compress(data)
 
-        def decompress(self, data: ByteString) -> bytes:
+        def decompress(self, data: bytes | bytearray) -> bytes:
             return brotli.decompress(data)
 
         def is_identity(self) -> bool:
@@ -67,10 +67,10 @@ try:
         def name(self) -> str:
             return "zstd"
 
-        def compress(self, data: ByteString) -> bytes:
+        def compress(self, data: bytes | bytearray) -> bytes:
             return zstandard.ZstdCompressor().compress(data)
 
-        def decompress(self, data: ByteString) -> bytes:
+        def decompress(self, data: bytes | bytearray) -> bytes:
             # Support clients sending frames without length by using
             # stream API.
             with zstandard.ZstdDecompressor().stream_reader(data) as reader:
@@ -88,11 +88,11 @@ class IdentityCompression(Compression):
     def name(self) -> str:
         return "identity"
 
-    def compress(self, data: ByteString) -> bytes:
+    def compress(self, data: bytes | bytearray) -> bytes:
         """Return data as-is without compression."""
         return bytes(data)
 
-    def decompress(self, data: ByteString) -> bytes:
+    def decompress(self, data: bytes | bytearray) -> bytes:
         """Return data as-is without decompression."""
         return bytes(data)
 
@@ -160,8 +160,7 @@ def parse_accept_encoding(accept_encoding: str | bytes) -> list[tuple[str, float
             encodings.append((encoding, q))
 
     # Sort by q-value in descending order while preserving the original accept-encoding order for equal q-values
-    result = sorted(encodings, key=lambda x: -x[1])
-    return result
+    return sorted(encodings, key=lambda x: -x[1])
 
 
 # TODO: wrong sorting order, use preference order instead of available order
@@ -196,10 +195,9 @@ def select_encoding(
             candidates = [enc for enc in _compressions if enc not in excluded]
             if candidates:
                 return candidates[0]
-            else:
-                # If all available encodings were explicitly mentioned, return the first available.
-                return next(iter(get_available_compressions()))
-        elif client_encoding in _compressions:
+            # If all available encodings were explicitly mentioned, return the first available.
+            return next(iter(get_available_compressions()))
+        if client_encoding in _compressions:
             return client_encoding
 
     # If no match found, fallback to identity

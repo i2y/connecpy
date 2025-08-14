@@ -44,6 +44,25 @@ extend-select = [
     "C4",
     "DTZ",
     "T10",
+    "EM",
+    "EXE",
+    "FA",
+    "ISC",
+    "ICN",
+    "LOG",
+    "G",
+    "INP",
+    "PIE",
+    "T20",
+    "PYI",
+    "PT",
+    "Q004",   # Other quote rules are handled by formatting
+    "RSE",
+    "RET",
+    # This rule is a bit strict since accessing private members within this package can be
+    # useful to reduce public API exposure. But it is important to not access private members
+    # of dependencies like httpx so we enable it and ignore the locations where we need to.
+    "SLF",
 ]
 
 # Document reasons for ignoring specific linting errors
@@ -60,13 +79,23 @@ extend-ignore = [
     "A005",
     # TODO: Consider using copyright headers
     "CPY",
+    # Not Applicable
+    "DJ",
+    # It's fine to have TODOs
+    "FIX",
+    # Not Applicable
+    "INT",
+    # Even prevents pytest.raises around an iteration which is too strict
+    "PT012",
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"conformance/test/**" = ["INP", "SLF"]
 "example/**" = [
-    "S", # Keep examples simpler, e.g. allow normal random
+    "S",   # Keep examples simpler, e.g. allow normal random
+    "T20",
 ]
-"**/test_*.py" = ["S101", "S603", "S607", "FBT"]
+"**/test_*.py" = ["S101", "S603", "S607", "FBT", "EM", "INP", "SLF"]
 
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.

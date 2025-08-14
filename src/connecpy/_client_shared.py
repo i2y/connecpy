@@ -36,10 +36,11 @@ def resolve_send_compression(compression_name: str | None) -> Compression | None
         return None
     compression = get_compression(compression_name)
     if compression is None:
-        raise ValueError(
+        msg = (
             f"Unsupported compression method: {compression_name}. "
             f"Available methods: {', '.join(get_available_compressions())}"
         )
+        raise ValueError(msg)
     return compression
 
 
@@ -111,13 +112,13 @@ def maybe_compress_request(request_data: bytes, headers: HttpxHeaders) -> bytes:
     compression = _compression.get_compression(compression_name)
     if not compression:
         # TODO: Validate within client construction instead of request
-        raise ValueError(f"Unsupported compression method: {compression_name}")
+        msg = f"Unsupported compression method: {compression_name}"
+        raise ValueError(msg)
     try:
         return compression.compress(request_data)
     except Exception as e:
-        raise Exception(
-            f"Failed to compress request with {compression_name}: {str(e)}"
-        ) from e
+        msg = f"Failed to compress request with {compression_name}: {str(e)}"
+        raise Exception(msg) from e
 
 
 def prepare_get_params(codec: Codec, request_data, headers):
@@ -225,9 +226,9 @@ def handle_response_headers(headers: HttpxHeaders):
             obj = response_headers
         obj.add(key, value)
     if response_headers:
-        response._headers = response_headers
+        response._headers = response_headers  # noqa: SLF001
     if response_trailers:
-        response._trailers = response_trailers
+        response._trailers = response_trailers  # noqa: SLF001
 
 
 def handle_response_trailers(trailers: Mapping[str, Sequence[str]]):
@@ -239,7 +240,7 @@ def handle_response_trailers(trailers: Mapping[str, Sequence[str]]):
         for value in values:
             response_trailers.add(key, value)
     if response_trailers:
-        response._trailers = response_trailers
+        response._trailers = response_trailers  # noqa: SLF001
 
 
 class ResponseMetadata:

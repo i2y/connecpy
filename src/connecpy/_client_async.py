@@ -301,8 +301,7 @@ class ConnecpyClient:
                 response = ctx.method().output()
                 self._codec.decode(resp.content, response)
                 return response
-            else:
-                raise ConnectWireError.from_response(resp).to_exception()
+            raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError, asyncio.TimeoutError) as e:
             raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:

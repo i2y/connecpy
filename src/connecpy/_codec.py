@@ -1,4 +1,4 @@
-from typing import Any, ByteString, Optional, Protocol, TypeVar
+from typing import Any, Optional, Protocol, TypeVar
 
 from google.protobuf.json_format import MessageToJson
 from google.protobuf.json_format import Parse as MessageFromJson
@@ -23,43 +23,47 @@ class Codec(Protocol):
         """Marshals the given message."""
         ...
 
-    def decode(self, data: ByteString, message: T) -> T:
+    def decode(self, data: bytes | bytearray, message: T) -> T:
         """Unmarshals the given message."""
         ...
 
 
 class ProtoBinaryCodec(Codec):
-    """Codec for Protocol Buffers binary format."""
+    """Codec for Protocol bytes | bytearrays binary format."""
 
     def name(self) -> str:
         return "proto"
 
     def encode(self, message: Any) -> bytes:
         if not isinstance(message, Message):
-            raise TypeError("Expected a protobuf Message instance")
+            msg = "Expected a protobuf Message instance"
+            raise TypeError(msg)
         return message.SerializeToString()
 
-    def decode(self, data: ByteString, message: T) -> T:
+    def decode(self, data: bytes | bytearray, message: T) -> T:
         if not isinstance(message, Message):
-            raise TypeError("Expected a protobuf Message instance")
+            msg = "Expected a protobuf Message instance"
+            raise TypeError(msg)
         message.ParseFromString(data)  # pyright: ignore[reportArgumentType] - type is incorrect
         return message
 
 
 class ProtoJSONCodec(Codec):
-    """Codec for Protocol Buffers JSON format."""
+    """Codec for Protocol bytes | bytearrays JSON format."""
 
     def name(self) -> str:
         return "json"
 
     def encode(self, message: Any) -> bytes:
         if not isinstance(message, Message):
-            raise TypeError("Expected a protobuf Message instance")
+            msg = "Expected a protobuf Message instance"
+            raise TypeError(msg)
         return MessageToJson(message).encode()
 
-    def decode(self, data: ByteString, message: T) -> T:
+    def decode(self, data: bytes | bytearray, message: T) -> T:
         if not isinstance(message, Message):
-            raise TypeError("Expected a protobuf Message instance")
+            msg = "Expected a protobuf Message instance"
+            raise TypeError(msg)
         MessageFromJson(data, message)  # pyright: ignore[reportArgumentType] - type is incorrect
         return message
 
@@ -76,12 +80,12 @@ _codecs = {
 
 
 def get_proto_binary_codec() -> Codec:
-    """Returns the Protocol Buffers binary codec."""
+    """Returns the Protocol bytes | bytearrays binary codec."""
     return _proto_binary_codec
 
 
 def get_proto_json_codec() -> Codec:
-    """Returns the Protocol Buffers JSON codec."""
+    """Returns the Protocol bytes | bytearrays JSON codec."""
     return _proto_json_codec
 
 

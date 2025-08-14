@@ -158,8 +158,7 @@ class ConnecpyWSGIApplication(ABC):
 
     @property
     @abstractmethod
-    def path(self) -> str:
-        raise NotImplementedError()
+    def path(self) -> str: ...
 
     def __init__(
         self,
@@ -630,4 +629,5 @@ def _apply_interceptors(
                 func = functools.partial(interceptor.intercept_bidi_stream_sync, func)
             return replace(endpoint, function=func)
         case _:
-            raise ValueError("Unknown endpoint type")
+            msg = "Unknown endpoint type"
+            raise ValueError(msg)

@@ -101,8 +101,7 @@ class ConnectWireError:
             return ConnectWireError.from_dict(
                 data, response.status_code, Code.UNAVAILABLE
             )
-        else:
-            return ConnectWireError.from_http_status(response.status_code)
+        return ConnectWireError.from_http_status(response.status_code)
 
     @staticmethod
     def from_dict(

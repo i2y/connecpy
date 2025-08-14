@@ -78,7 +78,8 @@ def _convert_code(conformance_code: ConformanceCode) -> Code:
             return Code.DATA_LOSS
         case ConformanceCode.CODE_UNAUTHENTICATED:
             return Code.UNAUTHENTICATED
-    raise ValueError(f"Unknown ConformanceCode: {conformance_code}")
+    msg = f"Unknown ConformanceCode: {conformance_code}"
+    raise ValueError(msg)
 
 
 RES = TypeVar(
@@ -163,7 +164,8 @@ class TestService(ConformanceService):
                 definition = message.response_definition
 
         if not definition:
-            raise ValueError("ClientStream must have a response definition")
+            msg = "ClientStream must have a response definition"
+            raise ValueError(msg)
         return await _handle_unary_response(
             definition, requests, ClientStreamResponse(), ctx
         )
@@ -294,7 +296,8 @@ class TestServiceSync(ConformanceServiceSync):
                 definition = message.response_definition
 
         if not definition:
-            raise ValueError("ClientStream must have a response definition")
+            msg = "ClientStream must have a response definition"
+            raise ValueError(msg)
         return _handle_unary_response_sync(
             definition, requests, ClientStreamResponse(), ctx
         )

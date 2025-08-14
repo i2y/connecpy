@@ -85,7 +85,8 @@ def _convert_compression(compression: Compression) -> str:
         case Compression.COMPRESSION_SNAPPY:
             return "snappy"
         case _:
-            raise ValueError(f"Unsupported compression: {compression}")
+            msg = f"Unsupported compression: {compression}"
+            raise ValueError(msg)
 
 
 T = TypeVar("T", bound=Message)
@@ -319,8 +320,9 @@ async def _run_test(
                                     )
                                 )
                             case _:
+                                msg = f"Unrecognized method: {test_request.method}"
                                 raise ValueError(
-                                    f"Unrecognized method: {test_request.method}"
+                                    msg
                                 )
                         if test_request.cancel.after_close_send_ms:
                             await asyncio.sleep(
@@ -508,8 +510,9 @@ async def _run_test(
                                     )
                                 )
                             case _:
+                                msg = f"Unrecognized method: {test_request.method}"
                                 raise ValueError(
-                                    f"Unrecognized method: {test_request.method}"
+                                    msg
                                 )
                         if test_request.cancel.after_close_send_ms:
                             await asyncio.sleep(

@@ -81,7 +81,7 @@ class Headers(MutableMapping[str, str]):
         """Return an iterable view of all header items, including duplicates."""
         if self._extra is None:
             return self._store.items()
-        return _AllItemsView(self)
+        return _AllItemsView(self._store, self._extra)
 
     # Commonly used functions that delegate to _store for performance vs the base class
     # implementations that rely on dunder methods.
@@ -108,18 +108,22 @@ class Headers(MutableMapping[str, str]):
 class _AllItemsView(ItemsView[str, str]):
     """An iterable view of all header items, including duplicates."""
 
-    def __init__(self, headers: Headers):
-        self._headers = headers
+    _store: dict[str, str]
+    _extra: Optional[dict[str, list[str]]]
+
+    def __init__(self, store: dict[str, str], extra: Optional[dict[str, list[str]]]):
+        self._store = store
+        self._extra = extra
 
     def __iter__(self) -> Iterator[tuple[str, str]]:
-        for key, value in self._headers._store.items():
+        for key, value in self._store.items():
             yield (key, value)
-            if self._headers._extra:
-                for value in self._headers._extra.get(key, ()):
+            if self._extra:
+                for value in self._extra.get(key, ()):
                     yield (key, value)
 
     def __len__(self) -> int:
-        size = len(self._headers._store)
-        if self._headers._extra:
-            size += sum(len(v) for v in self._headers._extra.values())
+        size = len(self._store)
+        if self._extra:
+            size += sum(len(v) for v in self._extra.values())
         return size
