@@ -21,7 +21,7 @@ class IdempotencyLevel(enum.Enum):
     """
 
     UNKNOWN = enum.auto()
-    """The default idempotency level. 
+    """The default idempotency level.
 
     A method with this idempotency level may not be idempotent. This is appropriate for
     any kind of method.
@@ -40,7 +40,7 @@ class IdempotencyLevel(enum.Enum):
     """
 
     IDEMPOTENT = enum.auto()
-    """The idempotency level that specifies that a given call is "idempotent", 
+    """The idempotency level that specifies that a given call is "idempotent",
     such that multiple instances of the same request to this procedure would have
     the same side-effects as a single request.
 

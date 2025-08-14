@@ -66,9 +66,7 @@ jobs:
         working-directory: conformance
 
       - name: run tests with minimal dependencies
-        run: |
-          uv sync --exact
-          uv run pytest
+        run: uv run --exact pytest
         working-directory: noextras
 
       - name: run Go tests

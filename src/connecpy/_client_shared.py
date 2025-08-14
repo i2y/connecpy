@@ -1,7 +1,9 @@
 import base64
+import contextlib
+from collections.abc import Iterable, Mapping, Sequence
 from contextvars import ContextVar, Token
 from http import HTTPStatus
-from typing import Iterable, Mapping, Optional, Sequence, TypeVar
+from typing import TypeVar
 
 from httpx import Headers as HttpxHeaders
 
@@ -36,10 +38,11 @@ def resolve_send_compression(compression_name: str | None) -> Compression | None
         return None
     compression = get_compression(compression_name)
     if compression is None:
-        raise ValueError(
+        msg = (
             f"Unsupported compression method: {compression_name}. "
             f"Available methods: {', '.join(get_available_compressions())}"
         )
+        raise ValueError(msg)
     return compression
 
 
@@ -111,13 +114,13 @@ def maybe_compress_request(request_data: bytes, headers: HttpxHeaders) -> bytes:
     compression = _compression.get_compression(compression_name)
     if not compression:
         # TODO: Validate within client construction instead of request
-        raise ValueError(f"Unsupported compression method: {compression_name}")
+        msg = f"Unsupported compression method: {compression_name}"
+        raise ValueError(msg)
     try:
         return compression.compress(request_data)
     except Exception as e:
-        raise Exception(
-            f"Failed to compress request with {compression_name}: {str(e)}"
-        ) from e
+        msg = f"Failed to compress request with {compression_name}: {e!s}"
+        raise Exception(msg) from e
 
 
 def prepare_get_params(codec: Codec, request_data, headers):
@@ -219,15 +222,16 @@ def handle_response_headers(headers: HttpxHeaders):
     response_trailers: Headers = Headers()
     for key, value in headers.multi_items():
         if key.startswith("trailer-"):
-            key = key[len("trailer-") :]
+            normalized_key = key[len("trailer-") :]
             obj = response_trailers
         else:
+            normalized_key = key
             obj = response_headers
-        obj.add(key, value)
+        obj.add(normalized_key, value)
     if response_headers:
-        response._headers = response_headers
+        response._headers = response_headers  # noqa: SLF001
     if response_trailers:
-        response._trailers = response_trailers
+        response._trailers = response_trailers  # noqa: SLF001
 
 
 def handle_response_trailers(trailers: Mapping[str, Sequence[str]]):
@@ -239,7 +243,7 @@ def handle_response_trailers(trailers: Mapping[str, Sequence[str]]):
         for value in values:
             response_trailers.add(key, value)
     if response_trailers:
-        response._trailers = response_trailers
+        response._trailers = response_trailers  # noqa: SLF001
 
 
 class ResponseMetadata:
@@ -259,9 +263,9 @@ class ResponseMetadata:
             check_response_trailers(resp_data.trailers())
     """
 
-    _headers: Optional[Headers] = None
-    _trailers: Optional[Headers] = None
-    _token: Optional[Token["ResponseMetadata"]] = None
+    _headers: Headers | None = None
+    _trailers: Headers | None = None
+    _token: Token["ResponseMetadata"] | None = None
 
     def __enter__(self) -> "ResponseMetadata":
         self._token = _current_response.set(self)
@@ -269,13 +273,11 @@ class ResponseMetadata:
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self._token:
-            try:
+            # Normal usage with context manager will always work but it is
+            # theoretically possible for user to move to another thread
+            # and this fails, it is fine to ignore it.
+            with contextlib.suppress(Exception):
                 _current_response.reset(self._token)
-            except Exception:  # noqa: S110
-                # Normal usage with context manager will always work but it is
-                # theoretically possible for user to move to another thread
-                # and this fails, it is fine to ignore it.
-                pass
         self._token = None
 
     def headers(self) -> Headers:

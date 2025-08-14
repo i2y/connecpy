@@ -1,6 +1,7 @@
 import json
 import struct
-from typing import Any, Generic, Iterator, Optional, TypeVar
+from collections.abc import Iterator
+from typing import Any, Generic, TypeVar
 
 from ._client_shared import handle_response_trailers
 from ._codec import Codec
@@ -66,10 +67,10 @@ class EnvelopeReader(Generic[_RES]):
 
                 if end_stream:
                     end_stream_message: dict = json.loads(message_data)
-                    metadata = end_stream_message.get("metadata", None)
+                    metadata = end_stream_message.get("metadata")
                     if metadata:
                         handle_response_trailers(metadata)
-                    error = end_stream_message.get("error", None)
+                    error = end_stream_message.get("error")
                     if error:
                         # Most likely a bug in the protocol, handling of unknown code is different for unary
                         # and streaming.
@@ -89,7 +90,7 @@ class EnvelopeReader(Generic[_RES]):
 
 
 class EnvelopeWriter:
-    def __init__(self, codec: Codec, compression: Optional[Compression]):
+    def __init__(self, codec: Codec, compression: Compression | None):
         self._codec = codec
         self._compression = compression
         self._prefix = 0 if not compression or compression.is_identity() else 1
@@ -102,7 +103,7 @@ class EnvelopeWriter:
         # I/O multiple times for small prefix / length elements.
         return struct.pack(">BI", self._prefix, len(data)) + data
 
-    def end(self, trailers: Headers, error: Optional[ConnectWireError]) -> bytes:
+    def end(self, trailers: Headers, error: ConnectWireError | None) -> bytes:
         end_message = {}
         if trailers:
             metadata: dict[str, list[str]] = {}

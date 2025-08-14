@@ -2,10 +2,11 @@ import argparse
 import asyncio
 import signal
 import time
+from collections.abc import AsyncIterator, Iterator
 from contextlib import ExitStack
 from ssl import VerifyMode
 from tempfile import NamedTemporaryFile
-from typing import AsyncIterator, Iterator, Literal, TypeVar
+from typing import TYPE_CHECKING, Literal, TypeVar
 
 from _util import create_standard_streams
 from connecpy.code import Code
@@ -38,10 +39,12 @@ from connectrpc.conformance.v1.service_pb2 import (
     UnaryResponseDefinition,
 )
 from google.protobuf.any import Any, pack
-from google.protobuf.message import Message
 from hypercorn.asyncio import serve as hypercorn_serve
 from hypercorn.config import Config as HypercornConfig
 from hypercorn.logging import Logger
+
+if TYPE_CHECKING:
+    from google.protobuf.message import Message
 
 
 def _convert_code(conformance_code: ConformanceCode) -> Code:
@@ -78,7 +81,8 @@ def _convert_code(conformance_code: ConformanceCode) -> Code:
             return Code.DATA_LOSS
         case ConformanceCode.CODE_UNAUTHENTICATED:
             return Code.UNAUTHENTICATED
-    raise ValueError(f"Unknown ConformanceCode: {conformance_code}")
+    msg = f"Unknown ConformanceCode: {conformance_code}"
+    raise ValueError(msg)
 
 
 RES = TypeVar(
@@ -163,7 +167,8 @@ class TestService(ConformanceService):
                 definition = message.response_definition
 
         if not definition:
-            raise ValueError("ClientStream must have a response definition")
+            msg = "ClientStream must have a response definition"
+            raise ValueError(msg)
         return await _handle_unary_response(
             definition, requests, ClientStreamResponse(), ctx
         )
@@ -294,7 +299,8 @@ class TestServiceSync(ConformanceServiceSync):
                 definition = message.response_definition
 
         if not definition:
-            raise ValueError("ClientStream must have a response definition")
+            msg = "ClientStream must have a response definition"
+            raise ValueError(msg)
         return _handle_unary_response_sync(
             definition, requests, ClientStreamResponse(), ctx
         )

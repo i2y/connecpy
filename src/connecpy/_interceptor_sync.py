@@ -1,10 +1,7 @@
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import (
-    Callable,
     Generic,
-    Iterable,
-    Iterator,
     Protocol,
-    Sequence,
     TypeVar,
     runtime_checkable,
 )
