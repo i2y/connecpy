@@ -781,7 +781,7 @@ from haberdasher_pb2 import Size, Hat
 from haberdasher_connecpy import HaberdasherASGIApplication
 from service import HaberdasherService
 
-# Unary interceptor with specific types for MakeHat RPC
+# Single interceptor class handling multiple RPC types
 class LoggingInterceptor:
     async def intercept_unary(
         self,
@@ -794,8 +794,6 @@ class LoggingInterceptor:
         print(f"Response sent: {response.color} hat")
         return response
 
-# Server streaming interceptor for MakeSimilarHats RPC
-class StreamingInterceptor:
     async def intercept_server_stream(
         self,
         next: Callable[[Size, RequestContext], AsyncIterator[Hat]],
@@ -810,7 +808,7 @@ class StreamingInterceptor:
 # ASGI application with interceptors
 app = HaberdasherASGIApplication(
     HaberdasherService(),
-    interceptors=[LoggingInterceptor(), StreamingInterceptor()]
+    interceptors=[LoggingInterceptor()]  # Single interceptor handles both unary and streaming
 )
 ```
 
