@@ -27,18 +27,18 @@ app = Starlette(
         ),
         Mount(
             "/services",
-            app=cast(ASGIApp, haberdasher_app),
+            app=cast("ASGIApp", haberdasher_app),
         ),
         Mount(
             "/moreservices",
             app=Mount(
                 haberdasher_app.path,
-                app=strip_prefix("/moreservices", cast(ASGIApp, haberdasher_app)),
+                app=strip_prefix("/moreservices", cast("ASGIApp", haberdasher_app)),
             ),
         ),
         Mount(
             haberdasher_app.path,
-            app=cast(ASGIApp, haberdasher_app),
+            app=cast("ASGIApp", haberdasher_app),
         ),
     ]
 )
