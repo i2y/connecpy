@@ -1,8 +1,9 @@
 import json
 from base64 import b64decode, b64encode
+from collections.abc import Sequence
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Optional, Sequence, cast
+from typing import cast
 
 import httpx
 from google.protobuf.any_pb2 import Any
@@ -101,8 +102,7 @@ class ConnectWireError:
             return ConnectWireError.from_dict(
                 data, response.status_code, Code.UNAVAILABLE
             )
-        else:
-            return ConnectWireError.from_http_status(response.status_code)
+        return ConnectWireError.from_http_status(response.status_code)
 
     @staticmethod
     def from_dict(
@@ -118,7 +118,7 @@ class ConnectWireError:
             code = _http_status_code_to_error.get(http_status, Code.UNKNOWN)
         message = data.get("message", "")
         details: Sequence[Any] = ()
-        details_json = cast(Optional[list[dict[str, str]]], data.get("details"))
+        details_json = cast(list[dict[str, str]] | None, data.get("details"))
         if details_json:
             details = []
             for detail in details_json:
@@ -142,10 +142,7 @@ class ConnectWireError:
             http_status = HTTPStatus(status_code)
             message = http_status.phrase
         except ValueError:
-            if status_code == 499:
-                message = "Client Closed Request"
-            else:
-                message = ""
+            message = "Client Closed Request" if status_code == 499 else ""
         return ConnectWireError(code, message, details=())
 
     def to_exception(self) -> ConnecpyException:
@@ -188,7 +185,7 @@ class HTTPException(Exception):
         self.headers = headers
 
 
-def codec_name_from_content_type(content_type: str, stream: bool) -> str:
+def codec_name_from_content_type(content_type: str, *, stream: bool) -> str:
     prefix = (
         CONNECT_STREAMING_CONTENT_TYPE_PREFIX
         if stream

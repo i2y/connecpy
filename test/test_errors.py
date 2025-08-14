@@ -1,7 +1,6 @@
 import threading
 import time
-from http import HTTPMethod, HTTPStatus
-from typing import Optional
+from http import HTTPStatus
 from wsgiref.simple_server import WSGIServer, make_server
 
 import pytest
@@ -15,7 +14,6 @@ from httpx import (
     Timeout,
     WSGITransport,
 )
-from pytest import param as p
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -49,7 +47,7 @@ _errors = [
 ]
 
 
-@pytest.mark.parametrize("code,message,http_status", _errors)
+@pytest.mark.parametrize(("code", "message", "http_status"), _errors)
 def test_sync_errors(
     code: Code,
     message: str,
@@ -59,14 +57,14 @@ def test_sync_errors(
         def __init__(self, exception: ConnecpyException):
             self._exception = exception
 
-        def MakeHat(self, req, ctx):
+        def MakeHat(self, request, ctx):
             raise self._exception
 
     haberdasher = ErrorHaberdasherSync(ConnecpyException(code, message))
     app = HaberdasherWSGIApplication(haberdasher)
     transport = WSGITransport(app)
 
-    recorded_response: Optional[Response] = None
+    recorded_response: Response | None = None
 
     def record_response(response):
         nonlocal recorded_response
@@ -87,7 +85,7 @@ def test_sync_errors(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("code,message,http_status", _errors)
+@pytest.mark.parametrize(("code", "message", "http_status"), _errors)
 async def test_async_errors(
     code: Code,
     message: str,
@@ -97,14 +95,14 @@ async def test_async_errors(
         def __init__(self, exception: ConnecpyException):
             self._exception = exception
 
-        async def MakeHat(self, req, ctx):
+        async def MakeHat(self, request, ctx):
             raise self._exception
 
     haberdasher = ErrorHaberdasher(ConnecpyException(code, message))
     app = HaberdasherASGIApplication(haberdasher)
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
-    recorded_response: Optional[Response] = None
+    recorded_response: Response | None = None
 
     async def record_response(response):
         nonlocal recorded_response
@@ -126,44 +124,44 @@ async def test_async_errors(
 
 
 _http_errors = [
-    p(400, {}, Code.INTERNAL, "Bad Request", id="400"),
-    p(401, {}, Code.UNAUTHENTICATED, "Unauthorized", id="401"),
-    p(403, {}, Code.PERMISSION_DENIED, "Forbidden", id="403"),
-    p(404, {}, Code.UNIMPLEMENTED, "Not Found", id="404"),
-    p(429, {}, Code.UNAVAILABLE, "Too Many Requests", id="429"),
-    p(499, {}, Code.UNKNOWN, "Client Closed Request", id="499"),
-    p(502, {}, Code.UNAVAILABLE, "Bad Gateway", id="502"),
-    p(503, {}, Code.UNAVAILABLE, "Service Unavailable", id="503"),
-    p(504, {}, Code.UNAVAILABLE, "Gateway Timeout", id="504"),
-    p(
+    pytest.param(400, {}, Code.INTERNAL, "Bad Request", id="400"),
+    pytest.param(401, {}, Code.UNAUTHENTICATED, "Unauthorized", id="401"),
+    pytest.param(403, {}, Code.PERMISSION_DENIED, "Forbidden", id="403"),
+    pytest.param(404, {}, Code.UNIMPLEMENTED, "Not Found", id="404"),
+    pytest.param(429, {}, Code.UNAVAILABLE, "Too Many Requests", id="429"),
+    pytest.param(499, {}, Code.UNKNOWN, "Client Closed Request", id="499"),
+    pytest.param(502, {}, Code.UNAVAILABLE, "Bad Gateway", id="502"),
+    pytest.param(503, {}, Code.UNAVAILABLE, "Service Unavailable", id="503"),
+    pytest.param(504, {}, Code.UNAVAILABLE, "Gateway Timeout", id="504"),
+    pytest.param(
         400,
         {"json": {"code": "invalid_argument", "message": "Bad parameter"}},
         Code.INVALID_ARGUMENT,
         "Bad parameter",
         id="connect error",
     ),
-    p(
+    pytest.param(
         400,
         {"json": {"message": "Bad parameter"}},
         Code.INTERNAL,
         "Bad parameter",
         id="connect error without code",
     ),
-    p(
+    pytest.param(
         404,
         {"json": {"code": "not_found"}},
         Code.NOT_FOUND,
         "",
         id="connect error without message",
     ),
-    p(
+    pytest.param(
         502,
         {"text": '"{bad_json'},
         Code.UNAVAILABLE,
         "Bad Gateway",
         id="bad json",
     ),
-    p(
+    pytest.param(
         200,
         {"text": "weird encoding", "headers": {"content-encoding": "weird"}},
         Code.INTERNAL,
@@ -173,7 +171,9 @@ _http_errors = [
 ]
 
 
-@pytest.mark.parametrize("response_status,response_kwargs,code,message", _http_errors)
+@pytest.mark.parametrize(
+    ("response_status", "response_kwargs", "code", "message"), _http_errors
+)
 def test_sync_http_errors(response_status, response_kwargs, code, message):
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
     with (
@@ -188,7 +188,9 @@ def test_sync_http_errors(response_status, response_kwargs, code, message):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("response_status,response_kwargs,code,message", _http_errors)
+@pytest.mark.parametrize(
+    ("response_status", "response_kwargs", "code", "message"), _http_errors
+)
 async def test_async_http_errors(response_status, response_kwargs, code, message):
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
     async with HaberdasherClient(
@@ -201,8 +203,8 @@ async def test_async_http_errors(response_status, response_kwargs, code, message
 
 
 _client_errors = [
-    p(
-        HTTPMethod.PUT,
+    pytest.param(
+        "PUT",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -210,8 +212,8 @@ _client_errors = [
         {"Allow": "GET, POST"},
         id="bad method",
     ),
-    p(
-        HTTPMethod.POST,
+    pytest.param(
+        "POST",
         "/notservicemethod",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -219,8 +221,8 @@ _client_errors = [
         {},
         id="not found",
     ),
-    p(
-        HTTPMethod.POST,
+    pytest.param(
+        "POST",
         "/notservice/method",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -228,8 +230,8 @@ _client_errors = [
         {},
         id="not present service",
     ),
-    p(
-        HTTPMethod.POST,
+    pytest.param(
+        "POST",
         "/i2y.connecpy.example.Haberdasher/notmethod",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -237,8 +239,8 @@ _client_errors = [
         {},
         id="not present method",
     ),
-    p(
-        HTTPMethod.POST,
+    pytest.param(
+        "POST",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "text/html"},
         Size(inches=10).SerializeToString(),
@@ -246,8 +248,8 @@ _client_errors = [
         {"Accept-Post": "application/json, application/proto"},
         id="bad content type",
     ),
-    p(
-        HTTPMethod.POST,
+    pytest.param(
+        "POST",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto", "connect-protocol-version": "2"},
         Size(inches=10).SerializeToString(),
@@ -259,13 +261,14 @@ _client_errors = [
 
 
 @pytest.mark.parametrize(
-    "method,path,headers,body,response_status,response_headers", _client_errors
+    ("method", "path", "headers", "body", "response_status", "response_headers"),
+    _client_errors,
 )
 def test_sync_client_errors(
     method, path, headers, body, response_status, response_headers
 ):
     class ValidHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req, ctx):
+        def MakeHat(self, request, ctx):
             return Hat()
 
     app = HaberdasherWSGIApplication(ValidHaberdasherSync())
@@ -285,13 +288,14 @@ def test_sync_client_errors(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "method,path,headers,body,response_status,response_headers", _client_errors
+    ("method", "path", "headers", "body", "response_status", "response_headers"),
+    _client_errors,
 )
 async def test_async_client_errors(
     method, path, headers, body, response_status, response_headers
 ):
     class ValidHaberdasher(Haberdasher):
-        async def MakeHat(self, req, ctx):
+        async def MakeHat(self, request, ctx):
             return Hat()
 
     haberdasher = ValidHaberdasher()
@@ -314,7 +318,7 @@ async def test_async_client_errors(
 @pytest.fixture(scope="module")
 def sync_timeout_server():
     class SleepingHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req, ctx):
+        def MakeHat(self, request, ctx):
             time.sleep(10)
             raise AssertionError("Should be timedout already")
 
@@ -333,11 +337,11 @@ def sync_timeout_server():
 
 
 @pytest.mark.parametrize(
-    "client_timeout_ms, call_timeout_ms",
-    (
+    ("client_timeout_ms", "call_timeout_ms"),
+    [
         (1, None),
         (None, 1),
-    ),
+    ],
 )
 def test_sync_client_timeout(
     client_timeout_ms, call_timeout_ms, sync_timeout_server: WSGIServer
@@ -376,11 +380,11 @@ def test_sync_client_timeout(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "client_timeout_ms, call_timeout_ms",
-    (
+    ("client_timeout_ms", "call_timeout_ms"),
+    [
         (1, None),
         (None, 1),
-    ),
+    ],
 )
 async def test_async_client_timeout(
     client_timeout_ms, call_timeout_ms, sync_timeout_server: WSGIServer

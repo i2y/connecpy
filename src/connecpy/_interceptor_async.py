@@ -1,11 +1,7 @@
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Sequence
 from typing import (
-    AsyncIterator,
-    Awaitable,
-    Callable,
     Generic,
-    Iterable,
     Protocol,
-    Sequence,
     TypeVar,
     runtime_checkable,
 )
@@ -21,7 +17,7 @@ T = TypeVar("T")
 class UnaryInterceptor(Protocol):
     async def intercept_unary(
         self,
-        next: Callable[[REQ, RequestContext], Awaitable[RES]],
+        call_next: Callable[[REQ, RequestContext], Awaitable[RES]],
         request: REQ,
         ctx: RequestContext,
     ) -> RES:
@@ -33,7 +29,7 @@ class UnaryInterceptor(Protocol):
 class ClientStreamInterceptor(Protocol):
     async def intercept_client_stream(
         self,
-        next: Callable[[AsyncIterator[REQ], RequestContext], Awaitable[RES]],
+        call_next: Callable[[AsyncIterator[REQ], RequestContext], Awaitable[RES]],
         request: AsyncIterator[REQ],
         ctx: RequestContext,
     ) -> RES:
@@ -45,7 +41,7 @@ class ClientStreamInterceptor(Protocol):
 class ServerStreamInterceptor(Protocol):
     def intercept_server_stream(
         self,
-        next: Callable[[REQ, RequestContext], AsyncIterator[RES]],
+        call_next: Callable[[REQ, RequestContext], AsyncIterator[RES]],
         request: REQ,
         ctx: RequestContext,
     ) -> AsyncIterator[RES]:
@@ -57,7 +53,7 @@ class ServerStreamInterceptor(Protocol):
 class BidiStreamInterceptor(Protocol):
     def intercept_bidi_stream(
         self,
-        next: Callable[[AsyncIterator[REQ], RequestContext], AsyncIterator[RES]],
+        call_next: Callable[[AsyncIterator[REQ], RequestContext], AsyncIterator[RES]],
         request: AsyncIterator[REQ],
         ctx: RequestContext,
     ) -> AsyncIterator[RES]:
@@ -103,50 +99,50 @@ class MetadataInterceptorInvoker(Generic[T]):
 
     async def intercept_unary(
         self,
-        next: Callable[[REQ, RequestContext], Awaitable[RES]],
+        call_next: Callable[[REQ, RequestContext], Awaitable[RES]],
         request: REQ,
         ctx: RequestContext,
     ) -> RES:
         token = await self._delegate.on_start(ctx)
         try:
-            return await next(request, ctx)
+            return await call_next(request, ctx)
         finally:
             await self._delegate.on_end(token, ctx)
 
     async def intercept_client_stream(
         self,
-        next: Callable[[AsyncIterator[REQ], RequestContext], Awaitable[RES]],
+        call_next: Callable[[AsyncIterator[REQ], RequestContext], Awaitable[RES]],
         request: AsyncIterator[REQ],
         ctx: RequestContext,
     ) -> RES:
         token = await self._delegate.on_start(ctx)
         try:
-            return await next(request, ctx)
+            return await call_next(request, ctx)
         finally:
             await self._delegate.on_end(token, ctx)
 
     async def intercept_server_stream(
         self,
-        next: Callable[[REQ, RequestContext], AsyncIterator[RES]],
+        call_next: Callable[[REQ, RequestContext], AsyncIterator[RES]],
         request: REQ,
         ctx: RequestContext,
     ) -> AsyncIterator[RES]:
         token = await self._delegate.on_start(ctx)
         try:
-            async for response in next(request, ctx):
+            async for response in call_next(request, ctx):
                 yield response
         finally:
             await self._delegate.on_end(token, ctx)
 
     async def intercept_bidi_stream(
         self,
-        next: Callable[[AsyncIterator[REQ], RequestContext], AsyncIterator[RES]],
+        call_next: Callable[[AsyncIterator[REQ], RequestContext], AsyncIterator[RES]],
         request: AsyncIterator[REQ],
         ctx: RequestContext,
     ) -> AsyncIterator[RES]:
         token = await self._delegate.on_start(ctx)
         try:
-            async for response in next(request, ctx):
+            async for response in call_next(request, ctx):
                 yield response
         finally:
             await self._delegate.on_end(token, ctx)

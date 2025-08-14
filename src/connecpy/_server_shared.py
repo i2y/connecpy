@@ -1,11 +1,8 @@
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import (
-    AsyncIterator,
-    Awaitable,
-    Callable,
     Generic,
-    Iterator,
     TypeVar,
 )
 

@@ -1,10 +1,7 @@
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from typing import (
-    Callable,
     Generic,
-    Iterable,
-    Iterator,
     Protocol,
-    Sequence,
     TypeVar,
     runtime_checkable,
 )
@@ -20,7 +17,7 @@ T = TypeVar("T")
 class UnaryInterceptorSync(Protocol):
     def intercept_unary_sync(
         self,
-        next: Callable[[REQ, RequestContext], RES],
+        call_next: Callable[[REQ, RequestContext], RES],
         request: REQ,
         ctx: RequestContext,
     ) -> RES:
@@ -32,7 +29,7 @@ class UnaryInterceptorSync(Protocol):
 class ClientStreamInterceptorSync(Protocol):
     def intercept_client_stream_sync(
         self,
-        next: Callable[[Iterator[REQ], RequestContext], RES],
+        call_next: Callable[[Iterator[REQ], RequestContext], RES],
         request: Iterator[REQ],
         ctx: RequestContext,
     ) -> RES:
@@ -44,7 +41,7 @@ class ClientStreamInterceptorSync(Protocol):
 class ServerStreamInterceptorSync(Protocol):
     def intercept_server_stream_sync(
         self,
-        next: Callable[[REQ, RequestContext], Iterator[RES]],
+        call_next: Callable[[REQ, RequestContext], Iterator[RES]],
         request: REQ,
         ctx: RequestContext,
     ) -> Iterator[RES]:
@@ -56,7 +53,7 @@ class ServerStreamInterceptorSync(Protocol):
 class BidiStreamInterceptorSync(Protocol):
     def intercept_bidi_stream_sync(
         self,
-        next: Callable[[Iterator[REQ], RequestContext], Iterator[RES]],
+        call_next: Callable[[Iterator[REQ], RequestContext], Iterator[RES]],
         request: Iterator[REQ],
         ctx: RequestContext,
     ) -> Iterator[RES]:
@@ -102,49 +99,49 @@ class MetadataInterceptorInvokerSync(Generic[T]):
 
     def intercept_unary_sync(
         self,
-        next: Callable[[REQ, RequestContext], RES],
+        call_next: Callable[[REQ, RequestContext], RES],
         request: REQ,
         ctx: RequestContext,
     ) -> RES:
         token = self._delegate.on_start_sync(ctx)
         try:
-            return next(request, ctx)
+            return call_next(request, ctx)
         finally:
             self._delegate.on_end_sync(token, ctx)
 
     def intercept_client_stream_sync(
         self,
-        next: Callable[[Iterator[REQ], RequestContext], RES],
+        call_next: Callable[[Iterator[REQ], RequestContext], RES],
         request: Iterator[REQ],
         ctx: RequestContext,
     ) -> RES:
         token = self._delegate.on_start_sync(ctx)
         try:
-            return next(request, ctx)
+            return call_next(request, ctx)
         finally:
             self._delegate.on_end_sync(token, ctx)
 
     def intercept_server_stream_sync(
         self,
-        next: Callable[[REQ, RequestContext], Iterator[RES]],
+        call_next: Callable[[REQ, RequestContext], Iterator[RES]],
         request: REQ,
         ctx: RequestContext,
     ) -> Iterator[RES]:
         token = self._delegate.on_start_sync(ctx)
         try:
-            yield from next(request, ctx)
+            yield from call_next(request, ctx)
         finally:
             self._delegate.on_end_sync(token, ctx)
 
     def intercept_bidi_stream_sync(
         self,
-        next: Callable[[Iterator[REQ], RequestContext], Iterator[RES]],
+        call_next: Callable[[Iterator[REQ], RequestContext], Iterator[RES]],
         request: Iterator[REQ],
         ctx: RequestContext,
     ) -> Iterator[RES]:
         token = self._delegate.on_start_sync(ctx)
         try:
-            yield from next(request, ctx)
+            yield from call_next(request, ctx)
         finally:
             self._delegate.on_end_sync(token, ctx)
 

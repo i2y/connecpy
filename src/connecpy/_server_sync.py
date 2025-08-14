@@ -1,12 +1,14 @@
 import base64
 import functools
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import replace
 from http import HTTPStatus
-from io import BytesIO
-from typing import Iterable, Iterator, Mapping, Optional, Sequence, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    TypeVar,
+)
 from urllib.parse import parse_qs
-from wsgiref.types import StartResponse, WSGIEnvironment
 
 from . import _compression, _server_shared
 from ._codec import Codec, get_codec
@@ -33,6 +35,19 @@ from .code import Code
 from .exceptions import ConnecpyException
 from .request import Headers, RequestContext
 
+if TYPE_CHECKING:
+    import sys
+    from io import BytesIO
+
+    if sys.version_info >= (3, 11):
+        from wsgiref.types import StartResponse, WSGIEnvironment
+    else:
+        from _typeshed.wsgi import StartResponse, WSGIEnvironment
+else:
+    StartResponse = "wsgiref.types.StartResponse"
+    WSGIEnvironment = "wsgiref.types.WSGIEnvironment"
+
+
 _REQ = TypeVar("_REQ")
 _RES = TypeVar("_RES")
 
@@ -58,7 +73,7 @@ def _process_headers(headers: dict) -> Headers:
     """Convert headers dictionary to connecpy format."""
     result = Headers()
     for key, value in headers.items():
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, list | tuple):
             for v in value:
                 result.add(key, v)
         else:
@@ -100,7 +115,7 @@ def validate_request_headers(headers: dict) -> tuple[str, str]:
 def prepare_response_headers(
     base_headers: dict[str, list[str]],
     selected_encoding: str,
-    compressed_size: Optional[int] = None,
+    compressed_size: int | None = None,
 ) -> tuple[dict[str, list[str]], bool]:
     """Prepare response headers and determine if compression should be used.
 
@@ -140,8 +155,7 @@ class ConnecpyWSGIApplication(ABC):
 
     @property
     @abstractmethod
-    def path(self) -> str:
-        raise NotImplementedError()
+    def path(self) -> str: ...
 
     def __init__(
         self,
@@ -170,7 +184,7 @@ class ConnecpyWSGIApplication(ABC):
         self, environ: WSGIEnvironment, start_response: StartResponse
     ) -> Iterable[bytes]:
         """Handle incoming WSGI requests."""
-        ctx: Optional[RequestContext] = None
+        ctx: RequestContext | None = None
         try:
             path = environ["PATH_INFO"]
             if not path:
@@ -251,8 +265,8 @@ class ConnecpyWSGIApplication(ABC):
         # Convert headers to WSGI format
         wsgi_headers: list[tuple[str, str]] = []
         for key, values in response_headers.items():
-            for value in values:
-                wsgi_headers.append((key.lower(), value))
+            normalized_key = key.lower()
+            wsgi_headers.extend((normalized_key, value) for value in values)
         _add_context_headers(wsgi_headers, ctx)
 
         start_response("200 OK", wsgi_headers)
@@ -270,7 +284,7 @@ class ConnecpyWSGIApplication(ABC):
         """Handle POST request with body."""
 
         codec_name = codec_name_from_content_type(
-            request_headers.get("content-type", ""), False
+            request_headers.get("content-type", ""), stream=False
         )
         codec = get_codec(codec_name)
         if not codec:
@@ -281,17 +295,11 @@ class ConnecpyWSGIApplication(ABC):
 
         try:
             content_length = environ.get("CONTENT_LENGTH")
-            if not content_length:
-                content_length = 0
-            else:
-                content_length = int(content_length)
+            content_length = 0 if not content_length else int(content_length)
             if content_length > 0:
                 req_body = environ["wsgi.input"].read(content_length)
             else:
-                req_body_chunks: list[bytes] = []
-                for chunk in _read_body(environ):
-                    req_body_chunks.append(chunk)
-                req_body = b"".join(req_body_chunks)
+                req_body = b"".join(_read_body(environ))
 
             # Handle compression if specified
             compression_name = environ.get("HTTP_CONTENT_ENCODING", "identity").lower()
@@ -307,8 +315,8 @@ class ConnecpyWSGIApplication(ABC):
                 except Exception as e:
                     raise ConnecpyException(
                         Code.INVALID_ARGUMENT,
-                        f"Failed to decompress request body: {str(e)}",
-                    )
+                        f"Failed to decompress request body: {e!s}",
+                    ) from e
 
             if (
                 self._read_max_bytes is not None
@@ -323,15 +331,15 @@ class ConnecpyWSGIApplication(ABC):
                 return codec.decode(req_body, endpoint.method.input()), codec
             except Exception as e:
                 raise ConnecpyException(
-                    Code.INVALID_ARGUMENT, f"Failed to decode request body: {str(e)}"
-                )
+                    Code.INVALID_ARGUMENT, f"Failed to decode request body: {e!s}"
+                ) from e
 
         except Exception as e:
             if not isinstance(e, ConnecpyException):
                 raise ConnecpyException(
                     Code.INTERNAL,
                     str(e),  # TODO
-                )
+                ) from e
             raise
 
     def _handle_get_request(
@@ -355,8 +363,8 @@ class ConnecpyWSGIApplication(ABC):
                     message = base64.urlsafe_b64decode(message + "===")
                 except Exception as e:
                     raise ConnecpyException(
-                        Code.INVALID_ARGUMENT, f"Invalid base64 encoding: {str(e)}"
-                    )
+                        Code.INVALID_ARGUMENT, f"Invalid base64 encoding: {e!s}"
+                    ) from e
             else:
                 message = message.encode("utf-8")
 
@@ -384,12 +392,12 @@ class ConnecpyWSGIApplication(ABC):
                 return request, codec
             except Exception as e:
                 raise ConnecpyException(
-                    Code.INVALID_ARGUMENT, f"Failed to decode message: {str(e)}"
-                )
+                    Code.INVALID_ARGUMENT, f"Failed to decode message: {e!s}"
+                ) from e
 
         except Exception as e:
             if not isinstance(e, ConnecpyException):
-                raise ConnecpyException(Code.INTERNAL, str(e))
+                raise ConnecpyException(Code.INTERNAL, str(e)) from e
             raise
 
     def _handle_stream(
@@ -408,7 +416,9 @@ class ConnecpyWSGIApplication(ABC):
         response_compression_name = _compression.select_encoding(accept_compression)
         response_compression = _compression.get_compression(response_compression_name)
 
-        codec_name = codec_name_from_content_type(headers.get("content-type", ""), True)
+        codec_name = codec_name_from_content_type(
+            headers.get("content-type", ""), stream=True
+        )
         codec = get_codec(codec_name)
         if not codec:
             raise HTTPException(
@@ -474,9 +484,7 @@ class ConnecpyWSGIApplication(ABC):
                 )
             ]
 
-    def _handle_error(
-        self, exc, ctx: Optional[RequestContext], _environ, start_response
-    ):
+    def _handle_error(self, exc, ctx: RequestContext | None, _environ, start_response):
         """Handle and log errors with detailed information."""
         headers: list[tuple[str, str]]
         body: list[bytes]
@@ -537,8 +545,7 @@ def _request_stream(
 ) -> Iterator[_REQ]:
     reader = EnvelopeReader(request_class, codec, compression, read_max_bytes)
     for chunk in _read_body(environ):
-        for message in reader.feed(chunk):
-            yield message
+        yield from reader.feed(chunk)
 
 
 def _response_stream(
@@ -610,4 +617,5 @@ def _apply_interceptors(
                 func = functools.partial(interceptor.intercept_bidi_stream_sync, func)
             return replace(endpoint, function=func)
         case _:
-            raise ValueError("Unknown endpoint type")
+            msg = "Unknown endpoint type"
+            raise ValueError(msg)

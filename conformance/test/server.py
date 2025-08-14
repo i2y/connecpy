@@ -2,10 +2,11 @@ import argparse
 import asyncio
 import signal
 import time
+from collections.abc import AsyncIterator, Iterator
 from contextlib import ExitStack
 from ssl import VerifyMode
 from tempfile import NamedTemporaryFile
-from typing import AsyncIterator, Iterator, Literal, TypeVar
+from typing import TYPE_CHECKING, Literal, TypeVar
 
 from _util import create_standard_streams
 from connecpy.code import Code
@@ -38,10 +39,12 @@ from connectrpc.conformance.v1.service_pb2 import (
     UnaryResponseDefinition,
 )
 from google.protobuf.any import Any, pack
-from google.protobuf.message import Message
 from hypercorn.asyncio import serve as hypercorn_serve
 from hypercorn.config import Config as HypercornConfig
 from hypercorn.logging import Logger
+
+if TYPE_CHECKING:
+    from google.protobuf.message import Message
 
 
 def _convert_code(conformance_code: ConformanceCode) -> Code:
@@ -78,7 +81,8 @@ def _convert_code(conformance_code: ConformanceCode) -> Code:
             return Code.DATA_LOSS
         case ConformanceCode.CODE_UNAUTHENTICATED:
             return Code.UNAUTHENTICATED
-    raise ValueError(f"Unknown ConformanceCode: {conformance_code}")
+    msg = f"Unknown ConformanceCode: {conformance_code}"
+    raise ValueError(msg)
 
 
 RES = TypeVar(
@@ -140,40 +144,41 @@ async def _handle_unary_response(
 
 
 class TestService(ConformanceService):
-    async def Unary(self, req: UnaryRequest, ctx: RequestContext) -> UnaryResponse:
+    async def Unary(self, request: UnaryRequest, ctx: RequestContext) -> UnaryResponse:
         return await _handle_unary_response(
-            req.response_definition, [pack(req)], UnaryResponse(), ctx
+            request.response_definition, [pack(request)], UnaryResponse(), ctx
         )
 
     async def IdempotentUnary(
-        self, req: IdempotentUnaryRequest, ctx: RequestContext
+        self, request: IdempotentUnaryRequest, ctx: RequestContext
     ) -> IdempotentUnaryResponse:
         return await _handle_unary_response(
-            req.response_definition, [pack(req)], IdempotentUnaryResponse(), ctx
+            request.response_definition, [pack(request)], IdempotentUnaryResponse(), ctx
         )
 
     async def ClientStream(
-        self, req: AsyncIterator[ClientStreamRequest], ctx: RequestContext
+        self, request: AsyncIterator[ClientStreamRequest], ctx: RequestContext
     ) -> ClientStreamResponse:
         requests: list[Any] = []
         definition: UnaryResponseDefinition | None = None
-        async for message in req:
+        async for message in request:
             requests.append(pack(message))
             if not definition:
                 definition = message.response_definition
 
         if not definition:
-            raise ValueError("ClientStream must have a response definition")
+            msg = "ClientStream must have a response definition"
+            raise ValueError(msg)
         return await _handle_unary_response(
             definition, requests, ClientStreamResponse(), ctx
         )
 
     async def ServerStream(
-        self, req: ServerStreamRequest, ctx: RequestContext
+        self, request: ServerStreamRequest, ctx: RequestContext
     ) -> AsyncIterator[ServerStreamResponse]:
-        definition = req.response_definition
+        definition = request.response_definition
         _send_headers(ctx, definition)
-        request_info = _create_request_info(ctx, [pack(req)])
+        request_info = _create_request_info(ctx, [pack(request)])
         sent_message = False
         for res_data in definition.response_data:
             res = ServerStreamResponse()
@@ -196,13 +201,13 @@ class TestService(ConformanceService):
             )
 
     async def BidiStream(
-        self, req: AsyncIterator[BidiStreamRequest], ctx: RequestContext
+        self, request: AsyncIterator[BidiStreamRequest], ctx: RequestContext
     ) -> AsyncIterator[BidiStreamResponse]:
         definition: StreamResponseDefinition | None = None
         full_duplex = False
         requests: list[Any] = []
         res_idx = 0
-        async for message in req:
+        async for message in request:
             if not definition:
                 definition = message.response_definition
                 _send_headers(ctx, definition)
@@ -271,40 +276,41 @@ def _handle_unary_response_sync(
 
 
 class TestServiceSync(ConformanceServiceSync):
-    def Unary(self, req: UnaryRequest, ctx: RequestContext) -> UnaryResponse:
+    def Unary(self, request: UnaryRequest, ctx: RequestContext) -> UnaryResponse:
         return _handle_unary_response_sync(
-            req.response_definition, [pack(req)], UnaryResponse(), ctx
+            request.response_definition, [pack(request)], UnaryResponse(), ctx
         )
 
     def IdempotentUnary(
-        self, req: IdempotentUnaryRequest, ctx: RequestContext
+        self, request: IdempotentUnaryRequest, ctx: RequestContext
     ) -> IdempotentUnaryResponse:
         return _handle_unary_response_sync(
-            req.response_definition, [pack(req)], IdempotentUnaryResponse(), ctx
+            request.response_definition, [pack(request)], IdempotentUnaryResponse(), ctx
         )
 
     def ClientStream(
-        self, req: Iterator[ClientStreamRequest], ctx: RequestContext
+        self, request: Iterator[ClientStreamRequest], ctx: RequestContext
     ) -> ClientStreamResponse:
         requests: list[Any] = []
         definition: UnaryResponseDefinition | None = None
-        for message in req:
+        for message in request:
             requests.append(pack(message))
             if not definition:
                 definition = message.response_definition
 
         if not definition:
-            raise ValueError("ClientStream must have a response definition")
+            msg = "ClientStream must have a response definition"
+            raise ValueError(msg)
         return _handle_unary_response_sync(
             definition, requests, ClientStreamResponse(), ctx
         )
 
     def ServerStream(
-        self, req: ServerStreamRequest, ctx: RequestContext
+        self, request: ServerStreamRequest, ctx: RequestContext
     ) -> Iterator[ServerStreamResponse]:
-        definition = req.response_definition
+        definition = request.response_definition
         _send_headers(ctx, definition)
-        request_info = _create_request_info(ctx, [pack(req)])
+        request_info = _create_request_info(ctx, [pack(request)])
         sent_message = False
         for res_data in definition.response_data:
             res = ServerStreamResponse()
@@ -327,13 +333,13 @@ class TestServiceSync(ConformanceServiceSync):
             )
 
     def BidiStream(
-        self, req: Iterator[BidiStreamRequest], ctx: RequestContext
+        self, request: Iterator[BidiStreamRequest], ctx: RequestContext
     ) -> Iterator[BidiStreamResponse]:
         definition: StreamResponseDefinition | None = None
         full_duplex = False
         requests: list[Any] = []
         res_idx = 0
-        for message in req:
+        for message in request:
             if not definition:
                 definition = message.response_definition
                 _send_headers(ctx, definition)
@@ -413,20 +419,18 @@ async def serve(
 
     cleanup = ExitStack()
     if request.use_tls:
-        cert_file = cleanup.enter_context(NamedTemporaryFile(delete_on_close=False))
-        key_file = cleanup.enter_context(NamedTemporaryFile(delete_on_close=False))
+        cert_file = cleanup.enter_context(NamedTemporaryFile())
+        key_file = cleanup.enter_context(NamedTemporaryFile())
         cert_file.write(request.server_creds.cert)
-        cert_file.close()
+        cert_file.flush()
         key_file.write(request.server_creds.key)
-        key_file.close()
+        key_file.flush()
         conf.certfile = cert_file.name
         conf.keyfile = key_file.name
         if request.client_tls_cert:
-            ca_cert_file = cleanup.enter_context(
-                NamedTemporaryFile(delete_on_close=False)
-            )
+            ca_cert_file = cleanup.enter_context(NamedTemporaryFile())
             ca_cert_file.write(request.client_tls_cert)
-            ca_cert_file.close()
+            ca_cert_file.flush()
             conf.ca_certs = ca_cert_file.name
             conf.verify_mode = VerifyMode.CERT_REQUIRED
 
@@ -473,7 +477,7 @@ async def main():
         size_buf = await stdin.readexactly(4)
     except asyncio.IncompleteReadError:
         return
-    size = int.from_bytes(size_buf)
+    size = int.from_bytes(size_buf, byteorder="big")
     # Allow to raise even on EOF since we always should have a message
     request_buf = await stdin.readexactly(size)
     request = ServerCompatRequest()
@@ -486,7 +490,7 @@ async def main():
     if request.use_tls:
         response.pem_cert = request.server_creds.cert
     response_buf = response.SerializeToString()
-    size_buf = len(response_buf).to_bytes(4)
+    size_buf = len(response_buf).to_bytes(4, byteorder="big")
     stdout.write(size_buf)
     stdout.write(response_buf)
     await stdout.drain()
