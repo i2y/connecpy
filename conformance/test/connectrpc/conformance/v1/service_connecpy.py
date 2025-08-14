@@ -4,6 +4,7 @@
 
 from typing import AsyncIterator, Iterable, Iterator, Mapping, Protocol
 
+import connectrpc.conformance.v1.service_pb2 as connectrpc_dot_conformance_dot_v1_dot_service__pb2
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -16,7 +17,6 @@ from connecpy.server import (
     Endpoint,
     EndpointSync,
 )
-import connectrpc.conformance.v1.service_pb2 as connectrpc_dot_conformance_dot_v1_dot_service__pb2
 
 
 class ConformanceService(Protocol):

@@ -5,7 +5,7 @@ import time
 from contextlib import ExitStack
 from ssl import VerifyMode
 from tempfile import NamedTemporaryFile
-from typing import AsyncIterator, Iterator, Literal, TypeVar
+from typing import TYPE_CHECKING, AsyncIterator, Iterator, Literal, TypeVar
 
 from _util import create_standard_streams
 from connecpy.code import Code
@@ -38,10 +38,12 @@ from connectrpc.conformance.v1.service_pb2 import (
     UnaryResponseDefinition,
 )
 from google.protobuf.any import Any, pack
-from google.protobuf.message import Message
 from hypercorn.asyncio import serve as hypercorn_serve
 from hypercorn.config import Config as HypercornConfig
 from hypercorn.logging import Logger
+
+if TYPE_CHECKING:
+    from google.protobuf.message import Message
 
 
 def _convert_code(conformance_code: ConformanceCode) -> Code:

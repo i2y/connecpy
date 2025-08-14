@@ -1,4 +1,5 @@
 import base64
+import contextlib
 from contextvars import ContextVar, Token
 from http import HTTPStatus
 from typing import Iterable, Mapping, Optional, Sequence, TypeVar
@@ -220,11 +221,12 @@ def handle_response_headers(headers: HttpxHeaders):
     response_trailers: Headers = Headers()
     for key, value in headers.multi_items():
         if key.startswith("trailer-"):
-            key = key[len("trailer-") :]
+            normalized_key = key[len("trailer-") :]
             obj = response_trailers
         else:
+            normalized_key = key
             obj = response_headers
-        obj.add(key, value)
+        obj.add(normalized_key, value)
     if response_headers:
         response._headers = response_headers  # noqa: SLF001
     if response_trailers:
@@ -270,13 +272,11 @@ class ResponseMetadata:
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self._token:
-            try:
+            # Normal usage with context manager will always work but it is
+            # theoretically possible for user to move to another thread
+            # and this fails, it is fine to ignore it.
+            with contextlib.suppress(Exception):
                 _current_response.reset(self._token)
-            except Exception:  # noqa: S110
-                # Normal usage with context manager will always work but it is
-                # theoretically possible for user to move to another thread
-                # and this fails, it is fine to ignore it.
-                pass
         self._token = None
 
     def headers(self) -> Headers:

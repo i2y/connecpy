@@ -266,9 +266,7 @@ class ConnecpyASGIApplication(ABC):
         """Handle POST request with body."""
 
         # Get request body
-        chunks: list[bytes] = []
-        async for chunk in _read_body(receive):
-            chunks.append(chunk)
+        chunks: list[bytes] = [chunk async for chunk in _read_body(receive)]
         req_body = b"".join(chunks)
 
         # Handle compression if specified
@@ -335,8 +333,11 @@ class ConnecpyASGIApplication(ABC):
                     response_stream = endpoint.function(request, ctx)
                 case _server_shared.EndpointBidiStream():
                     response_stream = endpoint.function(request_stream, ctx)
+                case _:
+                    msg = "Unknown endpoint type"
+                    raise ValueError(msg)
 
-            async for message in response_stream:  # type:ignore # TODO
+            async for message in response_stream:
                 # Don't send headers until the first message to allow logic a chance to add
                 # response headers.
                 if not sent_headers:

@@ -135,8 +135,8 @@ def parse_accept_encoding(accept_encoding: str | bytes) -> list[tuple[str, float
     if accept_encoding.replace(" ", "") == "identity;q=0,*;q=0":
         return [("identity", 0.0), ("*", 0.0)]
 
-    for part in accept_encoding.split(","):
-        part = part.strip()
+    for p in accept_encoding.split(","):
+        part = p.strip()
         if not part:
             continue
 
@@ -181,9 +181,12 @@ def select_encoding(
     encodings = parse_accept_encoding(accept_encoding)
 
     # Check for "no encoding allowed" case
-    if len(encodings) == 2 and all(q == 0.0 for _, q in encodings):
-        if {"identity", "*"} == {enc for enc, _ in encodings}:
-            return "identity"
+    if (
+        len(encodings) == 2
+        and all(q == 0.0 for _, q in encodings)
+        and {"identity", "*"} == {enc for enc, _ in encodings}
+    ):
+        return "identity"
 
     # Iterate over client-preferred encodings (sorted by q-value)
     for client_encoding, q in encodings:

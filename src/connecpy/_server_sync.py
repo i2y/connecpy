@@ -1,10 +1,8 @@
 import base64
 import functools
-import sys
 from abc import ABC, abstractmethod
 from dataclasses import replace
 from http import HTTPStatus
-from io import BytesIO
 from typing import (
     TYPE_CHECKING,
     Iterable,
@@ -42,6 +40,9 @@ from .exceptions import ConnecpyException
 from .request import Headers, RequestContext
 
 if TYPE_CHECKING:
+    import sys
+    from io import BytesIO
+
     if sys.version_info >= (3, 11):
         from wsgiref.types import StartResponse, WSGIEnvironment
     else:
@@ -268,8 +269,8 @@ class ConnecpyWSGIApplication(ABC):
         # Convert headers to WSGI format
         wsgi_headers: list[tuple[str, str]] = []
         for key, values in response_headers.items():
-            for value in values:
-                wsgi_headers.append((key.lower(), value))
+            normalized_key = key.lower()
+            wsgi_headers.extend((normalized_key, value) for value in values)
         _add_context_headers(wsgi_headers, ctx)
 
         start_response("200 OK", wsgi_headers)
@@ -298,17 +299,11 @@ class ConnecpyWSGIApplication(ABC):
 
         try:
             content_length = environ.get("CONTENT_LENGTH")
-            if not content_length:
-                content_length = 0
-            else:
-                content_length = int(content_length)
+            content_length = 0 if not content_length else int(content_length)
             if content_length > 0:
                 req_body = environ["wsgi.input"].read(content_length)
             else:
-                req_body_chunks: list[bytes] = []
-                for chunk in _read_body(environ):
-                    req_body_chunks.append(chunk)
-                req_body = b"".join(req_body_chunks)
+                req_body = b"".join(_read_body(environ))
 
             # Handle compression if specified
             compression_name = environ.get("HTTP_CONTENT_ENCODING", "identity").lower()

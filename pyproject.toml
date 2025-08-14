@@ -63,6 +63,28 @@ extend-select = [
     # useful to reduce public API exposure. But it is important to not access private members
     # of dependencies like httpx so we enable it and ignore the locations where we need to.
     "SLF",
+    "SIM",
+    "SLOT",
+    "TID",
+    # TODO: Update TODOs then enable
+    # "TD",
+    "TC",
+    "ARG",
+    "PTH",
+    "FLY",
+    "I",
+    "N",
+    "PERF",
+    "E",
+    "W",
+    # TODO: Flesh out docs and enable
+    # "DOC"
+    # "D",
+    "F",
+    "PGH",
+    "PLC",
+    "PLE",
+    "PLW",
 ]
 
 # Document reasons for ignoring specific linting errors
@@ -87,15 +109,46 @@ extend-ignore = [
     "INT",
     # Even prevents pytest.raises around an iteration which is too strict
     "PT012",
+    # Triggers for protocol implementations that don't need the arg too
+    "ARG002",
+    # Complexity checks usually reduce readability
+    "C90",
+    # Not Applicable
+    "NPY",
+    # Not Applicable
+    "PD",
+    # We use the Exception suffix instead
+    "N818",
+    # Handled by formatting
+    "E111",
+    "E114",
+    "E117",
+    "E501",
+    "W191",
+    # Low signal-to-noise ratio
+    "PLR",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"conformance/test/**" = ["INP", "SLF"]
+"conformance/test/**" = ["INP", "SLF", "SIM115", "N802", "D"]
 "example/**" = [
-    "S",   # Keep examples simpler, e.g. allow normal random
+    "S",    # Keep examples simpler, e.g. allow normal random
     "T20",
+    "N802",
+    "D",
 ]
-"**/test_*.py" = ["S101", "S603", "S607", "FBT", "EM", "INP", "SLF"]
+"**/test_*.py" = [
+    "S101",
+    "S603",
+    "S607",
+    "FBT",
+    "EM",
+    "INP",
+    "SLF",
+    "N802",
+    "PERF",
+    "D",
+]
 
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.

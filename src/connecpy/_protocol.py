@@ -141,10 +141,7 @@ class ConnectWireError:
             http_status = HTTPStatus(status_code)
             message = http_status.phrase
         except ValueError:
-            if status_code == 499:
-                message = "Client Closed Request"
-            else:
-                message = ""
+            message = "Client Closed Request" if status_code == 499 else ""
         return ConnectWireError(code, message, details=())
 
     def to_exception(self) -> ConnecpyException:

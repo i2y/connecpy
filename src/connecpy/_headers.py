@@ -116,11 +116,11 @@ class _AllItemsView(ItemsView[str, str]):
         self._extra = extra
 
     def __iter__(self) -> Iterator[tuple[str, str]]:
-        for key, value in self._store.items():
-            yield (key, value)
+        for key, v in self._store.items():
+            yield (key, v)
             if self._extra:
-                for value in self._extra.get(key, ()):
-                    yield (key, value)
+                for vv in self._extra.get(key, ()):
+                    yield (key, vv)
 
     def __len__(self) -> int:
         size = len(self._store)

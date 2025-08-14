@@ -66,10 +66,10 @@ class EnvelopeReader(Generic[_RES]):
 
                 if end_stream:
                     end_stream_message: dict = json.loads(message_data)
-                    metadata = end_stream_message.get("metadata", None)
+                    metadata = end_stream_message.get("metadata")
                     if metadata:
                         handle_response_trailers(metadata)
-                    error = end_stream_message.get("error", None)
+                    error = end_stream_message.get("error")
                     if error:
                         # Most likely a bug in the protocol, handling of unknown code is different for unary
                         # and streaming.

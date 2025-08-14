@@ -179,9 +179,8 @@ async def _run_test(
                                         if (
                                             num
                                             := test_request.cancel.after_num_responses
-                                        ):
-                                            if len(payloads) >= num:
-                                                task.cancel()
+                                        ) and len(payloads) >= num:
+                                            task.cancel()
 
                                 def bidi_request_stream_sync():
                                     for message in test_request.request_messages:
@@ -270,9 +269,8 @@ async def _run_test(
                                         if (
                                             num
                                             := test_request.cancel.after_num_responses
-                                        ):
-                                            if len(payloads) >= num:
-                                                task.cancel()
+                                        ) and len(payloads) >= num:
+                                            task.cancel()
 
                                 task = asyncio.create_task(
                                     asyncio.to_thread(
@@ -360,9 +358,8 @@ async def _run_test(
                                         if (
                                             num
                                             := test_request.cancel.after_num_responses
-                                        ):
-                                            if len(payloads) >= num:
-                                                task.cancel()
+                                        ) and len(payloads) >= num:
+                                            task.cancel()
 
                                 async def bidi_stream_request():
                                     for message in test_request.request_messages:
@@ -463,9 +460,8 @@ async def _run_test(
                                         if (
                                             num
                                             := test_request.cancel.after_num_responses
-                                        ):
-                                            if len(payloads) >= num:
-                                                task.cancel()
+                                        ) and len(payloads) >= num:
+                                            task.cancel()
 
                                 task = asyncio.create_task(
                                     send_server_stream_request(
@@ -533,11 +529,11 @@ async def _run_test(
 
         test_response.response.payloads.extend(payloads)
 
-        for name in meta.headers().keys():
+        for name in meta.headers():
             test_response.response.response_headers.add(
                 name=name, value=meta.headers().getall(name)
             )
-        for name in meta.trailers().keys():
+        for name in meta.trailers():
             test_response.response.response_trailers.add(
                 name=name, value=meta.trailers().getall(name)
             )
