@@ -484,9 +484,7 @@ class ConnecpyWSGIApplication(ABC):
                 )
             ]
 
-    def _handle_error(
-        self, exc, ctx: RequestContext | None, _environ, start_response
-    ):
+    def _handle_error(self, exc, ctx: RequestContext | None, _environ, start_response):
         """Handle and log errors with detailed information."""
         headers: list[tuple[str, str]]
         body: list[bytes]

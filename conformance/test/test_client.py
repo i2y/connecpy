@@ -35,7 +35,8 @@ def test_client_sync():
             *args,
         ],
         capture_output=True,
-        text=True, check=False,
+        text=True,
+        check=False,
     )
     if result.returncode != 0:
         pytest.fail(f"\n{result.stdout}\n{result.stderr}")
@@ -68,7 +69,8 @@ def test_client_async():
             *args,
         ],
         capture_output=True,
-        text=True, check=False,
+        text=True,
+        check=False,
     )
     if result.returncode != 0:
         pytest.fail(f"\n{result.stdout}\n{result.stderr}")

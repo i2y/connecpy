@@ -320,9 +320,7 @@ async def _run_test(
                                 )
                             case _:
                                 msg = f"Unrecognized method: {test_request.method}"
-                                raise ValueError(
-                                    msg
-                                )
+                                raise ValueError(msg)
                         if test_request.cancel.after_close_send_ms:
                             await asyncio.sleep(
                                 test_request.cancel.after_close_send_ms / 1000.0
@@ -508,9 +506,7 @@ async def _run_test(
                                 )
                             case _:
                                 msg = f"Unrecognized method: {test_request.method}"
-                                raise ValueError(
-                                    msg
-                                )
+                                raise ValueError(msg)
                         if test_request.cancel.after_close_send_ms:
                             await asyncio.sleep(
                                 test_request.cancel.after_close_send_ms / 1000.0
