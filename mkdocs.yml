@@ -8,7 +8,10 @@ plugins:
       handlers:
         python:
           options:
+            docstring_options:
+              ignore_init_summary: true
             members_order: source
+            merge_init_into_class: true
             show_signature: false
           inventories:
             - https://docs.python.org/3/objects.inv

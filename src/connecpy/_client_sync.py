@@ -57,6 +57,8 @@ class _ExecuteBidiStream(Protocol[REQ, RES]):
 
 
 class ConnecpyClientSync:
+    """A synchronous Connecpy client."""
+
     _execute_unary: _ExecuteUnary
     _execute_client_stream: _ExecuteClientStream
     _execute_server_stream: _ExecuteServerStream
