@@ -252,6 +252,7 @@ class ResponseMetadata:
     for the invocation made within the context.
 
     Example:
+
         with ResponseMetadata() as resp_data:
             resp = client.MakeHat(Size(inches=10))
             do_something_with_response_payload(resp)
