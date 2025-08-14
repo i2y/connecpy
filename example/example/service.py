@@ -28,10 +28,10 @@ class HaberdasherService(Haberdasher):
         return response
 
     async def MakeSimilarHats(
-        self, req: Size, ctx: RequestContext
+        self, request: Size, ctx: RequestContext
     ) -> AsyncIterator[Hat]:
         """Server Streaming RPC: Returns multiple hats of similar size"""
-        if req.inches <= 0:
+        if request.inches <= 0:
             raise ConnecpyException(
                 Code.INVALID_ARGUMENT, "inches: I can't make a hat that small!"
             )
@@ -42,11 +42,11 @@ class HaberdasherService(Haberdasher):
 
         for i in range(3):
             hat = Hat(
-                size=req.inches + random.randint(-1, 1),  # Slight size variation
+                size=request.inches + random.randint(-1, 1),  # Slight size variation
                 color=colors[i % len(colors)],
             )
-            if req.description:  # Use description if provided
-                hat.name = f"{req.description} #{i + 1}"
+            if request.description:  # Use description if provided
+                hat.name = f"{request.description} #{i + 1}"
             else:
                 hat.name = hat_types[i % len(hat_types)]
 
