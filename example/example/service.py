@@ -1,5 +1,5 @@
 import random
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
