@@ -191,50 +191,6 @@ if __name__ == "__main__":
     main()
 ```
 
-### Client-Side Interceptors (New in v2.1.0)
-
-Connecpy now supports client-side interceptors, allowing you to add cross-cutting concerns to your client requests:
-
-```python
-# async_client_with_interceptor.py
-import asyncio
-from connecpy.exceptions import ConnecpyException
-from haberdasher_connecpy import HaberdasherClient
-from haberdasher_pb2 import Size, Hat
-
-class LoggingInterceptor:
-    """Interceptor that logs all requests and responses"""
-    
-    async def intercept_unary(self, next, request, ctx):
-        print(f"[LOG] Calling {ctx.method().name} with request: {request}")
-        try:
-            response = await next(request, ctx)
-            print(f"[LOG] Received response: {response}")
-            return response
-        except Exception as e:
-            print(f"[LOG] Error: {e}")
-            raise
-
-async def main():
-    # Create client with interceptors
-    client = HaberdasherClient(
-        "http://localhost:3000",
-        interceptors=[LoggingInterceptor()]
-    )
-    
-    try:
-        response = await client.MakeHat(
-            Size(inches=12)
-        )
-        print(response)
-    finally:
-        await client.close()
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-Client interceptors support all RPC types (unary, client streaming, server streaming, and bidirectional streaming) and work with both async and sync clients.
 
 ## Streaming RPCs
 
@@ -765,7 +721,7 @@ app.wsgi_app = DispatcherMiddleware(
 )
 ```
 
-### Interceptors (Server Side)
+### Server-Side Interceptors
 
 Connecpy supports server-side interceptors for both ASGI and WSGI applications. Interceptors allow you to add cross-cutting concerns like logging, authentication, and metrics to your services.
 
@@ -887,6 +843,51 @@ wsgi_app = HaberdasherWSGIApplication(
 
 Interceptors are executed in the order they are provided. For example, if you provide `[A, B, C]`, the execution order will be:
 - A.on_start → B.on_start → C.on_start → handler → C.on_end → B.on_end → A.on_end
+
+### Client-Side Interceptors
+
+Connecpy supports client-side interceptors, allowing you to add cross-cutting concerns to your client requests:
+
+```python
+# async_client_with_interceptor.py
+import asyncio
+from connecpy.exceptions import ConnecpyException
+from haberdasher_connecpy import HaberdasherClient
+from haberdasher_pb2 import Size, Hat
+
+class LoggingInterceptor:
+    """Interceptor that logs all requests and responses"""
+    
+    async def intercept_unary(self, next, request, ctx):
+        print(f"[LOG] Calling {ctx.method().name} with request: {request}")
+        try:
+            response = await next(request, ctx)
+            print(f"[LOG] Received response: {response}")
+            return response
+        except Exception as e:
+            print(f"[LOG] Error: {e}")
+            raise
+
+async def main():
+    # Create client with interceptors
+    client = HaberdasherClient(
+        "http://localhost:3000",
+        interceptors=[LoggingInterceptor()]
+    )
+    
+    try:
+        response = await client.MakeHat(
+            Size(inches=12)
+        )
+        print(response)
+    finally:
+        await client.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Client interceptors support all RPC types (unary, client streaming, server streaming, and bidirectional streaming) and work with both async and sync clients.
 
 ### Message Size Limits
 
