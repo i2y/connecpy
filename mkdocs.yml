@@ -1,0 +1,22 @@
+site_name: Connecpy Documentation
+
+theme:
+  name: material
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_options:
+              ignore_init_summary: true
+            members_order: source
+            merge_init_into_class: true
+            show_signature: false
+          inventories:
+            - https://docs.python.org/3/objects.inv
+            - https://googleapis.dev/python/protobuf/latest/objects.inv
+
+markdown_extensions:
+  - pymdownx.highlight:
+      default_lang: python

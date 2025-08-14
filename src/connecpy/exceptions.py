@@ -10,21 +10,15 @@ from .code import Code
 
 
 class ConnecpyException(Exception):
-    """
-    Exception class for Connecpy server errors.
-
-    Attributes:
-        code (errors.Errors): The error code associated with the exception.
-        message (str): The error message associated with the exception.
-    """
-
     def __init__(self, code: Code, message: str, details: Iterable[Message] = ()):
         """
-        Initializes a new instance of the ConnecpyException class.
+        Initializes a new Connecpy exception. If raised in a server, the same exception
+        will be raised in the client.
 
         Args:
-            code (int): The error code.
-            message (str): The error message.
+            code: The error code.
+            message: The error message.
+            details: Additional details about the error.
         """
         super().__init__(message)
         try:
