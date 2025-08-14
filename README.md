@@ -434,10 +434,7 @@ Bidirectional streaming RPCs allow both client and server to send multiple messa
    - Both `ConnecpyClient` (async) and `ConnecpyClientSync` support receiving streaming responses
    - Both support sending streaming requests (client streaming)
 
-3. **Resource Management**: When using streaming responses, always ensure proper cleanup:
-   - Use the stream as a context manager (`with`/`async with`) when possible
-   - Or fully iterate through all messages with `for`/`async for`
-   - If you break out of iteration early, call `stream.close()` to release resources
+3. **Resource Management**: When using streaming responses, resource will be cleaned up when the returned iterator completes or is garbage collected.
 
 4. **Error Handling**: Streaming RPCs can raise exceptions during iteration:
    ```python
