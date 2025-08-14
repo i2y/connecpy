@@ -58,7 +58,7 @@ def test_headers_sync(headers, trailers, response_headers, response_trailers):
             self.headers = headers
             self.trailers = trailers
 
-        def MakeHat(self, req, ctx):
+        def MakeHat(self, request, ctx):
             for key, value in self.headers:
                 ctx.response_headers().add(key, value)
             for key, value in self.trailers:
@@ -92,7 +92,7 @@ async def test_headers_async(headers, trailers, response_headers, response_trail
             self.headers = headers
             self.trailers = trailers
 
-        async def MakeHat(self, req, ctx):
+        async def MakeHat(self, request, ctx):
             for key, value in self.headers:
                 ctx.response_headers().add(key, value)
             for key, value in self.trailers:

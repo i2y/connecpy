@@ -1,13 +1,13 @@
 version: v2
 inputs:
-- directory: test/proto
+  - module: buf.build/connectrpc/conformance:v1.0.4
 plugins:
-- remote: buf.build/protocolbuffers/python:v29.3
-  out: test/
-- remote: buf.build/protocolbuffers/pyi:v29.3
-  out: test/
-- local:
-  - go
-  - run
-  - ../protoc-gen-connecpy
-  out: test/
+  - remote: buf.build/protocolbuffers/python:v29.3
+    out: test/
+  - remote: buf.build/protocolbuffers/pyi:v29.3
+    out: test/
+  - local:
+      - go
+      - run
+      - ../protoc-gen-connecpy
+    out: test/

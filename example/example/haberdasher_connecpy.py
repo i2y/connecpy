@@ -22,27 +22,31 @@ import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 class Haberdasher(Protocol):
     async def MakeHat(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: RequestContext
+        self, request: example_dot_haberdasher__pb2.Size, ctx: RequestContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def MakeFlexibleHat(
-        self, req: AsyncIterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
+        self,
+        request: AsyncIterator[example_dot_haberdasher__pb2.Size],
+        ctx: RequestContext,
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeSimilarHats(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: RequestContext
+        self, request: example_dot_haberdasher__pb2.Size, ctx: RequestContext
     ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeVariousHats(
-        self, req: AsyncIterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
+        self,
+        request: AsyncIterator[example_dot_haberdasher__pb2.Size],
+        ctx: RequestContext,
     ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     async def DoNothing(
-        self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
+        self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
@@ -224,27 +228,27 @@ class HaberdasherClient(ConnecpyClient):
 
 class HaberdasherSync(Protocol):
     def MakeHat(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: RequestContext
+        self, request: example_dot_haberdasher__pb2.Size, ctx: RequestContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeFlexibleHat(
-        self, req: Iterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
+        self, request: Iterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
     ) -> example_dot_haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeSimilarHats(
-        self, req: example_dot_haberdasher__pb2.Size, ctx: RequestContext
+        self, request: example_dot_haberdasher__pb2.Size, ctx: RequestContext
     ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def MakeVariousHats(
-        self, req: Iterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
+        self, request: Iterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
     ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def DoNothing(
-        self, req: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
+        self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 

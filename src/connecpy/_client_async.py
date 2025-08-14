@@ -1,3 +1,4 @@
+import asyncio
 import functools
 from asyncio import CancelledError, sleep, wait_for
 from typing import (
@@ -302,14 +303,14 @@ class ConnecpyClient:
                 return response
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError):
-            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out")
+        except (httpx.TimeoutException, TimeoutError, asyncio.TimeoutError) as e:
+            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:
             raise
         except CancelledError as e:
             raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
         except Exception as e:
-            raise ConnecpyException(Code.UNAVAILABLE, str(e))
+            raise ConnecpyException(Code.UNAVAILABLE, str(e)) from e
 
     async def _send_request_client_stream(
         self,
@@ -380,14 +381,14 @@ class ConnecpyClient:
                     await resp.aclose()
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError):
-            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out")
+        except (httpx.TimeoutException, TimeoutError, asyncio.TimeoutError) as e:
+            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:
             raise
         except CancelledError as e:
             raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
         except Exception as e:
-            raise ConnecpyException(Code.UNAVAILABLE, str(e))
+            raise ConnecpyException(Code.UNAVAILABLE, str(e)) from e
 
 
 def _convert_connect_timeout(timeout_ms: Optional[float]) -> Timeout:

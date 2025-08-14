@@ -15,12 +15,12 @@ class MyInterceptor:
 
     async def intercept_unary(
         self,
-        next: Callable[[T, RequestContext], Awaitable[U]],
+        call_next: Callable[[T, RequestContext], Awaitable[U]],
         request: T,
         ctx: RequestContext,
     ) -> U:
         print(f"intercepting {ctx.method().name} with {self._msg}")
-        return await next(request, ctx)
+        return await call_next(request, ctx)
 
 
 my_interceptor_a = MyInterceptor("A")

@@ -188,7 +188,7 @@ class HTTPException(Exception):
         self.headers = headers
 
 
-def codec_name_from_content_type(content_type: str, stream: bool) -> str:
+def codec_name_from_content_type(content_type: str, *, stream: bool) -> str:
     prefix = (
         CONNECT_STREAMING_CONTENT_TYPE_PREFIX
         if stream

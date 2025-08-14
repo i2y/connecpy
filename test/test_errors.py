@@ -1,6 +1,6 @@
 import threading
 import time
-from http import HTTPMethod, HTTPStatus
+from http import HTTPStatus
 from typing import Optional
 from wsgiref.simple_server import WSGIServer, make_server
 
@@ -59,7 +59,7 @@ def test_sync_errors(
         def __init__(self, exception: ConnecpyException):
             self._exception = exception
 
-        def MakeHat(self, req, ctx):
+        def MakeHat(self, request, ctx):
             raise self._exception
 
     haberdasher = ErrorHaberdasherSync(ConnecpyException(code, message))
@@ -97,7 +97,7 @@ async def test_async_errors(
         def __init__(self, exception: ConnecpyException):
             self._exception = exception
 
-        async def MakeHat(self, req, ctx):
+        async def MakeHat(self, request, ctx):
             raise self._exception
 
     haberdasher = ErrorHaberdasher(ConnecpyException(code, message))
@@ -202,7 +202,7 @@ async def test_async_http_errors(response_status, response_kwargs, code, message
 
 _client_errors = [
     p(
-        HTTPMethod.PUT,
+        "PUT",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -211,7 +211,7 @@ _client_errors = [
         id="bad method",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/notservicemethod",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -220,7 +220,7 @@ _client_errors = [
         id="not found",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/notservice/method",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -229,7 +229,7 @@ _client_errors = [
         id="not present service",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/i2y.connecpy.example.Haberdasher/notmethod",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
@@ -238,7 +238,7 @@ _client_errors = [
         id="not present method",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "text/html"},
         Size(inches=10).SerializeToString(),
@@ -247,7 +247,7 @@ _client_errors = [
         id="bad content type",
     ),
     p(
-        HTTPMethod.POST,
+        "POST",
         "/i2y.connecpy.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto", "connect-protocol-version": "2"},
         Size(inches=10).SerializeToString(),
@@ -265,7 +265,7 @@ def test_sync_client_errors(
     method, path, headers, body, response_status, response_headers
 ):
     class ValidHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req, ctx):
+        def MakeHat(self, request, ctx):
             return Hat()
 
     app = HaberdasherWSGIApplication(ValidHaberdasherSync())
@@ -291,7 +291,7 @@ async def test_async_client_errors(
     method, path, headers, body, response_status, response_headers
 ):
     class ValidHaberdasher(Haberdasher):
-        async def MakeHat(self, req, ctx):
+        async def MakeHat(self, request, ctx):
             return Hat()
 
     haberdasher = ValidHaberdasher()
@@ -314,7 +314,7 @@ async def test_async_client_errors(
 @pytest.fixture(scope="module")
 def sync_timeout_server():
     class SleepingHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, req, ctx):
+        def MakeHat(self, request, ctx):
             time.sleep(10)
             raise AssertionError("Should be timedout already")
 

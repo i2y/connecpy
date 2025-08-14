@@ -31,6 +31,45 @@ build-backend = "uv_build"
 [tool.pytest.ini_options]
 testpaths = ["test"]
 
+[tool.ruff.lint]
+extend-select = [
+    # Same order as listed on https://docs.astral.sh/ruff/rules/
+    "YTT",
+    # TODO: Enable after adding more type annotations
+    # "ANN",
+    "ASYNC",
+    "S",
+    "FBT",
+    "B",
+    "A",
+    "COM818", # Other comma rules are handled by formatting
+    "C4",
+    "DTZ",
+    "T10",
+]
+
+# Document reasons for ignoring specific linting errors
+extend-ignore = [
+    # Not applicable
+    "AIR",
+    # Dangerous false positives https://github.com/astral-sh/ruff/issues/4845
+    "ERA",
+    # Not Applicable
+    "FAST",
+    # Important to call user callbacks safely
+    "BLE",
+    # stdlib includes a module named code. This is less of an issue since users need to import a module so allow it
+    "A005",
+    # TODO: Consider using copyright headers
+    "CPY",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"example/**" = [
+    "S", # Keep examples simpler, e.g. allow normal random
+]
+"**/test_*.py" = ["S101", "S603", "S607", "FBT"]
+
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.
 extend-exclude = ["*_pb2.py", "*_pb2.pyi"]

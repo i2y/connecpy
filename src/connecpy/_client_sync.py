@@ -296,12 +296,12 @@ class ConnecpyClientSync:
                 return response
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError):
-            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out")
+        except (httpx.TimeoutException, TimeoutError) as e:
+            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:
             raise
         except Exception as e:
-            raise ConnecpyException(Code.UNAVAILABLE, str(e))
+            raise ConnecpyException(Code.UNAVAILABLE, str(e)) from e
 
     def _send_request_client_stream(
         self,
@@ -361,12 +361,12 @@ class ConnecpyClientSync:
                     resp.close()
             else:
                 raise ConnectWireError.from_response(resp).to_exception()
-        except (httpx.TimeoutException, TimeoutError):
-            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out")
+        except (httpx.TimeoutException, TimeoutError) as e:
+            raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:
             raise
         except Exception as e:
-            raise ConnecpyException(Code.UNAVAILABLE, str(e))
+            raise ConnecpyException(Code.UNAVAILABLE, str(e)) from e
 
 
 # Convert a timeout with connect semantics to a httpx.Timeout. Connect timeouts
