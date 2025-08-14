@@ -1,15 +1,16 @@
 import threading
+from wsgiref.simple_server import WSGIServer, make_server
 
 import httpx
 import pytest
-from wsgiref.simple_server import make_server, WSGIServer
-from example.wsgi_service import HaberdasherService
-from example.haberdasher_pb2 import Size
+
 from example.haberdasher_connecpy import (
     HaberdasherClient,
     HaberdasherClientSync,
     HaberdasherWSGIApplication,
 )
+from example.haberdasher_pb2 import Size
+from example.wsgi_service import HaberdasherService
 
 
 @pytest.fixture(scope="module")

@@ -42,6 +42,7 @@ def test_server_sync():
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         pytest.fail(f"\n{result.stdout}\n{result.stderr}")
@@ -78,6 +79,7 @@ def test_server_async():
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         pytest.fail(f"\n{result.stdout}\n{result.stderr}")

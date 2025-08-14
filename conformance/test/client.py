@@ -2,8 +2,9 @@ import argparse
 import asyncio
 import ssl
 import time
+from collections.abc import AsyncIterator, Iterator
 from tempfile import NamedTemporaryFile
-from typing import AsyncIterator, Iterator, Literal, TypeVar
+from typing import Literal, TypeVar
 
 import httpx
 from _util import create_standard_streams
@@ -85,7 +86,8 @@ def _convert_compression(compression: Compression) -> str:
         case Compression.COMPRESSION_SNAPPY:
             return "snappy"
         case _:
-            raise ValueError(f"Unsupported compression: {compression}")
+            msg = f"Unsupported compression: {compression}"
+            raise ValueError(msg)
 
 
 T = TypeVar("T", bound=Message)
@@ -178,9 +180,8 @@ async def _run_test(
                                         if (
                                             num
                                             := test_request.cancel.after_num_responses
-                                        ):
-                                            if len(payloads) >= num:
-                                                task.cancel()
+                                        ) and len(payloads) >= num:
+                                            task.cancel()
 
                                 def bidi_request_stream_sync():
                                     for message in test_request.request_messages:
@@ -269,9 +270,8 @@ async def _run_test(
                                         if (
                                             num
                                             := test_request.cancel.after_num_responses
-                                        ):
-                                            if len(payloads) >= num:
-                                                task.cancel()
+                                        ) and len(payloads) >= num:
+                                            task.cancel()
 
                                 task = asyncio.create_task(
                                     asyncio.to_thread(
@@ -319,9 +319,8 @@ async def _run_test(
                                     )
                                 )
                             case _:
-                                raise ValueError(
-                                    f"Unrecognized method: {test_request.method}"
-                                )
+                                msg = f"Unrecognized method: {test_request.method}"
+                                raise ValueError(msg)
                         if test_request.cancel.after_close_send_ms:
                             await asyncio.sleep(
                                 test_request.cancel.after_close_send_ms / 1000.0
@@ -358,9 +357,8 @@ async def _run_test(
                                         if (
                                             num
                                             := test_request.cancel.after_num_responses
-                                        ):
-                                            if len(payloads) >= num:
-                                                task.cancel()
+                                        ) and len(payloads) >= num:
+                                            task.cancel()
 
                                 async def bidi_stream_request():
                                     for message in test_request.request_messages:
@@ -461,9 +459,8 @@ async def _run_test(
                                         if (
                                             num
                                             := test_request.cancel.after_num_responses
-                                        ):
-                                            if len(payloads) >= num:
-                                                task.cancel()
+                                        ) and len(payloads) >= num:
+                                            task.cancel()
 
                                 task = asyncio.create_task(
                                     send_server_stream_request(
@@ -508,9 +505,8 @@ async def _run_test(
                                     )
                                 )
                             case _:
-                                raise ValueError(
-                                    f"Unrecognized method: {test_request.method}"
-                                )
+                                msg = f"Unrecognized method: {test_request.method}"
+                                raise ValueError(msg)
                         if test_request.cancel.after_close_send_ms:
                             await asyncio.sleep(
                                 test_request.cancel.after_close_send_ms / 1000.0
@@ -530,11 +526,11 @@ async def _run_test(
 
         test_response.response.payloads.extend(payloads)
 
-        for name in meta.headers().keys():
+        for name in meta.headers():
             test_response.response.response_headers.add(
                 name=name, value=meta.headers().getall(name)
             )
-        for name in meta.trailers().keys():
+        for name in meta.trailers():
             test_response.response.response_trailers.add(
                 name=name, value=meta.trailers().getall(name)
             )
