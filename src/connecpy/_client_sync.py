@@ -57,17 +57,6 @@ class _ExecuteBidiStream(Protocol[REQ, RES]):
 
 
 class ConnecpyClientSync:
-    """
-    Represents a synchronous client for Connecpy using httpx.
-
-    Args:
-        address (str): The address of the Connecpy server.
-        timeout_ms (int): The timeout in ms for the overall request. Note, this is currently only implemented
-            as a read timeout, which will be more forgiving than a timeout for the operation.
-        session (httpx.Client): The httpx client session to use for making requests. If setting timeout_ms,
-            the session should also at least have a read timeout set to the same value.
-    """
-
     _execute_unary: _ExecuteUnary
     _execute_client_stream: _ExecuteClientStream
     _execute_server_stream: _ExecuteServerStream
@@ -85,6 +74,18 @@ class ConnecpyClientSync:
         interceptors: Iterable[InterceptorSync] = (),
         session: Optional[httpx.Client] = None,
     ):
+        """Creates a new synchronous Connecpy client.
+
+        Args:
+            address: The address of the server to connect to, including scheme.
+            proto_json: Whether to use JSON for the protocol
+            accept_compression: A list of compression algorithms to accept from the server
+            send_compression: The compression algorithm to use for sending requests
+            timeout_ms: The timeout for requests in milliseconds
+            read_max_bytes: The maximum number of bytes to read from the response
+            interceptors: A list of interceptors to apply to requests
+            session: An httpx Client to use for requests
+        """
         self._address = address
         self._codec = get_proto_json_codec() if proto_json else get_proto_binary_codec()
         self._timeout_ms = timeout_ms

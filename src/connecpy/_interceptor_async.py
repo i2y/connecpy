@@ -93,6 +93,7 @@ Interceptor = (
     | BidiStreamInterceptor
     | MetadataInterceptor
 )
+"""An interceptor to apply to an asynchronous RPC server or client."""
 
 
 class MetadataInterceptorInvoker(Generic[T]):

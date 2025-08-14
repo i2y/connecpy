@@ -9,6 +9,7 @@ plugins:
         python:
           options:
             members_order: source
+            show_signature: false
           inventories:
             - https://docs.python.org/3/objects.inv
             - https://googleapis.dev/python/protobuf/latest/objects.inv
