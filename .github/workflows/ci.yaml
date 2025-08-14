@@ -32,8 +32,10 @@ jobs:
         include:
           - os: ubuntu-24.04
             python: "3.11"
+            coverage: "off"
           - os: ubuntu-24.04
             python: "3.12"
+            coverage: "off"
           # Enable coverage on just one job
           - os: ubuntu-24.04
             python: "3.13"
@@ -87,3 +89,4 @@ jobs:
           args: release --snapshot --clean
 
       - uses: codecov/codecov-action@v5
+        if: ${{ matrix.coverage == 'on' }}
