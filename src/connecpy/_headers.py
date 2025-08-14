@@ -1,5 +1,12 @@
-from collections.abc import ItemsView, KeysView, Mapping, MutableMapping, ValuesView
-from typing import Iterator, Optional, Sequence
+from collections.abc import (
+    ItemsView,
+    Iterator,
+    KeysView,
+    Mapping,
+    MutableMapping,
+    Sequence,
+    ValuesView,
+)
 
 
 class Headers(MutableMapping[str, str]):
@@ -12,7 +19,7 @@ class Headers(MutableMapping[str, str]):
     """
 
     _store: dict[str, str]
-    _extra: Optional[dict[str, list[str]]]
+    _extra: dict[str, list[str]] | None
 
     def __init__(
         self, items: Mapping[str, str] | Sequence[tuple[str, str]] = ()
@@ -109,9 +116,9 @@ class _AllItemsView(ItemsView[str, str]):
     """An iterable view of all header items, including duplicates."""
 
     _store: dict[str, str]
-    _extra: Optional[dict[str, list[str]]]
+    _extra: dict[str, list[str]] | None
 
-    def __init__(self, store: dict[str, str], extra: Optional[dict[str, list[str]]]):
+    def __init__(self, store: dict[str, str], extra: dict[str, list[str]] | None):
         self._store = store
         self._extra = extra
 

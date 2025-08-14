@@ -2,10 +2,11 @@ import argparse
 import asyncio
 import signal
 import time
+from collections.abc import AsyncIterator, Iterator
 from contextlib import ExitStack
 from ssl import VerifyMode
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, AsyncIterator, Iterator, Literal, TypeVar
+from typing import TYPE_CHECKING, Literal, TypeVar
 
 from _util import create_standard_streams
 from connecpy.code import Code

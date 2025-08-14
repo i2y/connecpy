@@ -1,7 +1,6 @@
 import threading
 import time
 from http import HTTPStatus
-from typing import Optional
 from wsgiref.simple_server import WSGIServer, make_server
 
 import pytest
@@ -65,7 +64,7 @@ def test_sync_errors(
     app = HaberdasherWSGIApplication(haberdasher)
     transport = WSGITransport(app)
 
-    recorded_response: Optional[Response] = None
+    recorded_response: Response | None = None
 
     def record_response(response):
         nonlocal recorded_response
@@ -103,7 +102,7 @@ async def test_async_errors(
     app = HaberdasherASGIApplication(haberdasher)
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
-    recorded_response: Optional[Response] = None
+    recorded_response: Response | None = None
 
     async def record_response(response):
         nonlocal recorded_response

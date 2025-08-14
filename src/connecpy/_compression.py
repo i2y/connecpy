@@ -1,6 +1,6 @@
 import gzip
 from collections.abc import KeysView
-from typing import Optional, Protocol
+from typing import Protocol
 
 
 class Compression(Protocol):
@@ -103,7 +103,7 @@ class IdentityCompression(Compression):
 _compressions["identity"] = IdentityCompression()
 
 
-def get_compression(name: str) -> Optional[Compression]:
+def get_compression(name: str) -> Compression | None:
     return _compressions.get(name.lower())
 
 

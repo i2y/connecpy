@@ -1,4 +1,4 @@
-from typing import Any, Optional, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from google.protobuf.json_format import MessageToJson
 from google.protobuf.json_format import Parse as MessageFromJson
@@ -89,6 +89,6 @@ def get_proto_json_codec() -> Codec:
     return _proto_json_codec
 
 
-def get_codec(name: str) -> Optional[Codec]:
+def get_codec(name: str) -> Codec | None:
     """Returns the codec with the given name."""
     return _codecs.get(name)

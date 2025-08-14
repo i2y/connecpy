@@ -1,11 +1,7 @@
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Sequence
 from typing import (
-    AsyncIterator,
-    Awaitable,
-    Callable,
     Generic,
-    Iterable,
     Protocol,
-    Sequence,
     TypeVar,
     runtime_checkable,
 )

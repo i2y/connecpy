@@ -1,8 +1,9 @@
 import base64
 import contextlib
+from collections.abc import Iterable, Mapping, Sequence
 from contextvars import ContextVar, Token
 from http import HTTPStatus
-from typing import Iterable, Mapping, Optional, Sequence, TypeVar
+from typing import TypeVar
 
 from httpx import Headers as HttpxHeaders
 
@@ -118,7 +119,7 @@ def maybe_compress_request(request_data: bytes, headers: HttpxHeaders) -> bytes:
     try:
         return compression.compress(request_data)
     except Exception as e:
-        msg = f"Failed to compress request with {compression_name}: {str(e)}"
+        msg = f"Failed to compress request with {compression_name}: {e!s}"
         raise Exception(msg) from e
 
 
@@ -262,9 +263,9 @@ class ResponseMetadata:
             check_response_trailers(resp_data.trailers())
     """
 
-    _headers: Optional[Headers] = None
-    _trailers: Optional[Headers] = None
-    _token: Optional[Token["ResponseMetadata"]] = None
+    _headers: Headers | None = None
+    _trailers: Headers | None = None
+    _token: Token["ResponseMetadata"] | None = None
 
     def __enter__(self) -> "ResponseMetadata":
         self._token = _current_response.set(self)

@@ -2,8 +2,9 @@ import argparse
 import asyncio
 import ssl
 import time
+from collections.abc import AsyncIterator, Iterator
 from tempfile import NamedTemporaryFile
-from typing import AsyncIterator, Iterator, Literal, TypeVar
+from typing import Literal, TypeVar
 
 import httpx
 from _util import create_standard_streams

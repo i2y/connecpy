@@ -1,8 +1,9 @@
 import json
 from base64 import b64decode, b64encode
+from collections.abc import Sequence
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Optional, Sequence, cast
+from typing import cast
 
 import httpx
 from google.protobuf.any_pb2 import Any
@@ -117,7 +118,7 @@ class ConnectWireError:
             code = _http_status_code_to_error.get(http_status, Code.UNKNOWN)
         message = data.get("message", "")
         details: Sequence[Any] = ()
-        details_json = cast(Optional[list[dict[str, str]]], data.get("details"))
+        details_json = cast(list[dict[str, str]] | None, data.get("details"))
         if details_json:
             details = []
             for detail in details_json:

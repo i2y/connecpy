@@ -85,6 +85,11 @@ extend-select = [
     "PLC",
     "PLE",
     "PLW",
+    "UP",
+    "FURB",
+    "RUF",
+    # TODO: See if it makes sense to enable after a pass at reducing code duplication
+    # "TRY",
 ]
 
 # Document reasons for ignoring specific linting errors

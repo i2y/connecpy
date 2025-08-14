@@ -2,16 +2,11 @@ import base64
 import functools
 from abc import ABC, abstractmethod
 from asyncio import CancelledError, sleep
+from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
 from dataclasses import replace
 from http import HTTPStatus
 from typing import (
     TYPE_CHECKING,
-    AsyncIterator,
-    Iterable,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
     TypeVar,
 )
 from urllib.parse import parse_qs
@@ -95,7 +90,7 @@ class ConnecpyASGIApplication(ABC):
         """
         assert scope["type"] == "http"  # noqa: S101 - only for type narrowing, in practice always true
 
-        ctx: Optional[RequestContext] = None
+        ctx: RequestContext | None = None
         try:
             path = scope["path"]
             endpoint = self._endpoints.get(path)
@@ -378,7 +373,7 @@ class ConnecpyASGIApplication(ABC):
     async def _handle_error(
         self,
         exc,
-        ctx: Optional[RequestContext],
+        ctx: RequestContext | None,
         send: ASGISendCallable,
     ) -> None:
         """Handle errors that occur during request processing."""
@@ -506,7 +501,7 @@ async def _yield_single_response(response: _RES) -> AsyncIterator[_RES]:
 
 
 def _process_headers(
-    iterable: Iterable[Tuple[bytes, bytes]],
+    iterable: Iterable[tuple[bytes, bytes]],
 ) -> Headers:
     result = Headers()
     for key, value in iterable:

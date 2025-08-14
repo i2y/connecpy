@@ -1,7 +1,7 @@
 __all__ = ["ConnecpyException"]
 
 
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 from google.protobuf.any import Any, pack
 from google.protobuf.message import Message
@@ -26,7 +26,7 @@ class ConnecpyException(Exception):
             code (int): The error code.
             message (str): The error message.
         """
-        super(ConnecpyException, self).__init__(message)
+        super().__init__(message)
         try:
             self._code = Code(code)
         except ValueError:
