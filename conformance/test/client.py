@@ -1,7 +1,9 @@
 import argparse
 import asyncio
 import ssl
+import sys
 import time
+import traceback
 from collections.abc import AsyncIterator, Iterator
 from tempfile import NamedTemporaryFile
 from typing import Literal, TypeVar
@@ -518,9 +520,6 @@ async def _run_test(
             test_response.response.error.message = e.message
             test_response.response.error.details.extend(e.details)
         except (asyncio.CancelledError, Exception) as e:
-            import sys
-            import traceback
-
             traceback.print_tb(e.__traceback__, file=sys.stderr)
             test_response.error.message = str(e)
 

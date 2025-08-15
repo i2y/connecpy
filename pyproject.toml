@@ -140,7 +140,7 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"conformance/test/**" = ["INP", "SLF", "SIM115", "N802", "D", "PLC0415"]  # PLC0415: Intentional conditional imports
+"conformance/test/**" = ["INP", "SLF", "SIM115", "N802", "D"]
 "example/**" = [
     "S",    # Keep examples simpler, e.g. allow normal random
     "T20",
