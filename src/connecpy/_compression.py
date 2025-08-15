@@ -164,9 +164,7 @@ def parse_accept_encoding(accept_encoding: str | bytes) -> list[tuple[str, float
 
 
 # TODO: wrong sorting order, use preference order instead of available order
-def select_encoding(
-    accept_encoding: str | bytes,
-) -> str:
+def select_encoding(accept_encoding: str | bytes) -> str:
     """Select the best compression encoding based on Accept-Encoding header.
 
     Args:

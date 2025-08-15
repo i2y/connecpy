@@ -1,10 +1,7 @@
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import (
-    Generic,
-    TypeVar,
-)
+from typing import Generic, TypeVar
 
 from ._protocol import (
     CONNECT_HEADER_PROTOCOL_VERSION,
@@ -43,97 +40,51 @@ class Endpoint(Generic[REQ, RES]):
     @staticmethod
     def unary(
         method: MethodInfo[T, U],
-        function: Callable[
-            [
-                T,
-                RequestContext[T, U],
-            ],
-            Awaitable[U],
-        ],
+        function: Callable[[T, RequestContext[T, U]], Awaitable[U]],
     ) -> "Endpoint[T, U]":
         return EndpointUnary(method=method, function=function)
 
     @staticmethod
     def client_stream(
         method: MethodInfo[T, U],
-        function: Callable[
-            [
-                AsyncIterator[T],
-                RequestContext[T, U],
-            ],
-            Awaitable[U],
-        ],
+        function: Callable[[AsyncIterator[T], RequestContext[T, U]], Awaitable[U]],
     ) -> "Endpoint[T, U]":
         return EndpointClientStream(method=method, function=function)
 
     @staticmethod
     def server_stream(
         method: MethodInfo[T, U],
-        function: Callable[
-            [
-                T,
-                RequestContext[T, U],
-            ],
-            AsyncIterator[U],
-        ],
+        function: Callable[[T, RequestContext[T, U]], AsyncIterator[U]],
     ) -> "Endpoint[T, U]":
         return EndpointServerStream(method=method, function=function)
 
     @staticmethod
     def bidi_stream(
         method: MethodInfo[T, U],
-        function: Callable[
-            [
-                AsyncIterator[T],
-                RequestContext[T, U],
-            ],
-            AsyncIterator[U],
-        ],
+        function: Callable[[AsyncIterator[T], RequestContext[T, U]], AsyncIterator[U]],
     ) -> "Endpoint[T, U]":
         return EndpointBidiStream(method=method, function=function)
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class EndpointUnary(Endpoint[REQ, RES]):
-    function: Callable[
-        [
-            REQ,
-            RequestContext[REQ, RES],
-        ],
-        Awaitable[RES],
-    ]
+    function: Callable[[REQ, RequestContext[REQ, RES]], Awaitable[RES]]
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class EndpointClientStream(Endpoint[REQ, RES]):
-    function: Callable[
-        [
-            AsyncIterator[REQ],
-            RequestContext[REQ, RES],
-        ],
-        Awaitable[RES],
-    ]
+    function: Callable[[AsyncIterator[REQ], RequestContext[REQ, RES]], Awaitable[RES]]
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class EndpointServerStream(Endpoint[REQ, RES]):
-    function: Callable[
-        [
-            REQ,
-            RequestContext[REQ, RES],
-        ],
-        AsyncIterator[RES],
-    ]
+    function: Callable[[REQ, RequestContext[REQ, RES]], AsyncIterator[RES]]
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class EndpointBidiStream(Endpoint[REQ, RES]):
     function: Callable[
-        [
-            AsyncIterator[REQ],
-            RequestContext[REQ, RES],
-        ],
-        AsyncIterator[RES],
+        [AsyncIterator[REQ], RequestContext[REQ, RES]], AsyncIterator[RES]
     ]
 
 
@@ -156,15 +107,7 @@ class EndpointSync(Generic[REQ, RES]):
 
     @staticmethod
     def unary(
-        *,
-        method: MethodInfo[T, U],
-        function: Callable[
-            [
-                T,
-                RequestContext[T, U],
-            ],
-            U,
-        ],
+        *, method: MethodInfo[T, U], function: Callable[[T, RequestContext[T, U]], U]
     ) -> "EndpointSync[T, U]":
         return EndpointUnarySync(method=method, function=function)
 
@@ -172,13 +115,7 @@ class EndpointSync(Generic[REQ, RES]):
     def client_stream(
         *,
         method: MethodInfo[T, U],
-        function: Callable[
-            [
-                Iterator[T],
-                RequestContext[T, U],
-            ],
-            U,
-        ],
+        function: Callable[[Iterator[T], RequestContext[T, U]], U],
     ) -> "EndpointSync[T, U]":
         return EndpointClientStreamSync(method=method, function=function)
 
@@ -186,72 +123,36 @@ class EndpointSync(Generic[REQ, RES]):
     def server_stream(
         *,
         method: MethodInfo[T, U],
-        function: Callable[
-            [
-                T,
-                RequestContext[T, U],
-            ],
-            Iterator[U],
-        ],
+        function: Callable[[T, RequestContext[T, U]], Iterator[U]],
     ) -> "EndpointSync[T, U]":
         return EndpointServerStreamSync(method=method, function=function)
 
     @staticmethod
     def bidi_stream(
         method: MethodInfo[T, U],
-        function: Callable[
-            [
-                Iterator[T],
-                RequestContext[T, U],
-            ],
-            Iterator[U],
-        ],
+        function: Callable[[Iterator[T], RequestContext[T, U]], Iterator[U]],
     ) -> "EndpointSync[T, U]":
         return EndpointBidiStreamSync(method=method, function=function)
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class EndpointUnarySync(EndpointSync[REQ, RES]):
-    function: Callable[
-        [
-            REQ,
-            RequestContext[REQ, RES],
-        ],
-        RES,
-    ]
+    function: Callable[[REQ, RequestContext[REQ, RES]], RES]
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class EndpointClientStreamSync(EndpointSync[REQ, RES]):
-    function: Callable[
-        [
-            Iterator[REQ],
-            RequestContext[REQ, RES],
-        ],
-        RES,
-    ]
+    function: Callable[[Iterator[REQ], RequestContext[REQ, RES]], RES]
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class EndpointServerStreamSync(EndpointSync[REQ, RES]):
-    function: Callable[
-        [
-            REQ,
-            RequestContext[REQ, RES],
-        ],
-        Iterator[RES],
-    ]
+    function: Callable[[REQ, RequestContext[REQ, RES]], Iterator[RES]]
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
 class EndpointBidiStreamSync(EndpointSync[REQ, RES]):
-    function: Callable[
-        [
-            Iterator[REQ],
-            RequestContext[REQ, RES],
-        ],
-        Iterator[RES],
-    ]
+    function: Callable[[Iterator[REQ], RequestContext[REQ, RES]], Iterator[RES]]
 
 
 def create_request_context(
@@ -259,15 +160,9 @@ def create_request_context(
 ) -> RequestContext[REQ, RES]:
     if method.idempotency_level == IdempotencyLevel.NO_SIDE_EFFECTS:
         if http_method not in ("GET", "POST"):
-            raise HTTPException(
-                HTTPStatus.METHOD_NOT_ALLOWED,
-                [("allow", "GET, POST")],
-            )
+            raise HTTPException(HTTPStatus.METHOD_NOT_ALLOWED, [("allow", "GET, POST")])
     elif http_method != "POST":
-        raise HTTPException(
-            HTTPStatus.METHOD_NOT_ALLOWED,
-            [("allow", "POST")],
-        )
+        raise HTTPException(HTTPStatus.METHOD_NOT_ALLOWED, [("allow", "POST")])
 
     # We don't require connect-protocol-version header. connect-go provides an option
     # to require it but it's almost never used in practice.
@@ -291,8 +186,7 @@ def create_request_context(
             timeout_ms = int(timeout_header)
         except ValueError as e:
             raise ConnecpyException(
-                Code.INVALID_ARGUMENT,
-                f"Invalid timeout header: '{timeout_header}'",
+                Code.INVALID_ARGUMENT, f"Invalid timeout header: '{timeout_header}'"
             ) from e
     else:
         timeout_ms = None
@@ -307,13 +201,7 @@ def create_request_context(
 def verify_http_method(http_method: str, method: MethodInfo) -> None:
     if method.idempotency_level == IdempotencyLevel.NO_SIDE_EFFECTS:
         if http_method not in ("GET", "POST"):
-            raise HTTPException(
-                HTTPStatus.METHOD_NOT_ALLOWED,
-                [("allow", "GET, POST")],
-            )
+            raise HTTPException(HTTPStatus.METHOD_NOT_ALLOWED, [("allow", "GET, POST")])
         return
     if http_method != "POST":
-        raise HTTPException(
-            HTTPStatus.METHOD_NOT_ALLOWED,
-            [("allow", "POST")],
-        )
+        raise HTTPException(HTTPStatus.METHOD_NOT_ALLOWED, [("allow", "POST")])

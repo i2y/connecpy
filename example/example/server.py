@@ -28,6 +28,5 @@ my_interceptor_a = MyInterceptor("A")
 my_interceptor_b = MyInterceptor("B")
 
 app = haberdasher_connecpy.HaberdasherASGIApplication(
-    HaberdasherService(),
-    interceptors=(my_interceptor_a, my_interceptor_b),
+    HaberdasherService(), interceptors=(my_interceptor_a, my_interceptor_b)
 )

@@ -15,10 +15,7 @@ def health():
 
 
 app.wsgi_app = DispatcherMiddleware(
-    app.wsgi_app,
-    {
-        haberdasher_app.path: haberdasher_app,
-    },
+    app.wsgi_app, {haberdasher_app.path: haberdasher_app}
 )
 
 if __name__ == "__main__":

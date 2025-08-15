@@ -8,12 +8,7 @@ from example.haberdasher_connecpy import (
     HaberdasherWSGIApplication,
 )
 from example.haberdasher_pb2 import Hat, Size
-from httpx import (
-    ASGITransport,
-    AsyncClient,
-    Client,
-    WSGITransport,
-)
+from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 
 @pytest.mark.parametrize("compression", ["gzip", "identity", None])

@@ -1,8 +1,4 @@
-__all__ = [
-    "ConnecpyClient",
-    "ConnecpyClientSync",
-    "ResponseMetadata",
-]
+__all__ = ["ConnecpyClient", "ConnecpyClientSync", "ResponseMetadata"]
 
 
 from ._client_async import ConnecpyClient

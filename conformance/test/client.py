@@ -101,8 +101,7 @@ def _unpack_request(message: Any, request: T) -> T:
 
 
 async def _run_test(
-    mode: Literal["sync", "async"],
-    test_request: ClientCompatRequest,
+    mode: Literal["sync", "async"], test_request: ClientCompatRequest
 ) -> ClientCompatResponse:
     test_response = ClientCompatResponse()
     test_response.test_name = test_request.test_name
@@ -419,8 +418,7 @@ async def _run_test(
 
                                 task = asyncio.create_task(
                                     send_client_stream_request(
-                                        client,
-                                        client_stream_request(),
+                                        client, client_stream_request()
                                     )
                                 )
                             case "IdempotentUnary":

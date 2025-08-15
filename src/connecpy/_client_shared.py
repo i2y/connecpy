@@ -152,9 +152,7 @@ def validate_response_content_encoding(
 
 
 def validate_response_content_type(
-    request_codec_name: str,
-    status_code: int,
-    response_content_type: str,
+    request_codec_name: str, status_code: int, response_content_type: str
 ):
     if status_code != HTTPStatus.OK:
         # Error responses must be JSON-encoded
@@ -194,8 +192,7 @@ def validate_response_content_type(
 
 
 def validate_stream_response_content_type(
-    request_codec_name: str,
-    response_content_type: str,
+    request_codec_name: str, response_content_type: str
 ):
     if not response_content_type.startswith(CONNECT_STREAMING_CONTENT_TYPE_PREFIX):
         raise ConnecpyException(

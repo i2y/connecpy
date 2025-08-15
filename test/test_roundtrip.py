@@ -1,12 +1,7 @@
 from collections.abc import AsyncIterator, Iterator
 
 import pytest
-from httpx import (
-    ASGITransport,
-    AsyncClient,
-    Client,
-    WSGITransport,
-)
+from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -101,10 +96,7 @@ async def test_roundtrip_response_stream_async(proto_json: bool, compression: st
 
 @pytest.mark.parametrize("client_bad", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
-def test_message_limit_sync(
-    client_bad: bool,
-    compression: str,
-):
+def test_message_limit_sync(client_bad: bool, compression: str):
     requests: list[Size] = []
     responses: list[Hat] = []
 
@@ -167,10 +159,7 @@ def test_message_limit_sync(
 @pytest.mark.parametrize("client_bad", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
 @pytest.mark.asyncio
-async def test_message_limit_async(
-    client_bad: bool,
-    compression: str,
-):
+async def test_message_limit_async(client_bad: bool, compression: str):
     requests: list[Size] = []
     responses: list[Hat] = []
 

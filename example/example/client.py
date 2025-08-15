@@ -10,10 +10,7 @@ timeout_s = 5
 
 
 async def main():
-    async with httpx.AsyncClient(
-        base_url=server_url,
-        timeout=timeout_s,
-    ) as session:
+    async with httpx.AsyncClient(base_url=server_url, timeout=timeout_s) as session:
         # Example 1: POST request with Zstandard compression, receiving Brotli compressed response
         async with haberdasher_connecpy.HaberdasherClient(
             server_url,
@@ -25,7 +22,7 @@ async def main():
                 response = await client.make_hat(
                     request=haberdasher_pb2.Size(inches=12),
                     headers={
-                        "Content-Encoding": "zstd",  # Request compression
+                        "Content-Encoding": "zstd"  # Request compression
                     },
                 )
                 print("POST with Zstandard and Brotli compression:", response)
@@ -34,9 +31,7 @@ async def main():
 
         # Example 2: GET request, receiving Zstandard compressed response
         async with haberdasher_connecpy.HaberdasherClient(
-            server_url,
-            session=session,
-            accept_compression=["zstd"],
+            server_url, session=session, accept_compression=["zstd"]
         ) as client:
             try:
                 response = await client.make_hat(

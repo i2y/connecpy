@@ -1,10 +1,5 @@
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Sequence
-from typing import (
-    Generic,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
-)
+from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 from .request import RequestContext
 
