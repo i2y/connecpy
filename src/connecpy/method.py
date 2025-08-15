@@ -1,7 +1,4 @@
-__all__ = [
-    "IdempotencyLevel",
-    "MethodInfo",
-]
+__all__ = ["IdempotencyLevel", "MethodInfo"]
 
 
 import enum

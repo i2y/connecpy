@@ -48,11 +48,7 @@ _errors = [
 
 
 @pytest.mark.parametrize(("code", "message", "http_status"), _errors)
-def test_sync_errors(
-    code: Code,
-    message: str,
-    http_status: int,
-):
+def test_sync_errors(code: Code, message: str, http_status: int):
     class ErrorHaberdasherSync(HaberdasherSync):
         def __init__(self, exception: ConnecpyException):
             self._exception = exception
@@ -86,11 +82,7 @@ def test_sync_errors(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(("code", "message", "http_status"), _errors)
-async def test_async_errors(
-    code: Code,
-    message: str,
-    http_status: int,
-):
+async def test_async_errors(code: Code, message: str, http_status: int):
     class ErrorHaberdasher(Haberdasher):
         def __init__(self, exception: ConnecpyException):
             self._exception = exception
@@ -155,11 +147,7 @@ _http_errors = [
         id="connect error without message",
     ),
     pytest.param(
-        502,
-        {"text": '"{bad_json'},
-        Code.UNAVAILABLE,
-        "Bad Gateway",
-        id="bad json",
+        502, {"text": '"{bad_json'}, Code.UNAVAILABLE, "Bad Gateway", id="bad json"
     ),
     pytest.param(
         200,
@@ -276,10 +264,7 @@ def test_sync_client_errors(
 
     client = Client(transport=transport)
     response = client.request(
-        method=method,
-        url=f"http://localhost{path}",
-        content=body,
-        headers=headers,
+        method=method, url=f"http://localhost{path}", content=body, headers=headers
     )
 
     assert response.status_code == response_status
@@ -304,10 +289,7 @@ async def test_async_client_errors(
 
     client = AsyncClient(transport=transport)
     response = await client.request(
-        method=method,
-        url=f"http://localhost{path}",
-        content=body,
-        headers=headers,
+        method=method, url=f"http://localhost{path}", content=body, headers=headers
     )
 
     assert response.status_code == response_status
@@ -337,11 +319,7 @@ def sync_timeout_server():
 
 
 @pytest.mark.parametrize(
-    ("client_timeout_ms", "call_timeout_ms"),
-    [
-        (1, None),
-        (None, 1),
-    ],
+    ("client_timeout_ms", "call_timeout_ms"), [(1, None), (None, 1)]
 )
 def test_sync_client_timeout(
     client_timeout_ms, call_timeout_ms, sync_timeout_server: WSGIServer
@@ -380,11 +358,7 @@ def test_sync_client_timeout(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    ("client_timeout_ms", "call_timeout_ms"),
-    [
-        (1, None),
-        (None, 1),
-    ],
+    ("client_timeout_ms", "call_timeout_ms"), [(1, None), (None, 1)]
 )
 async def test_async_client_timeout(
     client_timeout_ms, call_timeout_ms, sync_timeout_server: WSGIServer

@@ -24,9 +24,7 @@ def main():
     ) as client:
         try:
             print("\nTesting POST request with gzip compression...")
-            response = client.make_hat(
-                request=create_large_request(),
-            )
+            response = client.make_hat(request=create_large_request())
             print("POST with gzip compression successful:", response)
         except ConnecpyException as e:
             print("POST with gzip compression failed:", str(e))
@@ -40,9 +38,7 @@ def main():
     ) as client:
         try:
             print("\nTesting POST request with brotli compression...")
-            response = client.make_hat(
-                request=create_large_request(),
-            )
+            response = client.make_hat(request=create_large_request())
             print("POST with brotli compression successful:", response)
         except ConnecpyException as e:
             print("POST with brotli compression failed:", str(e))
@@ -70,25 +66,18 @@ def main():
     ) as client:
         try:
             print("\nTesting GET request with gzip compression...")
-            response = client.make_hat(
-                request=create_large_request(),
-                use_get=True,
-            )
+            response = client.make_hat(request=create_large_request(), use_get=True)
             print("GET with zstd compression successful:", response)
         except ConnecpyException as e:
             print("GET with zstd compression failed:", str(e))
 
     # Example 5: Test multiple accepted encodings
     with haberdasher_connecpy.HaberdasherClientSync(
-        server_url,
-        timeout_ms=timeout_ms,
-        send_compression="br",
+        server_url, timeout_ms=timeout_ms, send_compression="br"
     ) as client:
         try:
             print("\nTesting POST with multiple accepted encodings...")
-            response = client.make_hat(
-                request=create_large_request(),
-            )
+            response = client.make_hat(request=create_large_request())
             print("POST with multiple encodings successful:", response)
         except ConnecpyException as e:
             print("POST with multiple encodings failed:", str(e))

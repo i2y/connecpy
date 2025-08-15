@@ -1,12 +1,7 @@
 import pytest
 from google.protobuf.any import pack
 from google.protobuf.struct_pb2 import Struct, Value
-from httpx import (
-    ASGITransport,
-    AsyncClient,
-    Client,
-    WSGITransport,
-)
+from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException

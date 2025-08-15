@@ -48,7 +48,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
                     ),
                     function=service.make_hat,
-                ),
+                )
             },
             interceptors=interceptors,
             read_max_bytes=read_max_bytes,
@@ -111,7 +111,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
                     ),
                     function=service.make_hat,
-                ),
+                )
             },
             interceptors=interceptors,
             read_max_bytes=read_max_bytes,

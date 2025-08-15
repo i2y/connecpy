@@ -2,11 +2,7 @@ import asyncio
 import functools
 from asyncio import CancelledError, sleep, wait_for
 from collections.abc import AsyncIterator, Iterable, Mapping
-from typing import (
-    Any,
-    Protocol,
-    TypeVar,
-)
+from typing import Any, Protocol, TypeVar
 
 import httpx
 from httpx import USE_CLIENT_DEFAULT, Timeout
@@ -259,10 +255,7 @@ class ConnecpyClient:
                 request_headers.pop("content-type", None)
                 resp = await wait_for(
                     self._session.get(
-                        url=url,
-                        headers=request_headers,
-                        params=params,
-                        timeout=timeout,
+                        url=url, headers=request_headers, params=params, timeout=timeout
                     ),
                     timeout_s,
                 )
@@ -311,25 +304,19 @@ class ConnecpyClient:
             raise ConnecpyException(Code.UNAVAILABLE, str(e)) from e
 
     async def _send_request_client_stream(
-        self,
-        request: AsyncIterator[REQ],
-        ctx: RequestContext[REQ, RES],
+        self, request: AsyncIterator[REQ], ctx: RequestContext[REQ, RES]
     ) -> RES:
         return await _consume_single_response(
             self._send_request_bidi_stream(request, ctx)
         )
 
     def _send_request_server_stream(
-        self,
-        request: REQ,
-        ctx: RequestContext[REQ, RES],
+        self, request: REQ, ctx: RequestContext[REQ, RES]
     ) -> AsyncIterator[RES]:
         return self._send_request_bidi_stream(_yield_single_message(request), ctx)
 
     async def _send_request_bidi_stream(
-        self,
-        request: AsyncIterator[REQ],
-        ctx: RequestContext[REQ, RES],
+        self, request: AsyncIterator[REQ], ctx: RequestContext[REQ, RES]
     ) -> AsyncIterator[RES]:
         request_headers = httpx.Headers(list(ctx.request_headers().allitems()))
         url = f"{self._address}/{ctx.method().service_name}/{ctx.method().name}"
@@ -359,8 +346,7 @@ class ConnecpyClient:
                 resp.headers.get(CONNECT_STREAMING_HEADER_COMPRESSION, "")
             )
             _client_shared.validate_stream_response_content_type(
-                self._codec.name(),
-                resp.headers.get("content-type", ""),
+                self._codec.name(), resp.headers.get("content-type", "")
             )
             _client_shared.handle_response_headers(resp.headers)
 
@@ -400,9 +386,7 @@ def _convert_connect_timeout(timeout_ms: float | None) -> Timeout:
 
 
 async def _streaming_request_content(
-    msgs: AsyncIterator[Any],
-    codec: Codec,
-    compression: Compression | None,
+    msgs: AsyncIterator[Any], codec: Codec, compression: Compression | None
 ) -> AsyncIterator[bytes]:
     writer = EnvelopeWriter(codec, compression)
     async for msg in msgs:

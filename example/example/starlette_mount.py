@@ -13,15 +13,8 @@ from .server import app as server_app
 
 app = Starlette(
     routes=[
-        Route(
-            "/healthz",
-            lambda _: PlainTextResponse("OK"),
-        ),
-        Mount(
-            "/",
-            app=cast("ASGIApp", server_app),
-            name="haberdasher",
-        ),
+        Route("/healthz", lambda _: PlainTextResponse("OK")),
+        Mount("/", app=cast("ASGIApp", server_app), name="haberdasher"),
     ],
     middleware=[
         Middleware(
@@ -34,6 +27,6 @@ app = Starlette(
                 "Connect-Timeout-Ms",
                 "X-User-Agent",
             ],
-        ),
+        )
     ],
 )

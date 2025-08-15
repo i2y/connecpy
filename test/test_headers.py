@@ -70,10 +70,7 @@ def test_headers_duplicates():
     assert h.getall("x-test") == ["foo", "bar", "baz"]
     h["authorization"] = "cookie"
     assert h["authorization"] == "cookie"
-    assert list(h.items()) == [
-        ("x-test", "foo"),
-        ("authorization", "cookie"),
-    ]
+    assert list(h.items()) == [("x-test", "foo"), ("authorization", "cookie")]
     assert list(h.keys()) == ["x-test", "authorization"]
     assert list(h.values()) == ["foo", "cookie"]
     assert list(h.allitems()) == [
@@ -87,21 +84,13 @@ def test_headers_duplicates():
     assert len(h) == 1
     h["x-Test"] = "again"
     assert h["x-test"] == "again"
-    assert list(h.allitems()) == [
-        ("authorization", "cookie"),
-        ("x-test", "again"),
-    ]
+    assert list(h.allitems()) == [("authorization", "cookie"), ("x-test", "again")]
     h.add("x-test", "and again")
     # Implemented by base class using dunder methods
     h.pop("x-test", None)
-    assert list(h.allitems()) == [
-        ("authorization", "cookie"),
-    ]
+    assert list(h.allitems()) == [("authorization", "cookie")]
     h.add("x-animal", "bear")
     h.add("x-animal", "cat")
     h.update({"x-animal": "dog"})
-    assert list(h.allitems()) == [
-        ("authorization", "cookie"),
-        ("x-animal", "dog"),
-    ]
+    assert list(h.allitems()) == [("authorization", "cookie"), ("x-animal", "dog")]
     assert h.getall("x-animal") == ["dog"]
