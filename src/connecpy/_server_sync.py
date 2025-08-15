@@ -81,37 +81,6 @@ def _process_headers(headers: dict) -> Headers:
     return result
 
 
-def extract_metadata_from_query_params(query_string: str) -> dict:
-    """Extract metadata from query parameters into a dictionary."""
-    return parse_qs(query_string) if query_string else {}
-
-
-def validate_request_headers(headers: dict) -> tuple[str, str]:
-    """Validate and normalize request headers.
-
-    Args:
-        headers: Dictionary of request headers
-
-    Returns:
-        tuple[str, str]: Normalized content type and content encoding
-    """
-    # Get content type
-    content_type = headers.get("content-type", "application/json").lower()
-    if content_type not in ["application/json", "application/proto"]:
-        raise ConnecpyException(
-            Code.INVALID_ARGUMENT, f"Unsupported Content-Type: {content_type}"
-        )
-
-    # Get content encoding
-    content_encoding = headers.get("content-encoding", "identity").lower()
-    if content_encoding not in ["identity", "gzip", "br", "zstd"]:
-        raise ConnecpyException(
-            Code.UNIMPLEMENTED, f"Unsupported Content-Encoding: {content_encoding}"
-        )
-
-    return content_type, content_encoding
-
-
 def prepare_response_headers(
     base_headers: dict[str, list[str]],
     selected_encoding: str,
