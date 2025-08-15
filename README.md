@@ -72,7 +72,7 @@ from haberdasher_pb2 import Hat, Size
 
 
 class HaberdasherService:
-    async def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
+    async def make_hat(self, req: Size, ctx: RequestContext) -> Hat:
         print("remaining_time: ", ctx.timeout_ms())
         if req.inches <= 0:
             raise ConnecpyException(
@@ -143,7 +143,7 @@ async def main():
     ) as session:
         async with HaberdasherClient(server_url, session=session) as client:
             try:
-                response = await client.MakeHat(
+                response = await client.make_hat(
                     Size(inches=12),
                 )
                 if not response.HasField("name"):
@@ -182,7 +182,7 @@ timeout_s = 5
 def main():
     with HaberdasherClientSync(server_url, timeout_ms=timeout_s * 1000) as client:
         try:
-            response = client.MakeHat(
+            response = client.make_hat(
                 Size(inches=12),
             )
             if not response.HasField("name"):
@@ -213,7 +213,7 @@ from connecpy.request import RequestContext
 from haberdasher_pb2 import Hat, Size
 
 class HaberdasherService:
-    async def MakeSimilarHats(self, req: Size, ctx: RequestContext) -> AsyncIterator[Hat]:
+    async def make_similar_hats(self, req: Size, ctx: RequestContext) -> AsyncIterator[Hat]:
         """Server Streaming: Returns multiple hats of similar size"""
         for i in range(3):
             yield Hat(
@@ -241,7 +241,7 @@ async def main():
         ) as client:
             # Server streaming: receive multiple responses
             hats = []
-            stream = client.MakeSimilarHats(
+            stream = client.make_similar_hats(
                 Size(inches=12, description="summer hat")
             )
             async for hat in stream:
@@ -270,7 +270,7 @@ def main():
         ) as client:
             # Server streaming: receive multiple responses
             hats = []
-            stream = client.MakeSimilarHats(
+            stream = client.make_similar_hats(
                 Size(inches=12, description="winter hat")
             )
             for hat in stream:
@@ -308,7 +308,7 @@ from connecpy.request import RequestContext
 from example_pb2 import Size, Summary
 
 class ExampleService:
-    async def CollectSizes(
+    async def collect_sizes(
         self,
         req: AsyncIterator[Size],
         ctx: RequestContext
@@ -349,7 +349,7 @@ async def main():
         session=session
     ) as client:
         # Client streaming: send multiple requests
-        summary = await client.CollectSizes(send_sizes())
+        summary = await client.collect_sizes(send_sizes())
         print(f"Summary: {summary.total_count} sizes, average: {summary.average_size}")
 ```
 
@@ -373,7 +373,7 @@ def main():
         session=session
     ) as client:
         # Client streaming: send multiple requests
-        summary = client.CollectSizes(send_sizes())
+        summary = client.collect_sizes(send_sizes())
         print(f"Summary: {summary.total_count} sizes, average: {summary.average_size}")
 ```
 
@@ -489,11 +489,11 @@ from connecpy.request import RequestContext
 from haberdasher_pb2 import Hat, Size
 
 class HaberdasherServiceSync:
-    def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
+    def make_hat(self, req: Size, ctx: RequestContext) -> Hat:
         """Unary RPC"""
         return Hat(size=req.inches, color="red", name="fedora")
 
-    def MakeSimilarHats(self, req: Size, ctx: RequestContext) -> Iterator[Hat]:
+    def make_similar_hats(self, req: Size, ctx: RequestContext) -> Iterator[Hat]:
         """Server Streaming RPC - returns multiple hats"""
         for i in range(3):
             yield Hat(
@@ -502,7 +502,7 @@ class HaberdasherServiceSync:
                 name=f"hat #{i+1}"
             )
 
-    def CollectSizes(self, req: Iterator[Size], ctx: RequestContext) -> Hat:
+    def collect_sizes(self, req: Iterator[Size], ctx: RequestContext) -> Hat:
         """Client Streaming RPC - receives multiple sizes, returns one hat"""
         sizes = []
         for size_msg in req:
@@ -511,7 +511,7 @@ class HaberdasherServiceSync:
         avg_size = sum(sizes) / len(sizes) if sizes else 0
         return Hat(size=int(avg_size), color="average", name="custom")
 
-    def MakeVariousHats(self, req: Iterator[Size], ctx: RequestContext) -> Iterator[Hat]:
+    def make_various_hats(self, req: Iterator[Size], ctx: RequestContext) -> Iterator[Hat]:
         """Bidirectional Streaming RPC (half-duplex only for WSGI)"""
         # Note: In WSGI, all requests are received before sending responses
         for size_msg in req:
@@ -576,7 +576,7 @@ async with HaberdasherClient(
     send_compression="br",
     accept_compression=["gzip"]
 ) as client:
-    response = await client.MakeHat(
+    response = await client.make_hat(
         Size(inches=12)
     )
 ```
@@ -592,7 +592,7 @@ with HaberdasherClientSync(
     send_compression="zstd",  # Use Zstandard compression for request
     accept_compression=["br"]  # Accept Brotli compressed response
 ) as client:
-    response = client.MakeHat(
+    response = client.make_hat(
         Size(inches=12)
     )
 ```
@@ -627,14 +627,14 @@ from haberdasher_pb2 import Size
 
 # Async client using GET request
 async with HaberdasherClient(server_url, session=session) as client:
-    response = await client.MakeHat(
+    response = await client.make_hat(
         Size(inches=12),
         use_get=True  # Use GET instead of POST
     )
 
 # Sync client using GET request
 with HaberdasherClientSync(server_url) as client:
-    response = client.MakeHat(
+    response = client.make_hat(
         Size(inches=12),
         use_get=True  # Use GET instead of POST
     )
@@ -886,7 +886,7 @@ async def main():
     )
 
     try:
-        response = await client.MakeHat(
+        response = await client.make_hat(
             Size(inches=12)
         )
         print(response)
