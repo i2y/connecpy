@@ -22,7 +22,7 @@ async def main():
             accept_compression=("br",),
         ) as client:
             try:
-                response = await client.MakeHat(
+                response = await client.make_hat(
                     request=haberdasher_pb2.Size(inches=12),
                     headers={
                         "Content-Encoding": "zstd",  # Request compression
@@ -39,7 +39,7 @@ async def main():
             accept_compression=["zstd"],
         ) as client:
             try:
-                response = await client.MakeHat(
+                response = await client.make_hat(
                     request=haberdasher_pb2.Size(inches=8),
                     use_get=True,  # Enable GET request
                 )

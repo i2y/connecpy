@@ -21,7 +21,7 @@ import example.haberdasher_edition_2023_pb2 as example_dot_haberdasher__edition_
 
 
 class Haberdasher(Protocol):
-    async def MakeHat(
+    async def make_hat(
         self,
         request: example_dot_haberdasher__edition__2023__pb2.Size,
         ctx: RequestContext,
@@ -47,7 +47,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                         output=example_dot_haberdasher__edition__2023__pb2.Hat,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
                     ),
-                    function=service.MakeHat,
+                    function=service.make_hat,
                 ),
             },
             interceptors=interceptors,
@@ -61,7 +61,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
 
 
 class HaberdasherClient(ConnecpyClient):
-    async def MakeHat(
+    async def make_hat(
         self,
         request: example_dot_haberdasher__edition__2023__pb2.Size,
         *,
@@ -85,7 +85,7 @@ class HaberdasherClient(ConnecpyClient):
 
 
 class HaberdasherSync(Protocol):
-    def MakeHat(
+    def make_hat(
         self,
         request: example_dot_haberdasher__edition__2023__pb2.Size,
         ctx: RequestContext,
@@ -110,7 +110,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                         output=example_dot_haberdasher__edition__2023__pb2.Hat,
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
                     ),
-                    function=service.MakeHat,
+                    function=service.make_hat,
                 ),
             },
             interceptors=interceptors,
@@ -124,7 +124,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
 
 
 class HaberdasherClientSync(ConnecpyClientSync):
-    def MakeHat(
+    def make_hat(
         self,
         request: example_dot_haberdasher__edition__2023__pb2.Size,
         *,

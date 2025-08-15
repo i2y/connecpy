@@ -24,7 +24,7 @@ def main():
     ) as client:
         try:
             print("\nTesting POST request with gzip compression...")
-            response = client.MakeHat(
+            response = client.make_hat(
                 request=create_large_request(),
             )
             print("POST with gzip compression successful:", response)
@@ -40,7 +40,7 @@ def main():
     ) as client:
         try:
             print("\nTesting POST request with brotli compression...")
-            response = client.MakeHat(
+            response = client.make_hat(
                 request=create_large_request(),
             )
             print("POST with brotli compression successful:", response)
@@ -53,7 +53,7 @@ def main():
     ) as client:
         try:
             print("\nTesting GET request without compression...")
-            response = client.MakeHat(
+            response = client.make_hat(
                 request=haberdasher_pb2.Size(inches=8),  # Small request
                 use_get=True,
             )
@@ -70,7 +70,7 @@ def main():
     ) as client:
         try:
             print("\nTesting GET request with gzip compression...")
-            response = client.MakeHat(
+            response = client.make_hat(
                 request=create_large_request(),
                 use_get=True,
             )
@@ -86,7 +86,7 @@ def main():
     ) as client:
         try:
             print("\nTesting POST with multiple accepted encodings...")
-            response = client.MakeHat(
+            response = client.make_hat(
                 request=create_large_request(),
             )
             print("POST with multiple encodings successful:", response)

@@ -23,7 +23,7 @@ from example.haberdasher_pb2 import Size
 
 def test_details_sync():
     class DetailsHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             raise ConnecpyException(
                 Code.RESOURCE_EXHAUSTED,
                 "Resource exhausted",
@@ -40,7 +40,7 @@ def test_details_sync():
         ) as client,
         pytest.raises(ConnecpyException) as exc_info,
     ):
-        client.MakeHat(request=Size(inches=10))
+        client.make_hat(request=Size(inches=10))
     assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
     assert exc_info.value.message == "Resource exhausted"
     assert len(exc_info.value.details) == 2
@@ -55,7 +55,7 @@ def test_details_sync():
 @pytest.mark.asyncio
 async def test_details_async():
     class DetailsHaberdasher(Haberdasher):
-        async def MakeHat(self, request, ctx):
+        async def make_hat(self, request, ctx):
             raise ConnecpyException(
                 Code.RESOURCE_EXHAUSTED,
                 "Resource exhausted",
@@ -71,7 +71,7 @@ async def test_details_async():
         "http://localhost", session=AsyncClient(transport=transport)
     ) as client:
         with pytest.raises(ConnecpyException) as exc_info:
-            await client.MakeHat(request=Size(inches=10))
+            await client.make_hat(request=Size(inches=10))
     assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
     assert exc_info.value.message == "Resource exhausted"
     assert len(exc_info.value.details) == 2

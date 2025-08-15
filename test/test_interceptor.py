@@ -41,20 +41,20 @@ def interceptor():
 @pytest_asyncio.fixture
 async def client_async(interceptor: RequestInterceptor):
     class SimpleHaberdasher(Haberdasher):
-        async def MakeHat(self, request, ctx):
+        async def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
 
-        async def MakeFlexibleHat(self, request, ctx):
+        async def make_flexible_hat(self, request, ctx):
             size = 0
             async for s in request:
                 size += s.inches
             return Hat(size=size, color="red")
 
-        async def MakeSimilarHats(self, request, ctx):
+        async def make_similar_hats(self, request, ctx):
             yield Hat(size=request.inches, color="orange")
             yield Hat(size=request.inches, color="blue")
 
-        async def MakeVariousHats(self, request, ctx):
+        async def make_various_hats(self, request, ctx):
             colors = itertools.cycle(("black", "white", "gold"))
             async for s in request:
                 yield Hat(size=s.inches, color=next(colors))
@@ -73,7 +73,7 @@ async def client_async(interceptor: RequestInterceptor):
 async def test_intercept_unary_async(
     client_async: HaberdasherClient, interceptor: RequestInterceptor
 ):
-    result = await client_async.MakeHat(Size(inches=10))
+    result = await client_async.make_hat(Size(inches=10))
     assert result == Hat(size=10, color="green")
     assert interceptor.result == ["Hello MakeHat and goodbye"] * 2
 
@@ -86,7 +86,7 @@ async def test_intercept_client_stream_async(
         yield Size(inches=10)
         yield Size(inches=20)
 
-    result = await client_async.MakeFlexibleHat(requests())
+    result = await client_async.make_flexible_hat(requests())
     assert result == Hat(size=30, color="red")
     assert interceptor.result == ["Hello MakeFlexibleHat and goodbye"] * 2
 
@@ -95,7 +95,7 @@ async def test_intercept_client_stream_async(
 async def test_intercept_server_stream_async(
     client_async: HaberdasherClient, interceptor: RequestInterceptor
 ):
-    result = [r async for r in client_async.MakeSimilarHats(Size(inches=15))]
+    result = [r async for r in client_async.make_similar_hats(Size(inches=15))]
 
     assert result == [Hat(size=15, color="orange"), Hat(size=15, color="blue")]
     assert interceptor.result == ["Hello MakeSimilarHats and goodbye"] * 2
@@ -110,7 +110,7 @@ async def test_intercept_bidi_stream_async(
         yield Size(inches=35)
         yield Size(inches=45)
 
-    result = [r async for r in client_async.MakeVariousHats(requests())]
+    result = [r async for r in client_async.make_various_hats(requests())]
 
     assert result == [
         Hat(size=25, color="black"),
@@ -123,20 +123,20 @@ async def test_intercept_bidi_stream_async(
 @pytest.fixture
 def client_sync(interceptor: RequestInterceptor):
     class SimpleHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
 
-        def MakeFlexibleHat(self, request, ctx):
+        def make_flexible_hat(self, request, ctx):
             size = 0
             for s in request:
                 size += s.inches
             return Hat(size=size, color="red")
 
-        def MakeSimilarHats(self, request, ctx):
+        def make_similar_hats(self, request, ctx):
             yield Hat(size=request.inches, color="orange")
             yield Hat(size=request.inches, color="blue")
 
-        def MakeVariousHats(self, request, ctx):
+        def make_various_hats(self, request, ctx):
             colors = itertools.cycle(("black", "white", "gold"))
             requests = [*request]
             for s in requests:
@@ -157,7 +157,7 @@ def client_sync(interceptor: RequestInterceptor):
 def test_intercept_unary_sync(
     client_sync: HaberdasherClientSync, interceptor: RequestInterceptor
 ):
-    result = client_sync.MakeHat(Size(inches=10))
+    result = client_sync.make_hat(Size(inches=10))
     assert result == Hat(size=10, color="green")
     assert interceptor.result == ["Hello MakeHat and goodbye"] * 2
 
@@ -169,7 +169,7 @@ def test_intercept_client_stream_sync(
         yield Size(inches=10)
         yield Size(inches=20)
 
-    result = client_sync.MakeFlexibleHat(requests())
+    result = client_sync.make_flexible_hat(requests())
     assert result == Hat(size=30, color="red")
     assert interceptor.result == ["Hello MakeFlexibleHat and goodbye"] * 2
 
@@ -177,7 +177,7 @@ def test_intercept_client_stream_sync(
 def test_intercept_server_stream_sync(
     client_sync: HaberdasherClientSync, interceptor: RequestInterceptor
 ):
-    result = list(client_sync.MakeSimilarHats(Size(inches=15)))
+    result = list(client_sync.make_similar_hats(Size(inches=15)))
 
     assert result == [Hat(size=15, color="orange"), Hat(size=15, color="blue")]
     assert interceptor.result == ["Hello MakeSimilarHats and goodbye"] * 2
@@ -191,7 +191,7 @@ def test_intercept_bidi_stream_sync(
         yield Size(inches=35)
         yield Size(inches=45)
 
-    result = list(client_sync.MakeVariousHats(requests()))
+    result = list(client_sync.make_various_hats(requests()))
 
     assert result == [
         Hat(size=25, color="black"),

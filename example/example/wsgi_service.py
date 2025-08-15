@@ -9,7 +9,7 @@ from .haberdasher_pb2 import Hat, Size
 
 
 class HaberdasherService(HaberdasherSync):
-    def MakeHat(self, request: Size, ctx: RequestContext) -> Hat:
+    def make_hat(self, request: Size, ctx: RequestContext) -> Hat:
         print("remaining_time: ", ctx.timeout_ms())
         if request.inches <= 0:
             raise ConnecpyException(

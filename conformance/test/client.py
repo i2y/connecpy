@@ -173,7 +173,7 @@ async def _run_test(
                                     client: ConformanceServiceClientSync,
                                     request: Iterator[BidiStreamRequest],
                                 ):
-                                    for message in client.BidiStream(
+                                    for message in client.bidi_stream(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -209,7 +209,7 @@ async def _run_test(
                                     client: ConformanceServiceClientSync,
                                     request: Iterator[ClientStreamRequest],
                                 ):
-                                    res = client.ClientStream(
+                                    res = client.client_stream(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -239,7 +239,7 @@ async def _run_test(
                                     client: ConformanceServiceClientSync,
                                     request: IdempotentUnaryRequest,
                                 ):
-                                    res = client.IdempotentUnary(
+                                    res = client.idempotent_unary(
                                         request,
                                         headers=request_headers,
                                         use_get=test_request.use_get_http_method,
@@ -263,7 +263,7 @@ async def _run_test(
                                     client: ConformanceServiceClientSync,
                                     request: ServerStreamRequest,
                                 ):
-                                    for message in client.ServerStream(
+                                    for message in client.server_stream(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -291,7 +291,7 @@ async def _run_test(
                                     client: ConformanceServiceClientSync,
                                     request: UnaryRequest,
                                 ):
-                                    res = client.Unary(
+                                    res = client.unary(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -311,7 +311,7 @@ async def _run_test(
                             case "Unimplemented":
                                 task = asyncio.create_task(
                                     asyncio.to_thread(
-                                        client.Unimplemented,
+                                        client.unimplemented,
                                         _unpack_request(
                                             test_request.request_messages[0],
                                             UnimplementedRequest(),
@@ -349,7 +349,7 @@ async def _run_test(
                                     client: ConformanceServiceClient,
                                     request: AsyncIterator[BidiStreamRequest],
                                 ):
-                                    responses = client.BidiStream(
+                                    responses = client.bidi_stream(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -392,7 +392,7 @@ async def _run_test(
                                     client: ConformanceServiceClient,
                                     request: AsyncIterator[ClientStreamRequest],
                                 ):
-                                    res = await client.ClientStream(
+                                    res = await client.client_stream(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -429,7 +429,7 @@ async def _run_test(
                                     client: ConformanceServiceClient,
                                     request: IdempotentUnaryRequest,
                                 ):
-                                    res = await client.IdempotentUnary(
+                                    res = await client.idempotent_unary(
                                         request,
                                         headers=request_headers,
                                         use_get=test_request.use_get_http_method,
@@ -452,7 +452,7 @@ async def _run_test(
                                     client: ConformanceServiceClient,
                                     request: ServerStreamRequest,
                                 ):
-                                    async for message in client.ServerStream(
+                                    async for message in client.server_stream(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -479,7 +479,7 @@ async def _run_test(
                                     client: ConformanceServiceClient,
                                     request: UnaryRequest,
                                 ):
-                                    res = await client.Unary(
+                                    res = await client.unary(
                                         request,
                                         headers=request_headers,
                                         timeout_ms=timeout_ms,
@@ -497,7 +497,7 @@ async def _run_test(
                                 )
                             case "Unimplemented":
                                 task = asyncio.create_task(
-                                    client.Unimplemented(
+                                    client.unimplemented(
                                         _unpack_request(
                                             test_request.request_messages[0],
                                             UnimplementedRequest(),
