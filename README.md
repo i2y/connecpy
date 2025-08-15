@@ -61,13 +61,13 @@ import random
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.server import ServiceContext
+from connecpy.request import RequestContext
 
 from haberdasher_pb2 import Hat, Size
 
 
 class HaberdasherService:
-    async def MakeHat(self, req: Size, ctx: ServiceContext) -> Hat:
+    async def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
         print("remaining_time: ", ctx.timeout_ms())
         if req.inches <= 0:
             raise ConnecpyException(
@@ -87,10 +87,10 @@ class HaberdasherService:
 
 ```python
 # server.py
-import haberdasher_connecpy
+from haberdasher_connecpy import HaberdasherASGIApplication
 from service import HaberdasherService
 
-app = haberdasher_connecpy.HaberdasherASGIApplication(
+app = HaberdasherASGIApplication(
     HaberdasherService()
 )
 ```
@@ -123,7 +123,8 @@ import httpx
 
 from connecpy.exceptions import ConnecpyException
 
-import haberdasher_connecpy, haberdasher_pb2
+from haberdasher_connecpy import HaberdasherClient
+from haberdasher_pb2 import Size, Hat
 
 
 server_url = "http://localhost:3000"
@@ -135,17 +136,16 @@ async def main():
         base_url=server_url,
         timeout=timeout_s,
     ) as session:
-        async with haberdasher_connecpy.HaberdasherClient(server_url, session=session) as client:
-
-    try:
-        response = await client.MakeHat(
-            haberdasher_pb2.Size(inches=12),
-        )
-        if not response.HasField("name"):
-            print("We didn't get a name!")
-            print(response)
-        except ConnecpyException as e:
-            print(e.code, e.message)
+        async with HaberdasherClient(server_url, session=session) as client:
+            try:
+                response = await client.MakeHat(
+                    Size(inches=12),
+                )
+                if not response.HasField("name"):
+                    print("We didn't get a name!")
+                print(response)
+            except ConnecpyException as e:
+                print(e.code, e.message)
 
 
 if __name__ == "__main__":
@@ -160,13 +160,14 @@ color: "black"
 name: "bowler"
 ```
 
-## Client code (Synchronous)
+### Client code (Synchronous)
 
 ```python
 # client.py
 from connecpy.exceptions import ConnecpyException
 
-import haberdasher_connecpy, haberdasher_pb2
+from haberdasher_connecpy import HaberdasherClientSync
+from haberdasher_pb2 import Size, Hat
 
 
 server_url = "http://localhost:3000"
@@ -174,10 +175,10 @@ timeout_s = 5
 
 
 def main():
-    with haberdasher_connecpy.HaberdasherClientSync(server_url, timeout_ms=timeout_s * 1000) as client:
+    with HaberdasherClientSync(server_url, timeout_ms=timeout_s * 1000) as client:
         try:
             response = client.MakeHat(
-                haberdasher_pb2.Size(inches=12),
+                Size(inches=12),
             )
             if not response.HasField("name"):
                 print("We didn't get a name!")
@@ -189,6 +190,229 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+
+## Streaming RPCs
+
+Connecpy supports streaming RPCs in addition to unary RPCs. Here are examples of each type:
+
+### Server Streaming RPC
+
+In server streaming RPCs, the client sends a single request and receives multiple responses from the server.
+
+#### Server implementation
+
+```python
+# service.py
+from typing import AsyncIterator
+from connecpy.request import RequestContext
+from haberdasher_pb2 import Hat, Size
+
+class HaberdasherService:
+    async def MakeSimilarHats(self, req: Size, ctx: RequestContext) -> AsyncIterator[Hat]:
+        """Server Streaming: Returns multiple hats of similar size"""
+        for i in range(3):
+            yield Hat(
+                size=req.inches + i,
+                color=["red", "green", "blue"][i],
+                name=f"hat #{i+1}"
+            )
+```
+
+#### Client implementation (Async)
+
+```python
+# async_client.py
+import asyncio
+import httpx
+from connecpy.exceptions import ConnecpyException
+from haberdasher_connecpy import HaberdasherClient
+from haberdasher_pb2 import Size, Hat
+
+async def main():
+    async with httpx.AsyncClient(base_url="http://localhost:3000") as session:
+        async with HaberdasherClient(
+            "http://localhost:3000", 
+            session=session
+        ) as client:
+            # Server streaming: receive multiple responses
+            hats = []
+            stream = client.MakeSimilarHats(
+                Size(inches=12, description="summer hat")
+            )
+            async for hat in stream:
+                print(f"Received: {hat.color} {hat.name} (size {hat.size})")
+                hats.append(hat)
+            print(f"Total hats received: {len(hats)}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+#### Client implementation (Sync)
+
+```python
+# sync_client.py
+import httpx
+from connecpy.exceptions import ConnecpyException
+from haberdasher_connecpy import HaberdasherClientSync
+from haberdasher_pb2 import Size, Hat
+
+def main():
+    with httpx.Client(base_url="http://localhost:3000") as session:
+        with HaberdasherClientSync(
+            "http://localhost:3000",
+            session=session
+        ) as client:
+            # Server streaming: receive multiple responses
+            hats = []
+            stream = client.MakeSimilarHats(
+                Size(inches=12, description="winter hat")
+            )
+            for hat in stream:
+                print(f"Received: {hat.color} {hat.name} (size {hat.size})")
+                hats.append(hat)
+            print(f"Total hats received: {len(hats)}")
+
+if __name__ == "__main__":
+    main()
+```
+
+### Client Streaming RPC
+
+In client streaming RPCs, the client sends multiple requests and receives a single response from the server.
+
+#### Proto definition example
+
+```proto
+service ExampleService {
+  rpc CollectSizes(stream Size) returns (Summary);
+}
+
+message Summary {
+  int32 total_count = 1;
+  float average_size = 2;
+}
+```
+
+#### Server implementation
+
+```python
+# service.py
+from typing import AsyncIterator
+from connecpy.request import RequestContext
+from example_pb2 import Size, Summary
+
+class ExampleService:
+    async def CollectSizes(
+        self, 
+        req: AsyncIterator[Size], 
+        ctx: RequestContext
+    ) -> Summary:
+        """Client Streaming: Collect multiple sizes and return summary"""
+        sizes = []
+        async for size_msg in req:
+            sizes.append(size_msg.inches)
+        
+        if not sizes:
+            return Summary(total_count=0, average_size=0)
+        
+        return Summary(
+            total_count=len(sizes),
+            average_size=sum(sizes) / len(sizes)
+        )
+```
+
+#### Client implementation (Async)
+
+```python
+# async_client.py
+import asyncio
+from typing import AsyncIterator
+import haberdasher_pb2
+from haberdasher_connecpy import ExampleClient
+
+async def send_sizes() -> AsyncIterator[haberdasher_pb2.Size]:
+    """Generator to send multiple sizes to the server"""
+    sizes_to_send = [10, 12, 14, 16, 18]
+    for size in sizes_to_send:
+        yield haberdasher_pb2.Size(inches=size)
+        await asyncio.sleep(0.1)  # Simulate some delay
+
+async def main():
+    async with ExampleClient(
+        "http://localhost:3000", 
+        session=session
+    ) as client:
+        # Client streaming: send multiple requests
+        summary = await client.CollectSizes(send_sizes())
+        print(f"Summary: {summary.total_count} sizes, average: {summary.average_size}")
+```
+
+#### Client implementation (Sync)
+
+```python
+# sync_client.py
+from typing import Iterator
+import haberdasher_pb2
+from haberdasher_connecpy import ExampleClientSync
+
+def send_sizes() -> Iterator[haberdasher_pb2.Size]:
+    """Generator to send multiple sizes to the server"""
+    sizes_to_send = [10, 12, 14, 16, 18]
+    for size in sizes_to_send:
+        yield haberdasher_pb2.Size(inches=size)
+
+def main():
+    with ExampleClientSync(
+        "http://localhost:3000",
+        session=session
+    ) as client:
+        # Client streaming: send multiple requests
+        summary = client.CollectSizes(send_sizes())
+        print(f"Summary: {summary.total_count} sizes, average: {summary.average_size}")
+```
+
+### Bidirectional Streaming RPC
+
+Bidirectional streaming RPCs allow both client and server to send multiple messages to each other. Connecpy supports both:
+- **Full-duplex bidirectional streaming**: Client and server can send and receive messages simultaneously
+- **Half-duplex bidirectional streaming**: Client finishes sending all requests before the server starts sending responses
+
+### Important Notes on Streaming
+
+1. **Server Implementation**:
+   - **ASGI servers** (uvicorn, hypercorn, daphne): Support all streaming types including full-duplex bidirectional streaming
+   - **WSGI servers**: Support unary, server streaming, client streaming, and half-duplex bidirectional streaming
+   - **Note**: Full-duplex bidirectional streaming is not supported by WSGI servers due to protocol limitations (WSGI servers read the entire request before processing)
+
+2. **Client Support**:
+   - Both `ConnecpyClient` (async) and `ConnecpyClientSync` support receiving streaming responses
+   - Both support sending streaming requests (client streaming)
+
+3. **Resource Management**: When using streaming responses, resource will be cleaned up when the returned iterator completes or is garbage collected.
+
+4. **Error Handling**: Streaming RPCs can raise exceptions during iteration:
+   ```python
+   # Async version
+   try:
+       async for message in stream:
+           process(message)
+   except ConnecpyException as e:
+       print(f"Stream error: {e.code} - {e.message}")
+   
+   # Sync version
+   try:
+       for message in stream:
+           process(message)
+   except ConnecpyException as e:
+       print(f"Stream error: {e.code} - {e.message}")
+   ```
+
+5. **Bidirectional Streaming**: 
+   - Both full-duplex and half-duplex modes are supported
+   - In full-duplex mode, client and server can send/receive messages simultaneously
+   - In half-duplex mode, client must finish sending before server starts responding
 
 ### Other clients
 
@@ -244,9 +468,63 @@ curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"
 
 ## WSGI Support
 
-Connecpy now provides WSGI support via the `ConnecpyWSGIApp`. This synchronous application adapts our service endpoints to the WSGI specification. It reads requests from the WSGI `environ`, processes POST requests, and returns responses using `start_response`. This enables integration with legacy WSGI servers and middleware.
+Connecpy provides full WSGI support via the `ConnecpyWSGIApplication`. This synchronous application adapts our service endpoints to the WSGI specification. It reads requests from the WSGI `environ`, processes requests, and returns responses using `start_response`. This enables integration with WSGI servers and middleware.
 
-Please see the example in the [example directory](example/example/wsgi_server.py).
+### WSGI Streaming Support
+
+Starting from version 2.1.0, WSGI applications now support streaming RPCs! This includes server streaming, client streaming, and half-duplex bidirectional streaming. Here's how to implement streaming with WSGI:
+
+```python
+# service_sync.py
+from typing import Iterator
+from connecpy.request import RequestContext
+from haberdasher_pb2 import Hat, Size
+
+class HaberdasherServiceSync:
+    def MakeHat(self, req: Size, ctx: RequestContext) -> Hat:
+        """Unary RPC"""
+        return Hat(size=req.inches, color="red", name="fedora")
+    
+    def MakeSimilarHats(self, req: Size, ctx: RequestContext) -> Iterator[Hat]:
+        """Server Streaming RPC - returns multiple hats"""
+        for i in range(3):
+            yield Hat(
+                size=req.inches + i,
+                color=["red", "green", "blue"][i],
+                name=f"hat #{i+1}"
+            )
+    
+    def CollectSizes(self, req: Iterator[Size], ctx: RequestContext) -> Hat:
+        """Client Streaming RPC - receives multiple sizes, returns one hat"""
+        sizes = []
+        for size_msg in req:
+            sizes.append(size_msg.inches)
+        
+        avg_size = sum(sizes) / len(sizes) if sizes else 0
+        return Hat(size=int(avg_size), color="average", name="custom")
+    
+    def MakeVariousHats(self, req: Iterator[Size], ctx: RequestContext) -> Iterator[Hat]:
+        """Bidirectional Streaming RPC (half-duplex only for WSGI)"""
+        # Note: In WSGI, all requests are received before sending responses
+        for size_msg in req:
+            yield Hat(size=size_msg.inches, color="custom", name=f"size-{size_msg.inches}")
+```
+
+```python
+# wsgi_server.py
+from haberdasher_connecpy import HaberdasherWSGIApplication
+from service_sync import HaberdasherServiceSync
+
+app = HaberdasherWSGIApplication(
+    HaberdasherServiceSync()
+)
+
+if __name__ == "__main__":
+    from werkzeug.serving import run_simple
+    run_simple("localhost", 3000, app)
+```
+
+Please see the complete example in the [example directory](example/example/wsgi_server.py).
 
 ## Compression Support
 
@@ -282,38 +560,99 @@ The compression handling is built into both ASGI and WSGI applications. You don'
 For async clients:
 
 ```python
-async with haberdasher_connecpy.HaberdasherClient(
+from haberdasher_connecpy import HaberdasherClient
+from haberdasher_pb2 import Size
+
+async with HaberdasherClient(
     server_url,
     send_compression="br",
     accept_compression=["gzip"]
 ) as client:
     response = await client.MakeHat(
-        haberdasher_pb2.Size(inches=12)
+        Size(inches=12)
     )
 ```
 
 For synchronous clients:
 
 ```python
-with haberdasher_connecpy.HaberdasherClientSync(
+from haberdasher_connecpy import HaberdasherClientSync
+from haberdasher_pb2 import Size
+
+with HaberdasherClientSync(
     server_url,
     send_compression="zstd",  # Use Zstandard compression for request
     accept_compression=["br"]  # Accept Brotli compressed response
 ) as client:
     response = client.MakeHat(
-        haberdasher_pb2.Size(inches=12)
+        Size(inches=12)
     )
 ```
 
-Using GET requests with compression:
+
+### Connect GET Support
+
+Connecpy automatically enables GET request support for methods marked with `idempotency_level = NO_SIDE_EFFECTS` in your proto files. This follows the [Connect Protocol's GET specification](https://connectrpc.com/docs/protocol#unary-get-request).
+
+#### Proto Definition
+
+Mark methods as side-effect-free in your `.proto` file:
+
+```proto
+service Haberdasher {
+  // This method will support both GET and POST requests
+  rpc MakeHat(Size) returns (Hat) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+  
+  // This method only supports POST requests (default)
+  rpc UpdateHat(Hat) returns (Hat);
+}
+```
+
+#### Using GET Requests from Clients
+
+When a method is marked with `NO_SIDE_EFFECTS`, the generated client code includes a `use_get` parameter:
 
 ```python
-response = await client.MakeHat(
-    haberdasher_pb2.Size(inches=12),
-    use_get=True  # Enable GET request (for methods marked with no_side_effects)
-)
-# Note: Compression for GET requests is handled automatically based on the client's configuration
+from haberdasher_connecpy import HaberdasherClient, HaberdasherClientSync
+from haberdasher_pb2 import Size
+
+# Async client using GET request
+async with HaberdasherClient(server_url, session=session) as client:
+    response = await client.MakeHat(
+        Size(inches=12),
+        use_get=True  # Use GET instead of POST
+    )
+
+# Sync client using GET request  
+with HaberdasherClientSync(server_url) as client:
+    response = client.MakeHat(
+        Size(inches=12),
+        use_get=True  # Use GET instead of POST
+    )
 ```
+
+#### Server-Side Implementation
+
+The generated server code automatically configures GET support based on the proto definition. Methods with `NO_SIDE_EFFECTS` will have `allowed_methods=("GET", "POST")` while others will have `allowed_methods=("POST",)` only.
+
+#### Manual GET Requests
+
+You can also make GET requests directly using curl or other HTTP clients:
+
+```sh
+# GET request with query parameters (base64-encoded message)
+curl "http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat?encoding=proto&message=CgwI..."
+
+# GET request with compression
+curl "http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat?encoding=proto&compression=gzip&message=..."
+```
+
+Note: GET support is particularly useful for:
+- Cacheable operations
+- Browser-friendly APIs
+- Read-only operations that don't modify server state
 
 ### CORS Support
 
@@ -324,7 +663,14 @@ headers commonly used by Connect clients for CORS negotiation and a full [exampl
 ## Connect Protocol
 
 Connecpy protoc plugin generates the code based on [Connect Protocol](https://connectrpc.com/docs/protocol) from the `.proto` files.
-Currently, Connecpy supports only Unary RPCs using the POST HTTP method. Connecpy will support other types of RPCs as well, in the near future.
+
+### Supported RPC Types
+
+Connecpy supports the following RPC types:
+- **Unary RPCs** - Single request/response
+- **Server Streaming RPCs** - Single request, multiple responses
+- **Client Streaming RPCs** - Multiple requests, single response
+- **Bidirectional Streaming RPCs** - Multiple requests and responses (both full-duplex and half-duplex)
 
 ## Proto Editions Support
 
@@ -361,7 +707,9 @@ you can use a routing framework such as [werkzeug](./example/example/flask_mount
 The generated application classes now expose a `path` property that returns the service's URL path, making it easier to mount multiple services:
 
 ```python
-haberdasher_app = haberdasher_connecpy.HaberdasherASGIApplication(service)
+from haberdasher_connecpy import HaberdasherASGIApplication
+
+haberdasher_app = HaberdasherASGIApplication(service)
 print(haberdasher_app.path)  # "/package.ServiceName"
 
 # Use with routing frameworks
@@ -373,55 +721,201 @@ app.wsgi_app = DispatcherMiddleware(
 )
 ```
 
-### Interceptor (Server Side)
+### Server-Side Interceptors
 
-ConnecpyASGIApplication supports interceptors (ASGI only, not available for WSGI). You can add interceptors by passing `interceptors` to the application constructor:
+Connecpy supports server-side interceptors for both ASGI and WSGI applications. Interceptors allow you to add cross-cutting concerns like logging, authentication, and metrics to your services.
+
+#### Type-Safe Interceptors
+
+Connecpy provides type-safe interceptors for each RPC type:
 
 ```python
 # server.py
-from typing import Any, Callable
-
-from connecpy.server import ServerInterceptor, ServiceContext
-
-import haberdasher_connecpy
+from typing import Awaitable, Callable, AsyncIterator
+from connecpy.request import RequestContext
+from haberdasher_pb2 import Size, Hat
+from haberdasher_connecpy import HaberdasherASGIApplication
 from service import HaberdasherService
 
-
-class MyInterceptor(ServerInterceptor):
-    def __init__(self, msg):
-        self._msg = msg
-
-    async def intercept(
+# Single interceptor class handling multiple RPC types
+class LoggingInterceptor:
+    async def intercept_unary(
         self,
-        method: Callable,
-        request: Any,
-        ctx: ServiceContext,
-        method_name: str,
-    ) -> Any:
-        print("intercepting " + method_name + " with " + self._msg)
-        return await method(request, ctx)
+        next: Callable[[Size, RequestContext], Awaitable[Hat]],
+        request: Size,
+        ctx: RequestContext,
+    ) -> Hat:
+        print(f"Unary RPC: {ctx.method().name}, size={request.inches}")
+        response = await next(request, ctx)
+        print(f"Response sent: {response.color} hat")
+        return response
 
+    async def intercept_server_stream(
+        self,
+        next: Callable[[Size, RequestContext], AsyncIterator[Hat]],
+        request: Size,
+        ctx: RequestContext,
+    ) -> AsyncIterator[Hat]:
+        print(f"Server streaming RPC: {ctx.method().name}, size={request.inches}")
+        async for response in next(request, ctx):
+            print(f"Streaming: {response.color} hat (size {response.size})")
+            yield response
 
-my_interceptor_a = MyInterceptor("A")
-my_interceptor_b = MyInterceptor("B")
-
-service = haberdasher_connecpy.HaberdasherASGIApplication(
+# ASGI application with interceptors
+app = HaberdasherASGIApplication(
     HaberdasherService(),
-    interceptors=[my_interceptor_a, my_interceptor_b]
+    interceptors=[LoggingInterceptor()]  # Single interceptor handles both unary and streaming
 )
 ```
 
-Btw, `ServerInterceptor`'s `intercept` method has compatible signature as `intercept` method of [grpc_interceptor.server.AsyncServerInterceptor](https://grpc-interceptor.readthedocs.io/en/latest/#async-server-interceptors), so you might be able to convert Connecpy interceptors to gRPC interceptors by just changing the import statement and the parent class.
+#### Metadata Interceptors
 
-### Message Body Length
-
-Currently, message body length limit is set to 100kb, you can override this by passing `max_receive_message_length` to the application constructor.
+For simple cross-cutting concerns that don't need access to request/response bodies, use `MetadataInterceptor`:
 
 ```python
-# this sets max message length to be 10 bytes
-app = HaberedasherASGIApplication(max_receive_message_length=10)
+import time
+from connecpy.interceptor import MetadataInterceptor
 
+# Simple timing interceptor
+class TimingInterceptor(MetadataInterceptor[float]):
+    async def on_start(self, ctx: RequestContext) -> float:
+        print(f"Starting {ctx.method().name}")
+        return time.time()
+    
+    async def on_end(self, start_time: float, ctx: RequestContext) -> None:
+        elapsed = time.time() - start_time
+        print(f"{ctx.method().name} took {elapsed:.3f}s")
+
+# Works with all RPC types!
+app = HaberdasherASGIApplication(
+    HaberdasherService(),
+    interceptors=[TimingInterceptor()]
+)
 ```
+
+#### Synchronous Interceptors (WSGI)
+
+WSGI applications support synchronous interceptors:
+
+```python
+from typing import Callable
+from connecpy.interceptor import MetadataInterceptorSync
+from connecpy.request import RequestContext
+from haberdasher_pb2 import Size, Hat
+from haberdasher_connecpy import HaberdasherWSGIApplication
+
+class LoggingInterceptorSync:
+    def intercept_unary_sync(
+        self,
+        next: Callable[[Size, RequestContext], Hat],
+        request: Size,
+        ctx: RequestContext,
+    ) -> Hat:
+        print(f"Sync RPC: {ctx.method().name}, size={request.inches}")
+        return next(request, ctx)
+
+class TimingInterceptorSync(MetadataInterceptorSync[float]):
+    def on_start_sync(self, ctx: RequestContext) -> float:
+        return time.time()
+    
+    def on_end_sync(self, start_time: float, ctx: RequestContext) -> None:
+        elapsed = time.time() - start_time
+        print(f"{ctx.method().name} took {elapsed:.3f}s")
+
+# WSGI application with interceptors
+wsgi_app = HaberdasherWSGIApplication(
+    HaberdasherServiceSync(),
+    interceptors=[LoggingInterceptorSync(), TimingInterceptorSync()]
+)
+```
+
+#### Available Interceptor Types
+
+| Interceptor Type | Use Case | ASGI | WSGI |
+|-----------------|----------|------|------|
+| `UnaryInterceptor` / `UnaryInterceptorSync` | Unary RPCs | ✅ | ✅ |
+| `ClientStreamInterceptor` / `ClientStreamInterceptorSync` | Client streaming RPCs | ✅ | ✅ |
+| `ServerStreamInterceptor` / `ServerStreamInterceptorSync` | Server streaming RPCs | ✅ | ✅ |
+| `BidiStreamInterceptor` / `BidiStreamInterceptorSync` | Bidirectional streaming RPCs | ✅ | ✅ |
+| `MetadataInterceptor` / `MetadataInterceptorSync` | All RPC types (metadata only) | ✅ | ✅ |
+
+#### Interceptor Execution Order
+
+Interceptors are executed in the order they are provided. For example, if you provide `[A, B, C]`, the execution order will be:
+- A.on_start → B.on_start → C.on_start → handler → C.on_end → B.on_end → A.on_end
+
+### Client-Side Interceptors
+
+Connecpy supports client-side interceptors, allowing you to add cross-cutting concerns to your client requests:
+
+```python
+# async_client_with_interceptor.py
+import asyncio
+from connecpy.exceptions import ConnecpyException
+from haberdasher_connecpy import HaberdasherClient
+from haberdasher_pb2 import Size, Hat
+
+class LoggingInterceptor:
+    """Interceptor that logs all requests and responses"""
+    
+    async def intercept_unary(self, next, request, ctx):
+        print(f"[LOG] Calling {ctx.method().name} with request: {request}")
+        try:
+            response = await next(request, ctx)
+            print(f"[LOG] Received response: {response}")
+            return response
+        except Exception as e:
+            print(f"[LOG] Error: {e}")
+            raise
+
+async def main():
+    # Create client with interceptors
+    client = HaberdasherClient(
+        "http://localhost:3000",
+        interceptors=[LoggingInterceptor()]
+    )
+    
+    try:
+        response = await client.MakeHat(
+            Size(inches=12)
+        )
+        print(response)
+    finally:
+        await client.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Client interceptors support all RPC types (unary, client streaming, server streaming, and bidirectional streaming) and work with both async and sync clients.
+
+### Message Size Limits
+
+Connecpy allows you to limit incoming message sizes to protect against resource exhaustion. By default, there is no limit, but you can set one by passing `read_max_bytes` to the application constructor:
+
+```python
+from haberdasher_connecpy import HaberdasherASGIApplication, HaberdasherWSGIApplication
+
+# Set maximum message size to 1MB for ASGI applications
+app = HaberdasherASGIApplication(
+    service,
+    read_max_bytes=1024 * 1024  # 1MB
+)
+
+# Set maximum message size for WSGI applications  
+wsgi_app = HaberdasherWSGIApplication(
+    service_sync,
+    read_max_bytes=1024 * 1024  # 1MB
+)
+
+# Disable message size limit (not recommended for production)
+app = HaberdasherASGIApplication(
+    service,
+    read_max_bytes=None
+)
+```
+
+When a message exceeds the configured limit, the server will return a `RESOURCE_EXHAUSTED` error to the client.
 
 ## Standing on the shoulders of giants
 

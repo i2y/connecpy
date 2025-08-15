@@ -118,7 +118,7 @@ class ConnectWireError:
             code = _http_status_code_to_error.get(http_status, Code.UNKNOWN)
         message = data.get("message", "")
         details: Sequence[Any] = ()
-        details_json = cast(list[dict[str, str]] | None, data.get("details"))
+        details_json = cast("list[dict[str, str]] | None", data.get("details"))
         if details_json:
             details = []
             for detail in details_json:
