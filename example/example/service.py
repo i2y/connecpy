@@ -1,4 +1,5 @@
 import random
+from collections.abc import AsyncIterator
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -25,3 +26,28 @@ class HaberdasherService(Haberdasher):
             )
 
         return response
+
+    async def MakeSimilarHats(
+        self, request: Size, ctx: RequestContext
+    ) -> AsyncIterator[Hat]:
+        """Server Streaming RPC: Returns multiple hats of similar size"""
+        if request.inches <= 0:
+            raise ConnecpyException(
+                Code.INVALID_ARGUMENT, "inches: I can't make a hat that small!"
+            )
+
+        # Generate 3 similar hats with different colors
+        colors = ["white", "black", "brown", "red", "blue"]
+        hat_types = ["bowler", "baseball cap", "top hat", "derby", "fedora"]
+
+        for i in range(3):
+            hat = Hat(
+                size=request.inches + random.randint(-1, 1),  # Slight size variation
+                color=colors[i % len(colors)],
+            )
+            if request.description:  # Use description if provided
+                hat.name = f"{request.description} #{i + 1}"
+            else:
+                hat.name = hat_types[i % len(hat_types)]
+
+            yield hat

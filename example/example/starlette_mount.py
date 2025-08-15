@@ -1,11 +1,13 @@
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import PlainTextResponse
 from starlette.routing import Mount, Route
-from starlette.types import ASGIApp
+
+if TYPE_CHECKING:
+    from starlette.types import ASGIApp
 
 from .server import app as server_app
 
@@ -17,7 +19,7 @@ app = Starlette(
         ),
         Mount(
             "/",
-            app=cast(ASGIApp, server_app),
+            app=cast("ASGIApp", server_app),
             name="haberdasher",
         ),
     ],
