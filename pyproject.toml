@@ -140,11 +140,10 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"conformance/test/**" = ["INP", "SLF", "SIM115", "N802", "D"]
+"conformance/test/**" = ["INP", "SLF", "SIM115", "D"]
 "example/**" = [
-    "S",    # Keep examples simpler, e.g. allow normal random
+    "S",   # Keep examples simpler, e.g. allow normal random
     "T20",
-    "N802",
     "D",
 ]
 "**/test_*.py" = [
@@ -155,7 +154,6 @@ extend-ignore = [
     "EM",
     "INP",
     "SLF",
-    "N802",
     "PERF",
     "D",
 ]

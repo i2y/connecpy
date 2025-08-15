@@ -25,7 +25,7 @@ from example.haberdasher_pb2 import Hat, Size
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity", None])
 def test_roundtrip_sync(proto_json: bool, compression: str):
     class RoundtripHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
 
     app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
@@ -36,7 +36,7 @@ def test_roundtrip_sync(proto_json: bool, compression: str):
         send_compression=compression,
         accept_compression=[compression] if compression else None,
     ) as client:
-        response = client.MakeHat(request=Size(inches=10))
+        response = client.make_hat(request=Size(inches=10))
     assert response.size == 10
     assert response.color == "green"
 
@@ -46,7 +46,7 @@ def test_roundtrip_sync(proto_json: bool, compression: str):
 @pytest.mark.asyncio
 async def test_roundtrip_async(proto_json: bool, compression: str):
     class DetailsHaberdasher(Haberdasher):
-        async def MakeHat(self, request, ctx):
+        async def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
@@ -58,7 +58,7 @@ async def test_roundtrip_async(proto_json: bool, compression: str):
         send_compression=compression,
         accept_compression=[compression] if compression else None,
     ) as client:
-        response = await client.MakeHat(request=Size(inches=10))
+        response = await client.make_hat(request=Size(inches=10))
     assert response.size == 10
     assert response.color == "green"
 
@@ -68,7 +68,7 @@ async def test_roundtrip_async(proto_json: bool, compression: str):
 @pytest.mark.asyncio
 async def test_roundtrip_response_stream_async(proto_json: bool, compression: str):
     class StreamingHaberdasher(Haberdasher):
-        async def MakeSimilarHats(self, request, ctx):
+        async def make_similar_hats(self, request, ctx):
             yield Hat(size=request.inches, color="green")
             yield Hat(size=request.inches, color="red")
             yield Hat(size=request.inches, color="blue")
@@ -86,7 +86,7 @@ async def test_roundtrip_response_stream_async(proto_json: bool, compression: st
         accept_compression=[compression] if compression else None,
     ) as client:
         with pytest.raises(ConnecpyException) as exc_info:
-            async for h in client.MakeSimilarHats(request=Size(inches=10)):
+            async for h in client.make_similar_hats(request=Size(inches=10)):
                 hats.append(h)
     assert hats[0].size == 10
     assert hats[0].color == "green"
@@ -114,11 +114,11 @@ def test_message_limit_sync(
     bad_hat = Hat(color="X" * 1000)
 
     class LargeHaberdasher(HaberdasherSync):
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             requests.append(request)
             return good_hat if client_bad else bad_hat
 
-        def MakeVariousHats(self, request: Iterator[Size], ctx) -> Iterator[Hat]:
+        def make_various_hats(self, request: Iterator[Size], ctx) -> Iterator[Hat]:
             for size in request:
                 requests.append(size)
             yield Hat(color="good")
@@ -134,7 +134,7 @@ def test_message_limit_sync(
         read_max_bytes=100,
     ) as client:
         with pytest.raises(ConnecpyException) as exc_info:
-            client.MakeHat(request=bad_size if client_bad else good_size)
+            client.make_hat(request=bad_size if client_bad else good_size)
         assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
         assert exc_info.value.message == "message is larger than configured max 100"
         if client_bad:
@@ -152,7 +152,7 @@ def test_message_limit_sync(
                 yield good_size
                 yield bad_size if client_bad else good_size
 
-            for h in client.MakeVariousHats(request=request_stream()):
+            for h in client.make_various_hats(request=request_stream()):
                 responses.append(h)
         assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
         assert exc_info.value.message == "message is larger than configured max 100"
@@ -180,11 +180,11 @@ async def test_message_limit_async(
     bad_hat = Hat(color="X" * 1000)
 
     class LargeHaberdasher(Haberdasher):
-        async def MakeHat(self, request, ctx):
+        async def make_hat(self, request, ctx):
             requests.append(request)
             return good_hat if client_bad else bad_hat
 
-        async def MakeVariousHats(
+        async def make_various_hats(
             self, request: AsyncIterator[Size], ctx
         ) -> AsyncIterator[Hat]:
             async for size in request:
@@ -202,7 +202,7 @@ async def test_message_limit_async(
         read_max_bytes=100,
     ) as client:
         with pytest.raises(ConnecpyException) as exc_info:
-            await client.MakeHat(request=bad_size if client_bad else good_size)
+            await client.make_hat(request=bad_size if client_bad else good_size)
         assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
         assert exc_info.value.message == "message is larger than configured max 100"
         if client_bad:
@@ -220,7 +220,7 @@ async def test_message_limit_async(
                 yield good_size
                 yield bad_size if client_bad else good_size
 
-            async for h in client.MakeVariousHats(request=request_stream()):
+            async for h in client.make_various_hats(request=request_stream()):
                 responses.append(h)
         assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
         assert exc_info.value.message == "message is larger than configured max 100"

@@ -10,7 +10,7 @@ from .haberdasher_pb2 import Hat, Size
 
 
 class HaberdasherService(Haberdasher):
-    async def MakeHat(self, request: Size, ctx: RequestContext) -> Hat:
+    async def make_hat(self, request: Size, ctx: RequestContext) -> Hat:
         print("remaining_time: ", ctx.timeout_ms())
         if request.inches <= 0:
             raise ConnecpyException(
@@ -27,7 +27,7 @@ class HaberdasherService(Haberdasher):
 
         return response
 
-    async def MakeSimilarHats(
+    async def make_similar_hats(
         self, request: Size, ctx: RequestContext
     ) -> AsyncIterator[Hat]:
         """Server Streaming RPC: Returns multiple hats of similar size"""

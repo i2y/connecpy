@@ -29,7 +29,7 @@ def sync_server():
 
 def test_sync_client_basic(sync_server: WSGIServer):
     with HaberdasherClientSync(f"http://localhost:{sync_server.server_port}") as client:
-        response = client.MakeHat(request=Size(inches=10))
+        response = client.make_hat(request=Size(inches=10))
         assert response.size == 10
     assert client._session.is_closed
 
@@ -45,7 +45,9 @@ def test_sync_client_custom_session_and_header(sync_server: WSGIServer):
     with HaberdasherClientSync(
         f"http://localhost:{sync_server.server_port}", session=session
     ) as client:
-        response = client.MakeHat(request=Size(inches=10), headers={"x-animal": "bear"})
+        response = client.make_hat(
+            request=Size(inches=10), headers={"x-animal": "bear"}
+        )
         assert response.size == 10
     assert not session.is_closed
     assert recorded_request is not None
@@ -57,7 +59,7 @@ async def test_async_client_basic(sync_server: WSGIServer):
     async with HaberdasherClient(
         f"http://localhost:{sync_server.server_port}"
     ) as client:
-        response = await client.MakeHat(request=Size(inches=10))
+        response = await client.make_hat(request=Size(inches=10))
         assert response.size == 10
     assert client._session.is_closed
 
@@ -74,7 +76,7 @@ async def test_async_client_custom_session_and_header(sync_server: WSGIServer):
     async with HaberdasherClient(
         f"http://localhost:{sync_server.server_port}", session=session
     ) as client:
-        response = await client.MakeHat(
+        response = await client.make_hat(
             request=Size(inches=10), headers={"x-animal": "bear"}
         )
         assert response.size == 10

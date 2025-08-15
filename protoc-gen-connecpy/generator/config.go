@@ -7,12 +7,12 @@ import (
 type Naming uint32
 
 const (
-	// NamingGoogle is the naming convention that follows Google internal style,
-	// notably using PascalCase method names.
-	NamingGoogle Naming = iota
 	// NamingPEP is the naming convention that follows PEP8, notably using
 	// snake_case method names.
-	NamingPEP
+	NamingPEP Naming = iota
+	// NamingGoogle is the naming convention that follows Google internal style,
+	// notably using PascalCase method names.
+	NamingGoogle
 )
 
 // Config is the configuration for code generation.

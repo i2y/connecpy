@@ -57,7 +57,7 @@ def test_sync_errors(
         def __init__(self, exception: ConnecpyException):
             self._exception = exception
 
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             raise self._exception
 
     haberdasher = ErrorHaberdasherSync(ConnecpyException(code, message))
@@ -76,7 +76,7 @@ def test_sync_errors(
         HaberdasherClientSync("http://localhost", session=session) as client,
         pytest.raises(ConnecpyException) as exc_info,
     ):
-        client.MakeHat(request=Size(inches=10))
+        client.make_hat(request=Size(inches=10))
 
     assert exc_info.value.code == code
     assert exc_info.value.message == message
@@ -95,7 +95,7 @@ async def test_async_errors(
         def __init__(self, exception: ConnecpyException):
             self._exception = exception
 
-        async def MakeHat(self, request, ctx):
+        async def make_hat(self, request, ctx):
             raise self._exception
 
     haberdasher = ErrorHaberdasher(ConnecpyException(code, message))
@@ -115,7 +115,7 @@ async def test_async_errors(
         HaberdasherClient("http://localhost", session=session) as client,
     ):
         with pytest.raises(ConnecpyException) as exc_info:
-            await client.MakeHat(request=Size(inches=10))
+            await client.make_hat(request=Size(inches=10))
 
     assert exc_info.value.code == code
     assert exc_info.value.message == message
@@ -182,7 +182,7 @@ def test_sync_http_errors(response_status, response_kwargs, code, message):
         ) as client,
         pytest.raises(ConnecpyException) as exc_info,
     ):
-        client.MakeHat(request=Size(inches=10))
+        client.make_hat(request=Size(inches=10))
     assert exc_info.value.code == code
     assert exc_info.value.message == message
 
@@ -197,7 +197,7 @@ async def test_async_http_errors(response_status, response_kwargs, code, message
         "http://localhost", session=AsyncClient(transport=transport)
     ) as client:
         with pytest.raises(ConnecpyException) as exc_info:
-            await client.MakeHat(request=Size(inches=10))
+            await client.make_hat(request=Size(inches=10))
     assert exc_info.value.code == code
     assert exc_info.value.message == message
 
@@ -268,7 +268,7 @@ def test_sync_client_errors(
     method, path, headers, body, response_status, response_headers
 ):
     class ValidHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             return Hat()
 
     app = HaberdasherWSGIApplication(ValidHaberdasherSync())
@@ -295,7 +295,7 @@ async def test_async_client_errors(
     method, path, headers, body, response_status, response_headers
 ):
     class ValidHaberdasher(Haberdasher):
-        async def MakeHat(self, request, ctx):
+        async def make_hat(self, request, ctx):
             return Hat()
 
     haberdasher = ValidHaberdasher()
@@ -318,7 +318,7 @@ async def test_async_client_errors(
 @pytest.fixture(scope="module")
 def sync_timeout_server():
     class SleepingHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             time.sleep(10)
             raise AssertionError("Should be timedout already")
 
@@ -371,7 +371,7 @@ def test_sync_client_timeout(
         ) as client,
         pytest.raises(ConnecpyException) as exc_info,
     ):
-        client.MakeHat(request=Size(inches=10), timeout_ms=call_timeout_ms)
+        client.make_hat(request=Size(inches=10), timeout_ms=call_timeout_ms)
 
     assert exc_info.value.code == Code.DEADLINE_EXCEEDED
     assert exc_info.value.message == "Request timed out"
@@ -408,7 +408,7 @@ async def test_async_client_timeout(
         ) as client,
     ):
         with pytest.raises(ConnecpyException) as exc_info:
-            await client.MakeHat(request=Size(inches=10), timeout_ms=call_timeout_ms)
+            await client.make_hat(request=Size(inches=10), timeout_ms=call_timeout_ms)
 
     assert exc_info.value.code == Code.DEADLINE_EXCEEDED
     assert exc_info.value.message == "Request timed out"

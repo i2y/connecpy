@@ -19,7 +19,7 @@ from httpx import (
 @pytest.mark.parametrize("compression", ["gzip", "identity", None])
 def test_roundtrip_sync(compression: str):
     class RoundtripHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
 
     app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
@@ -29,7 +29,7 @@ def test_roundtrip_sync(compression: str):
         send_compression=compression,
         accept_compression=[compression] if compression else None,
     ) as client:
-        response = client.MakeHat(request=Size(inches=10))
+        response = client.make_hat(request=Size(inches=10))
     assert response.size == 10
     assert response.color == "green"
 
@@ -38,7 +38,7 @@ def test_roundtrip_sync(compression: str):
 @pytest.mark.asyncio
 async def test_roundtrip_async(compression: str):
     class DetailsHaberdasher(Haberdasher):
-        async def MakeHat(self, request, ctx):
+        async def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
@@ -49,7 +49,7 @@ async def test_roundtrip_async(compression: str):
         send_compression=compression,
         accept_compression=[compression] if compression else None,
     ) as client:
-        response = await client.MakeHat(request=Size(inches=10))
+        response = await client.make_hat(request=Size(inches=10))
     assert response.size == 10
     assert response.color == "green"
 
@@ -57,7 +57,7 @@ async def test_roundtrip_async(compression: str):
 @pytest.mark.parametrize("compression", ["br", "zstd"])
 def test_invalid_compression_sync(compression: str):
     class RoundtripHaberdasherSync(HaberdasherSync):
-        def MakeHat(self, request, ctx):
+        def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
 
     app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
@@ -81,7 +81,7 @@ def test_invalid_compression_sync(compression: str):
 @pytest.mark.asyncio
 async def test_invalid_compression_async(compression: str):
     class DetailsHaberdasher(Haberdasher):
-        async def MakeHat(self, request, ctx):
+        async def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
 
     app = HaberdasherASGIApplication(DetailsHaberdasher())
