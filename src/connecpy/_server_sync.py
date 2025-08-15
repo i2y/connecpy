@@ -79,10 +79,8 @@ def _process_headers(headers: dict) -> Headers:
 
 
 def prepare_response_headers(
-    base_headers: dict[str, list[str]],
-    selected_encoding: str,
-    compressed_size: int | None = None,
-) -> tuple[dict[str, list[str]], bool]:
+    base_headers: dict[str, list[str]], selected_encoding: str
+) -> dict[str, list[str]]:
     """Prepare response headers and determine if compression should be used.
 
     Args:
@@ -94,17 +92,13 @@ def prepare_response_headers(
         tuple[dict, bool]: Final headers and whether to use compression
     """
     headers = base_headers.copy()
-    use_compression = False
 
     if "content-type" not in headers:
         headers["content-type"] = ["application/proto"]
 
-    if selected_encoding != "identity" and compressed_size is not None:
-        headers["content-encoding"] = [selected_encoding]
-        use_compression = True
-
+    headers["content-encoding"] = [selected_encoding]
     headers["vary"] = ["Accept-Encoding"]
-    return headers, use_compression
+    return headers
 
 
 def _read_body(environ: WSGIEnvironment) -> Iterator[bytes]:
@@ -216,17 +210,9 @@ class ConnecpyWSGIApplication(ABC):
 
         # Handle compression if accepted
         accept_encoding = headers.get("accept-encoding", "identity")
-        selected_encoding = _compression.select_encoding(accept_encoding)
-        compressed_bytes = None
-        if selected_encoding != "identity":
-            compression = _compression.get_compression(selected_encoding)
-            if compression:
-                compressed_bytes = compression.compress(res_bytes)
-        response_headers, use_compression = prepare_response_headers(
-            base_headers,
-            selected_encoding,
-            len(compressed_bytes) if compressed_bytes is not None else None,
-        )
+        compression = _compression.negotiate_compression(accept_encoding)
+        res_bytes = compression.compress(res_bytes)
+        response_headers = prepare_response_headers(base_headers, compression.name())
 
         # Convert headers to WSGI format
         wsgi_headers: list[tuple[str, str]] = []
@@ -236,10 +222,7 @@ class ConnecpyWSGIApplication(ABC):
         _add_context_headers(wsgi_headers, ctx)
 
         start_response("200 OK", wsgi_headers)
-        final_response = (
-            compressed_bytes if use_compression and compressed_bytes else res_bytes
-        )
-        return [final_response]
+        return [res_bytes]
 
     def _handle_post_request(
         self,
@@ -379,8 +362,7 @@ class ConnecpyWSGIApplication(ABC):
         accept_compression = headers.get(
             CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
         )
-        response_compression_name = _compression.select_encoding(accept_compression)
-        response_compression = _compression.get_compression(response_compression_name)
+        response_compression = _compression.negotiate_compression(accept_compression)
 
         codec_name = codec_name_from_content_type(
             headers.get("content-type", ""), stream=True
@@ -423,7 +405,7 @@ class ConnecpyWSGIApplication(ABC):
             # Response headers set before the first message should be set to the context and
             # we can send them.
             _send_stream_response_headers(
-                start_response, codec, response_compression_name, ctx
+                start_response, codec, response_compression.name(), ctx
             )
             if first_response is None:
                 # It's valid for a service method to return no messages, finish the response
@@ -441,7 +423,7 @@ class ConnecpyWSGIApplication(ABC):
             # response message will be handled by _response_stream, so here we have a
             # full error-only response.
             _send_stream_response_headers(
-                start_response, codec, response_compression_name, ctx
+                start_response, codec, response_compression.name(), ctx
             )
             return [
                 writer.end(ctx.response_trailers(), ConnectWireError.from_exception(e))

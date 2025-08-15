@@ -153,7 +153,7 @@ class ConnecpyASGIApplication(ABC):
         ctx: _server_shared.RequestContext,
     ):
         accept_encoding = headers.get("accept-encoding", "")
-        selected_encoding = _compression.select_encoding(accept_encoding)
+        compression = _compression.negotiate_compression(accept_encoding)
 
         if http_method == "GET":
             request = await self._read_get_request(endpoint, codec, query_params)
@@ -169,15 +169,9 @@ class ConnecpyASGIApplication(ABC):
                 f"{CONNECT_UNARY_CONTENT_TYPE_PREFIX}{codec.name()}".encode(),
             )
         ]
-        # Compress response if needed
-        if selected_encoding != "identity":
-            compressor = _compression.get_compression(selected_encoding)
-            if compressor:
-                res_bytes = compressor.compress(res_bytes)
-                response_headers.append(
-                    (b"content-encoding", selected_encoding.encode())
-                )
-                response_headers.append((b"vary", b"Accept-Encoding"))
+        res_bytes = compression.compress(res_bytes)
+        response_headers.append((b"content-encoding", compression.name().encode()))
+        response_headers.append((b"vary", b"Accept-Encoding"))
 
         _add_context_headers(response_headers, ctx)
 
@@ -289,8 +283,7 @@ class ConnecpyASGIApplication(ABC):
         accept_compression = headers.get(
             CONNECT_STREAMING_HEADER_ACCEPT_COMPRESSION, ""
         )
-        response_compression_name = _compression.select_encoding(accept_compression)
-        response_compression = _compression.get_compression(response_compression_name)
+        response_compression = _compression.negotiate_compression(accept_compression)
 
         writer = EnvelopeWriter(codec, response_compression)
 
@@ -323,7 +316,7 @@ class ConnecpyASGIApplication(ABC):
                 # response headers.
                 if not sent_headers:
                     await _send_stream_response_headers(
-                        send, codec, response_compression_name, ctx
+                        send, codec, response_compression.name(), ctx
                     )
                     sent_headers = True
 
@@ -339,7 +332,7 @@ class ConnecpyASGIApplication(ABC):
             if not sent_headers:
                 # Exception before any response message is returned
                 await _send_stream_response_headers(
-                    send, codec, response_compression_name, ctx
+                    send, codec, response_compression.name(), ctx
                 )
             await send(
                 {
