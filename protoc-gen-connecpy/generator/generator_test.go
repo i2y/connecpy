@@ -95,7 +95,7 @@ func TestGenerateConnecpyFile(t *testing.T) {
 				t.Fatalf("Failed to create FileDescriptorProto: %v", err)
 				return
 			}
-			got, err := GenerateConnecpyFile(fd)
+			got, err := GenerateConnecpyFile(fd, Config{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateConnecpyFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -106,7 +106,7 @@ func TestGenerateConnecpyFile(t *testing.T) {
 				}
 
 				content := got.GetContent()
-				if !strings.Contains(content, "from typing import AsyncIterator, Iterable, Iterator, Mapping, Protocol") {
+				if !strings.Contains(content, "from collections.abc import AsyncIterator, Iterable, Iterator, Mapping") {
 					t.Error("Generated code missing required imports")
 				}
 				if !strings.Contains(content, "class "+strings.Split(tt.input.GetService()[0].GetName(), ".")[0]) {

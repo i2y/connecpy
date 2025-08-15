@@ -6,6 +6,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"unicode"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/proto"
@@ -20,6 +21,8 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 	resp.SupportedFeatures = proto.Uint64(uint64(plugin.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL) | uint64(plugin.CodeGeneratorResponse_FEATURE_SUPPORTS_EDITIONS))
 	resp.MinimumEdition = proto.Int32(int32(descriptorpb.Edition_EDITION_PROTO3))
 	resp.MaximumEdition = proto.Int32(int32(descriptorpb.Edition_EDITION_2023))
+
+	conf := parseConfig(r.GetParameter())
 
 	files := r.GetFileToGenerate()
 	if len(files) == 0 {
@@ -45,7 +48,7 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 			return true
 		}
 
-		connecpyFile, err := GenerateConnecpyFile(fd)
+		connecpyFile, err := GenerateConnecpyFile(fd, conf)
 		if err != nil {
 			resp.Error = proto.String("File[" + fd.Path() + "][generate]: " + err.Error())
 			return false
@@ -57,7 +60,7 @@ func Generate(r *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 	return resp
 }
 
-func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGeneratorResponse_File, error) {
+func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.CodeGeneratorResponse_File, error) {
 	filename := fd.Path()
 
 	fileNameWithoutSuffix := strings.TrimSuffix(filename, path.Ext(filename))
@@ -88,7 +91,6 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 				switch mo.GetIdempotencyLevel() {
 				case descriptorpb.MethodOptions_NO_SIDE_EFFECTS:
 					idempotencyLevel = "NO_SIDE_EFFECTS"
-					noSideEffects = true
 				case descriptorpb.MethodOptions_IDEMPOTENT:
 					idempotencyLevel = "IDEMPOTENT"
 				}
@@ -100,11 +102,14 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 				endpointType = "client_stream"
 			} else if method.IsStreamingServer() {
 				endpointType = "server_stream"
+			} else if idempotencyLevel == "NO_SIDE_EFFECTS" {
+				noSideEffects = true
 			}
 			connecpyMethod := &ConnecpyMethod{
 				Package:          packageName,
 				ServiceName:      connecpySvc.FullName,
 				Name:             string(method.Name()),
+				PythonName:       pythonMethodName(string(method.Name()), conf),
 				InputType:        symbolName(method.Input()),
 				OutputType:       symbolName(method.Output()),
 				EndpointType:     endpointType,
@@ -132,6 +137,31 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor) (*plugin.CodeGenerator
 	}
 
 	return resp, nil
+}
+
+func pythonMethodName(name string, conf Config) string {
+	switch conf.Naming {
+	case NamingGoogle:
+		return name
+	case NamingPEP:
+		if len(name) <= 1 {
+			return strings.ToLower(name)
+		}
+		buf := make([]byte, 0, len(name))
+		buf = append(buf, byte(unicode.ToLower(rune(name[0]))))
+		for i := 1; i < len(name); i++ {
+			switch {
+			case unicode.IsUpper(rune(name[i])):
+				buf = append(buf, '_')
+				buf = append(buf, byte(unicode.ToLower(rune(name[i]))))
+			default:
+				buf = append(buf, byte(name[i]))
+			}
+		}
+		return string(buf)
+	default:
+		panic("Unknown naming, this is a bug in protoc-gen-connecpy")
+	}
 }
 
 // https://github.com/grpc/grpc/blob/0dd1b2cad21d89984f9a1b3c6249d649381eeb65/src/compiler/python_generator_helpers.h#L67

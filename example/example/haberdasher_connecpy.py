@@ -373,7 +373,6 @@ class HaberdasherClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        use_get: bool = False,
     ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
         return self.execute_server_stream(
             request=request,
