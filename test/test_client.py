@@ -1,10 +1,5 @@
 import pytest
-from httpx import (
-    ASGITransport,
-    AsyncClient,
-    Client,
-    WSGITransport,
-)
+from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 from connecpy.client import ResponseMetadata
 from example.haberdasher_connecpy import (

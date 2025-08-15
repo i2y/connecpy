@@ -21,14 +21,8 @@ def strip_prefix(prefix: str, app: ASGIApp) -> ASGIApp:
 
 app = Starlette(
     routes=[
-        Route(
-            "/healthz",
-            lambda _: PlainTextResponse("OK"),
-        ),
-        Mount(
-            "/services",
-            app=cast("ASGIApp", haberdasher_app),
-        ),
+        Route("/healthz", lambda _: PlainTextResponse("OK")),
+        Mount("/services", app=cast("ASGIApp", haberdasher_app)),
         Mount(
             "/moreservices",
             app=Mount(
@@ -36,9 +30,6 @@ app = Starlette(
                 app=strip_prefix("/moreservices", cast("ASGIApp", haberdasher_app)),
             ),
         ),
-        Mount(
-            haberdasher_app.path,
-            app=cast("ASGIApp", haberdasher_app),
-        ),
+        Mount(haberdasher_app.path, app=cast("ASGIApp", haberdasher_app)),
     ]
 )

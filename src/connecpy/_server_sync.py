@@ -4,10 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import replace
 from http import HTTPStatus
-from typing import (
-    TYPE_CHECKING,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, TypeVar
 from urllib.parse import parse_qs
 
 from . import _compression, _server_shared
@@ -447,10 +444,7 @@ class ConnecpyWSGIApplication(ABC):
                 start_response, codec, response_compression_name, ctx
             )
             return [
-                writer.end(
-                    ctx.response_trailers(),
-                    ConnectWireError.from_exception(e),
-                )
+                writer.end(ctx.response_trailers(), ConnectWireError.from_exception(e))
             ]
 
     def _handle_error(self, exc, ctx: RequestContext | None, _environ, start_response):
@@ -490,14 +484,8 @@ def _send_stream_response_headers(
     ctx: RequestContext,
 ):
     response_headers = [
-        (
-            "content-type",
-            f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX}{codec.name()}",
-        ),
-        (
-            CONNECT_STREAMING_HEADER_COMPRESSION,
-            compression_name,
-        ),
+        ("content-type", f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX}{codec.name()}"),
+        (CONNECT_STREAMING_HEADER_COMPRESSION, compression_name),
     ]
     response_headers.extend(
         (key, value) for key, value in ctx.response_headers().allitems()

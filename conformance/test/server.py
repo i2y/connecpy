@@ -121,10 +121,7 @@ def _create_request_info(
 
 
 async def _handle_unary_response(
-    definition: UnaryResponseDefinition,
-    reqs: list[Any],
-    res: RES,
-    ctx: RequestContext,
+    definition: UnaryResponseDefinition, reqs: list[Any], res: RES, ctx: RequestContext
 ) -> RES:
     _send_headers(ctx, definition)
     request_info = _create_request_info(ctx, reqs)
@@ -253,10 +250,7 @@ class TestService(ConformanceService):
 
 
 def _handle_unary_response_sync(
-    definition: UnaryResponseDefinition,
-    reqs: list[Any],
-    res: RES,
-    ctx: RequestContext,
+    definition: UnaryResponseDefinition, reqs: list[Any], res: RES, ctx: RequestContext
 ) -> RES:
     _send_headers(ctx, definition)
     request_info = _create_request_info(ctx, reqs)

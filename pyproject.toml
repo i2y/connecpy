@@ -34,6 +34,10 @@ build-backend = "uv_build"
 [tool.pytest.ini_options]
 testpaths = ["test"]
 
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+docstring-code-format = true
+
 [tool.ruff.lint]
 extend-select = [
     # Same order as listed on https://docs.astral.sh/ruff/rules/
@@ -157,6 +161,9 @@ extend-ignore = [
     "PERF",
     "D",
 ]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
 
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.

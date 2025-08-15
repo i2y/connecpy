@@ -152,10 +152,7 @@ class ConnectWireError:
         return _error_to_http_status.get(self.code, _INTERNAL_SERVER_ERROR)
 
     def to_dict(self) -> dict:
-        data: dict = {
-            "code": self.code.value,
-            "message": self.message,
-        }
+        data: dict = {"code": self.code.value, "message": self.message}
         if self.details:
             details: list[dict[str, str]] = []
             for detail in self.details:

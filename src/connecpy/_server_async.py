@@ -5,10 +5,7 @@ from asyncio import CancelledError, sleep
 from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
 from dataclasses import replace
 from http import HTTPStatus
-from typing import (
-    TYPE_CHECKING,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, TypeVar
 from urllib.parse import parse_qs
 
 from . import _compression, _server_shared
@@ -142,14 +139,7 @@ class ConnecpyASGIApplication(ABC):
             return await self._handle_error(e, ctx, send)
 
         # Streams have their own error handling so move out of the try block.
-        return await self._handle_stream(
-            receive,
-            send,
-            endpoint,
-            codec,
-            headers,
-            ctx,
-        )
+        return await self._handle_stream(receive, send, endpoint, codec, headers, ctx)
 
     async def _handle_unary(
         self,
@@ -200,11 +190,7 @@ class ConnecpyASGIApplication(ABC):
             }
         )
         await send(
-            {
-                "type": "http.response.body",
-                "body": res_bytes,
-                "more_body": False,
-            }
+            {"type": "http.response.body", "body": res_bytes, "more_body": False}
         )
 
     async def _read_get_request(
@@ -343,11 +329,7 @@ class ConnecpyASGIApplication(ABC):
 
                 body = writer.write(message)
                 await send(
-                    {
-                        "type": "http.response.body",
-                        "body": body,
-                        "more_body": True,
-                    }
+                    {"type": "http.response.body", "body": body, "more_body": True}
                 )
         except CancelledError as e:
             raise ConnecpyException(Code.CANCELED, "Request was cancelled") from e
@@ -371,10 +353,7 @@ class ConnecpyASGIApplication(ABC):
             )
 
     async def _handle_error(
-        self,
-        exc,
-        ctx: RequestContext | None,
-        send: ASGISendCallable,
+        self, exc, ctx: RequestContext | None, send: ASGISendCallable
     ) -> None:
         """Handle errors that occur during request processing."""
         headers: list[tuple[bytes, bytes]]
@@ -387,9 +366,7 @@ class ConnecpyASGIApplication(ABC):
         else:
             wire_error = ConnectWireError.from_exception(exc)
             status = wire_error.to_http_status().code
-            headers = [
-                (b"content-type", b"application/json"),
-            ]
+            headers = [(b"content-type", b"application/json")]
             body = wire_error.to_json_bytes()
 
         if ctx:
@@ -403,30 +380,18 @@ class ConnecpyASGIApplication(ABC):
                 "trailers": False,
             }
         )
-        await send(
-            {
-                "type": "http.response.body",
-                "body": body,
-                "more_body": False,
-            }
-        )
+        await send({"type": "http.response.body", "body": body, "more_body": False})
 
 
 async def _send_stream_response_headers(
-    send: ASGISendCallable,
-    codec: Codec,
-    compression_name: str,
-    ctx: RequestContext,
+    send: ASGISendCallable, codec: Codec, compression_name: str, ctx: RequestContext
 ):
     response_headers = [
         (
             b"content-type",
             f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX}{codec.name()}".encode(),
         ),
-        (
-            CONNECT_STREAMING_HEADER_COMPRESSION.encode(),
-            compression_name.encode(),
-        ),
+        (CONNECT_STREAMING_HEADER_COMPRESSION.encode(), compression_name.encode()),
     ]
     response_headers.extend(
         (key.encode(), value.encode())
@@ -473,14 +438,10 @@ async def _read_body(receive: ASGIReceiveCallable) -> AsyncIterator[bytes]:
                     return
             case "http.disconnect":
                 raise ConnecpyException(
-                    Code.CANCELED,
-                    "Client disconnected before request completion",
+                    Code.CANCELED, "Client disconnected before request completion"
                 )
             case _:
-                raise ConnecpyException(
-                    Code.UNKNOWN,
-                    "Unexpected message type",
-                )
+                raise ConnecpyException(Code.UNKNOWN, "Unexpected message type")
 
 
 async def _consume_single_request(stream: AsyncIterator[_REQ]) -> _REQ:
@@ -500,9 +461,7 @@ async def _yield_single_response(response: _RES) -> AsyncIterator[_RES]:
     yield response
 
 
-def _process_headers(
-    iterable: Iterable[tuple[bytes, bytes]],
-) -> Headers:
+def _process_headers(iterable: Iterable[tuple[bytes, bytes]]) -> Headers:
     result = Headers()
     for key, value in iterable:
         result.add(key.decode(), value.decode())
