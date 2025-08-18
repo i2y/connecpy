@@ -69,7 +69,7 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 	vars := ConnecpyTemplateVariables{
 		FileName:   filename,
 		ModuleName: moduleName,
-		Imports:    importStatements(fd),
+		Imports:    importStatements(fd, conf),
 	}
 
 	svcs := fd.Services()
@@ -205,26 +205,47 @@ func symbolName(msg protoreflect.MessageDescriptor) string {
 	return fmt.Sprintf("%s.%s", moduleAlias(filename), name)
 }
 
-func importStatements(file protoreflect.FileDescriptor) []ImportStatement {
-	mods := map[string]string{}
+func lastPart(imp string) string {
+	if dotIdx := strings.LastIndexByte(imp, '.'); dotIdx != -1 {
+		return imp[dotIdx+1:]
+	}
+	return imp
+}
+
+func generateImport(pkg string, conf Config, isLocal bool) (string, ImportStatement) {
+	name := moduleName(pkg)
+	imp := ImportStatement{
+		Name:  name,
+		Alias: moduleAlias(pkg),
+	}
+	if isLocal && conf.Imports == ImportsRelative {
+		name = lastPart(name)
+		imp.Name = name
+		imp.Relative = true
+	}
+	return name, imp
+}
+
+func importStatements(file protoreflect.FileDescriptor, conf Config) []ImportStatement {
+	mods := map[string]ImportStatement{}
 	for i := 0; i < file.Services().Len(); i++ {
 		svc := file.Services().Get(i)
 		for j := 0; j < svc.Methods().Len(); j++ {
 			method := svc.Methods().Get(j)
 			inPkg := string(method.Input().ParentFile().Path())
-			mods[moduleName(inPkg)] = moduleAlias(inPkg)
+			inName, inImp := generateImport(inPkg, conf, method.Input().ParentFile() == file)
+			mods[inName] = inImp
 			outPkg := string(method.Output().ParentFile().Path())
-			mods[moduleName(outPkg)] = moduleAlias(outPkg)
+			outName, outImp := generateImport(outPkg, conf, method.Output().ParentFile() == file)
+			mods[outName] = outImp
 		}
 	}
 
 	imports := make([]ImportStatement, 0, len(mods))
-	for mod, alias := range mods {
-		imports = append(imports, ImportStatement{
-			Name:  mod,
-			Alias: alias,
-		})
+	for _, imp := range mods {
+		imports = append(imports, imp)
 	}
+
 	slices.SortFunc(imports, func(a, b ImportStatement) int {
 		return strings.Compare(a.Name, b.Name)
 	})

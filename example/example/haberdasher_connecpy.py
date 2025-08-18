@@ -18,7 +18,7 @@ from connecpy.server import (
     EndpointSync,
 )
 
-import example.haberdasher_pb2 as example_dot_haberdasher__pb2
+from . import haberdasher_pb2 as example_dot_haberdasher__pb2
 
 
 class Haberdasher(Protocol):
