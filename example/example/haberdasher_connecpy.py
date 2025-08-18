@@ -46,6 +46,11 @@ class Haberdasher(Protocol):
     ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
+    def list_parts(
+        self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
+    ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat.Part]:
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
+
     async def do_nothing(
         self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
     ) -> google_dot_protobuf_dot_empty__pb2.Empty:
@@ -101,6 +106,16 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                         idempotency_level=IdempotencyLevel.UNKNOWN,
                     ),
                     function=service.make_various_hats,
+                ),
+                "/i2y.connecpy.example.Haberdasher/ListParts": Endpoint.server_stream(
+                    method=MethodInfo(
+                        name="ListParts",
+                        service_name="i2y.connecpy.example.Haberdasher",
+                        input=google_dot_protobuf_dot_empty__pb2.Empty,
+                        output=example_dot_haberdasher__pb2.Hat.Part,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
+                    function=service.list_parts,
                 ),
                 "/i2y.connecpy.example.Haberdasher/DoNothing": Endpoint.unary(
                     method=MethodInfo(
@@ -206,6 +221,26 @@ class HaberdasherClient(ConnecpyClient):
             timeout_ms=timeout_ms,
         )
 
+    def list_parts(
+        self,
+        request: google_dot_protobuf_dot_empty__pb2.Empty,
+        *,
+        headers: Headers | Mapping[str, str] | None = None,
+        timeout_ms: int | None = None,
+    ) -> AsyncIterator[example_dot_haberdasher__pb2.Hat.Part]:
+        return self.execute_server_stream(
+            request=request,
+            method=MethodInfo(
+                name="ListParts",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=google_dot_protobuf_dot_empty__pb2.Empty,
+                output=example_dot_haberdasher__pb2.Hat.Part,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
+            timeout_ms=timeout_ms,
+        )
+
     async def do_nothing(
         self,
         request: google_dot_protobuf_dot_empty__pb2.Empty,
@@ -246,6 +281,11 @@ class HaberdasherSync(Protocol):
     def make_various_hats(
         self, request: Iterator[example_dot_haberdasher__pb2.Size], ctx: RequestContext
     ) -> Iterator[example_dot_haberdasher__pb2.Hat]:
+        raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
+
+    def list_parts(
+        self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
+    ) -> Iterator[example_dot_haberdasher__pb2.Hat.Part]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
     def do_nothing(
@@ -302,6 +342,16 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                         idempotency_level=IdempotencyLevel.UNKNOWN,
                     ),
                     function=service.make_various_hats,
+                ),
+                "/i2y.connecpy.example.Haberdasher/ListParts": EndpointSync.server_stream(
+                    method=MethodInfo(
+                        name="ListParts",
+                        service_name="i2y.connecpy.example.Haberdasher",
+                        input=google_dot_protobuf_dot_empty__pb2.Empty,
+                        output=example_dot_haberdasher__pb2.Hat.Part,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
+                    function=service.list_parts,
                 ),
                 "/i2y.connecpy.example.Haberdasher/DoNothing": EndpointSync.unary(
                     method=MethodInfo(
@@ -401,6 +451,26 @@ class HaberdasherClientSync(ConnecpyClientSync):
                 service_name="i2y.connecpy.example.Haberdasher",
                 input=example_dot_haberdasher__pb2.Size,
                 output=example_dot_haberdasher__pb2.Hat,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
+            timeout_ms=timeout_ms,
+        )
+
+    def list_parts(
+        self,
+        request: google_dot_protobuf_dot_empty__pb2.Empty,
+        *,
+        headers: Headers | Mapping[str, str] | None = None,
+        timeout_ms: int | None = None,
+    ) -> Iterator[example_dot_haberdasher__pb2.Hat.Part]:
+        return self.execute_server_stream(
+            request=request,
+            method=MethodInfo(
+                name="ListParts",
+                service_name="i2y.connecpy.example.Haberdasher",
+                input=google_dot_protobuf_dot_empty__pb2.Empty,
+                output=example_dot_haberdasher__pb2.Hat.Part,
                 idempotency_level=IdempotencyLevel.UNKNOWN,
             ),
             headers=headers,

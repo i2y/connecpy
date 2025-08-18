@@ -184,8 +184,25 @@ func moduleAlias(filename string) string {
 }
 
 func symbolName(msg protoreflect.MessageDescriptor) string {
-	filename := string(msg.ParentFile().Path())
+	filename := ""
+	// filename := string(msg.ParentFile().Path())
 	name := string(msg.Name())
+	for {
+		parent := msg.Parent()
+		if parent == nil {
+			break
+		}
+		switch parent := parent.(type) {
+		case protoreflect.FileDescriptor:
+			filename = string(parent.Path())
+		case protoreflect.MessageDescriptor:
+			name = fmt.Sprintf("%s.%s", string(parent.Name()), name)
+			msg = parent
+		}
+		if filename != "" {
+			break
+		}
+	}
 	return fmt.Sprintf("%s.%s", moduleAlias(filename), name)
 }
 
