@@ -18,6 +18,12 @@ message Hat {
 
   // The name of a hat is it's type. Like, 'bowler', or something.
   optional string name = 3;
+
+  // A part within a Hat.
+  message Part {
+    // The ID of the part.
+    string id = 1;
+  }
 }
 
 // Size is passed when requesting a new hat to be made. It's always
@@ -44,6 +50,9 @@ service Haberdasher {
   }
   // MakeVariousHats produces hats of mysterious, randomly-selected color following many orders!
   rpc MakeVariousHats(stream Size) returns (stream Hat) {}
+
+  // ListParts lists available parts for making a hat.
+  rpc ListParts(google.protobuf.Empty) returns (stream Hat.Part) {}
 
   rpc DoNothing(google.protobuf.Empty) returns (google.protobuf.Empty);
 }

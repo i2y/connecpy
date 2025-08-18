@@ -2,9 +2,9 @@ version: v2
 inputs:
   - module: buf.build/connectrpc/conformance:v1.0.4
 plugins:
-  - remote: buf.build/protocolbuffers/python:v29.3
+  - remote: buf.build/protocolbuffers/python:v32.0
     out: test/
-  - remote: buf.build/protocolbuffers/pyi:v29.3
+  - remote: buf.build/protocolbuffers/pyi:v32.0
     out: test/
   - local:
       - go
