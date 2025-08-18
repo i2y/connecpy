@@ -4,6 +4,7 @@ import (
 	"strings"
 )
 
+// Naming is the naming convention to use for generated symbols.
 type Naming uint32
 
 const (
@@ -15,10 +16,24 @@ const (
 	NamingGoogle
 )
 
+// Imports is how to import dependencies in the generated code.
+type Imports uint32
+
+const (
+	// ImportsAbsolute uses absolute imports following the proto's package definition.
+	ImportsAbsolute Imports = iota
+
+	// ImportsRelative uses relative imports.
+	ImportsRelative
+)
+
 // Config is the configuration for code generation.
 type Config struct {
 	// Naming is the naming convention to use for generated symbols.
 	Naming Naming
+
+	// Imports is how to import dependencies in the generated code.
+	Imports Imports
 }
 
 func parseConfig(p string) Config {
@@ -41,6 +56,13 @@ func parseConfig(p string) Config {
 				cfg.Naming = NamingPEP
 			case "google":
 				cfg.Naming = NamingGoogle
+			}
+		case "imports":
+			switch value {
+			case "absolute":
+				cfg.Imports = ImportsAbsolute
+			case "relative":
+				cfg.Imports = ImportsRelative
 			}
 		}
 	}

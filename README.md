@@ -57,6 +57,7 @@ protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 ```
 
 By default, naming follows PEP8 conventions. To use Google conventions, matching the output of grpc-python, add `--connecpy_opt=naming=google`.
+By default, imports are generated absolutely based on the proto package name. To use relative import, add `--connecpy_opt=imports=relative`.
 
 ### Server code (ASGI)
 

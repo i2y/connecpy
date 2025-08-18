@@ -3,8 +3,9 @@ package generator
 import "text/template"
 
 type ImportStatement struct {
-	Name  string
-	Alias string
+	Name     string
+	Alias    string
+	Relative bool
 }
 
 type ConnecpyTemplateVariables struct {
@@ -55,7 +56,7 @@ from connecpy.request import Headers, RequestContext
 from connecpy.server import ConnecpyASGIApplication, ConnecpyWSGIApplication, Endpoint, EndpointSync
 
 {{- range .Imports }}
-import {{.Name}} as {{.Alias}}
+{{if .Relative}}from . import {{.Name}}{{else}}import {{.Name}}{{end}} as {{.Alias}}
 {{- end}}
 {{- end}}
 {{- range .Services}}
