@@ -388,8 +388,8 @@ Bidirectional streaming RPCs allow both client and server to send multiple messa
 
 1. **Server Implementation**:
 
-   - **ASGI servers** (uvicorn, hypercorn, daphne): Support all streaming types including full-duplex bidirectional streaming
-   - **WSGI servers**: Support unary, server streaming, client streaming, and half-duplex bidirectional streaming
+   - **HTTP/2 ASGI servers** (hypercorn, daphne): Support all streaming types including full-duplex bidirectional streaming
+   - **HTTP/1 ASGI/WSGI servers**: Support unary, server streaming, client streaming, and half-duplex bidirectional streaming
    - **Note**: Full-duplex bidirectional streaming is not supported by WSGI servers due to protocol limitations (WSGI servers read the entire request before processing)
 
 2. **Client Support**:
