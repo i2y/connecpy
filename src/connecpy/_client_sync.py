@@ -244,9 +244,8 @@ class ConnecpyClientSync:
 
         try:
             request_data = self._codec.encode(request)
-            request_data = _client_shared.maybe_compress_request(
-                request_data, request_headers
-            )
+            if self._send_compression:
+                request_data = self._send_compression.compress(request_data)
 
             if ctx.http_method() == "GET":
                 params = _client_shared.prepare_get_params(

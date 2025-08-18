@@ -21,10 +21,7 @@ class ConnecpyException(Exception):
             details: Additional details about the error.
         """
         super().__init__(message)
-        try:
-            self._code = Code(code)
-        except ValueError:
-            self._code = Code.UNKNOWN
+        self._code = code
         self._message = message
 
         self._details = (
