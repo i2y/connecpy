@@ -185,7 +185,6 @@ func moduleAlias(filename string) string {
 
 func symbolName(msg protoreflect.MessageDescriptor) string {
 	filename := ""
-	// filename := string(msg.ParentFile().Path())
 	name := string(msg.Name())
 	for {
 		parent := msg.Parent()
