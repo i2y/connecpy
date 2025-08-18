@@ -104,25 +104,6 @@ def create_request_context(
     )
 
 
-def maybe_compress_request(request_data: bytes, headers: HttpxHeaders) -> bytes:
-    if "content-encoding" not in headers:
-        return request_data
-
-    compression_name = headers["content-encoding"].lower()
-    if compression_name == "identity":
-        return request_data
-    compression = _compression.get_compression(compression_name)
-    if not compression:
-        # TODO: Validate within client construction instead of request
-        msg = f"Unsupported compression method: {compression_name}"
-        raise ValueError(msg)
-    try:
-        return compression.compress(request_data)
-    except Exception as e:
-        msg = f"Failed to compress request with {compression_name}: {e!s}"
-        raise Exception(msg) from e
-
-
 def prepare_get_params(codec: Codec, request_data, headers):
     params = {"connect": f"v{CONNECT_PROTOCOL_VERSION}"}
     if request_data:

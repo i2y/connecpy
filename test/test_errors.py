@@ -245,6 +245,24 @@ _client_errors = [
         {"content-type": "application/json"},
         id="bad connect protocol version",
     ),
+    pytest.param(
+        "POST",
+        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        {"Content-Type": "application/proto", "connect-timeout-ms": "10000000000"},
+        Size(inches=10).SerializeToString(),
+        HTTPStatus.BAD_REQUEST,
+        {"content-type": "application/json"},
+        id="connect timeout header too long",
+    ),
+    pytest.param(
+        "POST",
+        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        {"Content-Type": "application/proto", "connect-timeout-ms": "goodbeer"},
+        Size(inches=10).SerializeToString(),
+        HTTPStatus.BAD_REQUEST,
+        {"content-type": "application/json"},
+        id="connect timeout header invalid",
+    ),
 ]
 
 

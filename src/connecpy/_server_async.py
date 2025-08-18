@@ -28,6 +28,12 @@ from ._protocol import (
     HTTPException,
     codec_name_from_content_type,
 )
+from ._server_shared import (
+    EndpointBidiStream,
+    EndpointClientStream,
+    EndpointServerStream,
+    EndpointUnary,
+)
 from .code import Code
 from .exceptions import ConnecpyException
 from .request import Headers, RequestContext
@@ -48,6 +54,15 @@ _RES = TypeVar("_RES")
 # We don't mutate query params so use a singleton for when they're not set.
 _UNSET_QUERY_PARAMS: dict[str, list[str]] = {}
 
+# While _server_shared.Endpoint is a closed type, we can't indicate that to Python so define
+# a more precise type here.
+Endpoint = (
+    EndpointBidiStream[_REQ, _RES]
+    | EndpointClientStream[_REQ, _RES]
+    | EndpointServerStream[_REQ, _RES]
+    | EndpointUnary[_REQ, _RES]
+)
+
 
 class ConnecpyASGIApplication(ABC):
     """ASGI application for Connecpy."""
@@ -59,7 +74,7 @@ class ConnecpyASGIApplication(ABC):
     def __init__(
         self,
         *,
-        endpoints: Mapping[str, _server_shared.Endpoint],
+        endpoints: Mapping[str, Endpoint],
         interceptors: Iterable[Interceptor] = (),
         read_max_bytes: int | None = None,
     ):
@@ -106,7 +121,7 @@ class ConnecpyASGIApplication(ABC):
                 endpoint.method, http_method, headers
             )
 
-            is_unary = isinstance(endpoint, _server_shared.EndpointUnary)
+            is_unary = isinstance(endpoint, EndpointUnary)
 
             if http_method == "GET":
                 query_string = scope.get("query_string", b"").decode("utf-8")
@@ -147,10 +162,10 @@ class ConnecpyASGIApplication(ABC):
         headers: Headers,
         codec: Codec,
         query_params: dict[str, list[str]],
-        endpoint: _server_shared.EndpointUnary[_REQ, _RES],
+        endpoint: EndpointUnary[_REQ, _RES],
         receive: ASGIReceiveCallable,
         send: ASGISendCallable,
-        ctx: _server_shared.RequestContext,
+        ctx: RequestContext,
     ):
         accept_encoding = headers.get("accept-encoding", "")
         compression = _compression.negotiate_compression(accept_encoding)
@@ -189,7 +204,7 @@ class ConnecpyASGIApplication(ABC):
 
     async def _read_get_request(
         self,
-        endpoint: _server_shared.Endpoint[_REQ, _RES],
+        endpoint: EndpointUnary[_REQ, _RES],
         codec: Codec,
         params: dict[str, list[str]],
     ) -> _REQ:
@@ -232,11 +247,7 @@ class ConnecpyASGIApplication(ABC):
         return codec.decode(message, endpoint.method.input())
 
     async def _read_post_request(
-        self,
-        endpoint: _server_shared.Endpoint[_REQ, _RES],
-        receive,
-        codec: Codec,
-        headers: Headers,
+        self, endpoint: Endpoint[_REQ, _RES], receive, codec: Codec, headers: Headers
     ) -> _REQ:
         """Handle POST request with body."""
 
@@ -268,7 +279,9 @@ class ConnecpyASGIApplication(ABC):
         self,
         receive: ASGIReceiveCallable,
         send: ASGISendCallable,
-        endpoint: _server_shared.Endpoint[_REQ, _RES],
+        endpoint: EndpointBidiStream[_REQ, _RES]
+        | EndpointClientStream[_REQ, _RES]
+        | EndpointServerStream[_REQ, _RES],
         codec: Codec,
         headers: Headers,
         ctx: _server_shared.RequestContext,
@@ -299,17 +312,14 @@ class ConnecpyASGIApplication(ABC):
             )
 
             match endpoint:
-                case _server_shared.EndpointClientStream():
+                case EndpointClientStream():
                     response = await endpoint.function(request_stream, ctx)
                     response_stream = _yield_single_response(response)
-                case _server_shared.EndpointServerStream():
+                case EndpointServerStream():
                     request = await _consume_single_request(request_stream)
                     response_stream = endpoint.function(request, ctx)
-                case _server_shared.EndpointBidiStream():
+                case EndpointBidiStream():
                     response_stream = endpoint.function(request_stream, ctx)
-                case _:
-                    msg = "Unknown endpoint type"
-                    raise ValueError(msg)
 
             async for message in response_stream:
                 # Don't send headers until the first message to allow logic a chance to add
@@ -475,37 +485,34 @@ def _add_context_headers(
 
 
 def _apply_interceptors(
-    endpoint: _server_shared.Endpoint[_REQ, _RES], interceptors: Sequence[Interceptor]
-) -> _server_shared.Endpoint:
+    endpoint: Endpoint[_REQ, _RES], interceptors: Sequence[Interceptor]
+) -> Endpoint[_REQ, _RES]:
     match endpoint:
-        case _server_shared.EndpointUnary():
+        case EndpointUnary():
             func = endpoint.function
             for interceptor in reversed(interceptors):
                 if not isinstance(interceptor, UnaryInterceptor):
                     continue
                 func = functools.partial(interceptor.intercept_unary, func)
             return replace(endpoint, function=func)
-        case _server_shared.EndpointClientStream():
+        case EndpointClientStream():
             func = endpoint.function
             for interceptor in reversed(interceptors):
                 if not isinstance(interceptor, ClientStreamInterceptor):
                     continue
                 func = functools.partial(interceptor.intercept_client_stream, func)
             return replace(endpoint, function=func)
-        case _server_shared.EndpointServerStream():
+        case EndpointServerStream():
             func = endpoint.function
             for interceptor in reversed(interceptors):
                 if not isinstance(interceptor, ServerStreamInterceptor):
                     continue
                 func = functools.partial(interceptor.intercept_server_stream, func)
             return replace(endpoint, function=func)
-        case _server_shared.EndpointBidiStream():
+        case EndpointBidiStream():
             func = endpoint.function
             for interceptor in reversed(interceptors):
                 if not isinstance(interceptor, BidiStreamInterceptor):
                     continue
                 func = functools.partial(interceptor.intercept_bidi_stream, func)
             return replace(endpoint, function=func)
-        case _:
-            msg = "Unknown endpoint type"
-            raise ValueError(msg)
