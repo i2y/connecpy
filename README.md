@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/i2y/connecpy/actions/workflows/ci.yaml/badge.svg)](https://github.com/i2y/connecpy/actions/workflows/ci.yaml)
-[![Codecov](https://img.shields.io/codecov/c/github/i2y/connecpy)](https://app.codecov.io/gh/i2y/connecpy)
+[![codecov](https://codecov.io/github/i2y/connecpy/graph/badge.svg)](https://codecov.io/github/i2y/connecpy)
 [![PyPI version](https://img.shields.io/pypi/v/connecpy)](https://pypi.org/project/connecpy)
 
 Python implementation of [Connect Protocol](https://connectrpc.com/docs/protocol).
