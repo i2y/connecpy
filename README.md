@@ -722,9 +722,9 @@ you can use a routing framework such as [werkzeug](./example/example/flask_mount
 The generated application classes now expose a `path` property that returns the service's URL path, making it easier to mount multiple services:
 
 ```python
-from haberdasher_connecpy import HaberdasherASGIApplication
+from haberdasher_connecpy import HaberdasherWSGIApplication
 
-haberdasher_app = HaberdasherASGIApplication(service)
+haberdasher_app = HaberdasherWSGIApplication(service)
 print(haberdasher_app.path)  # "/package.ServiceName"
 
 # Use with routing frameworks
