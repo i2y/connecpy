@@ -9,7 +9,7 @@ server_url = "http://localhost:3000"
 timeout_s = 5
 
 
-async def main():
+async def main() -> None:
     async with httpx.AsyncClient(base_url=server_url, timeout=timeout_s) as session:
         # Example 1: POST request with Zstandard compression, receiving Brotli compressed response
         async with haberdasher_connecpy.HaberdasherClient(

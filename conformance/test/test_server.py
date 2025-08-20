@@ -21,7 +21,7 @@ _skipped_tests_sync = [
 ]
 
 
-def test_server_sync():
+def test_server_sync() -> None:
     args = maybe_patch_args_with_debug(
         [sys.executable, _server_py_path, "--mode", "sync"]
     )
@@ -58,7 +58,7 @@ _skipped_tests_async = [
 ]
 
 
-def test_server_async():
+def test_server_async() -> None:
     args = maybe_patch_args_with_debug(
         [sys.executable, _server_py_path, "--mode", "async"]
     )

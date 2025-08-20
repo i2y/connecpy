@@ -177,7 +177,7 @@ class ConnectWireError:
 class HTTPException(Exception):
     """An HTTP exception returned directly before starting the connect protocol."""
 
-    def __init__(self, status: HTTPStatus, headers: list[tuple[str, str]]):
+    def __init__(self, status: HTTPStatus, headers: list[tuple[str, str]]) -> None:
         self.status = status
         self.headers = headers
 

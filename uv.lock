@@ -324,6 +324,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "typing-extensions" },
     { name = "zstandard" },
 ]
 
@@ -349,6 +350,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.25.2" },
     { name = "pytest-cov" },
     { name = "ruff", specifier = ">=0.9.4" },
+    { name = "typing-extensions" },
     { name = "zstandard" },
 ]
 

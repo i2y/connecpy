@@ -1,6 +1,7 @@
 import threading
 import time
 from http import HTTPStatus
+from typing import NoReturn
 from wsgiref.simple_server import WSGIServer, make_server
 
 import pytest
@@ -48,12 +49,12 @@ _errors = [
 
 
 @pytest.mark.parametrize(("code", "message", "http_status"), _errors)
-def test_sync_errors(code: Code, message: str, http_status: int):
+def test_sync_errors(code: Code, message: str, http_status: int) -> None:
     class ErrorHaberdasherSync(HaberdasherSync):
-        def __init__(self, exception: ConnecpyException):
+        def __init__(self, exception: ConnecpyException) -> None:
             self._exception = exception
 
-        def make_hat(self, request, ctx):
+        def make_hat(self, request, ctx) -> NoReturn:
             raise self._exception
 
     haberdasher = ErrorHaberdasherSync(ConnecpyException(code, message))
@@ -62,7 +63,7 @@ def test_sync_errors(code: Code, message: str, http_status: int):
 
     recorded_response: Response | None = None
 
-    def record_response(response):
+    def record_response(response) -> None:
         nonlocal recorded_response
         recorded_response = response
 
@@ -82,12 +83,12 @@ def test_sync_errors(code: Code, message: str, http_status: int):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(("code", "message", "http_status"), _errors)
-async def test_async_errors(code: Code, message: str, http_status: int):
+async def test_async_errors(code: Code, message: str, http_status: int) -> None:
     class ErrorHaberdasher(Haberdasher):
-        def __init__(self, exception: ConnecpyException):
+        def __init__(self, exception: ConnecpyException) -> None:
             self._exception = exception
 
-        async def make_hat(self, request, ctx):
+        async def make_hat(self, request, ctx) -> NoReturn:
             raise self._exception
 
     haberdasher = ErrorHaberdasher(ConnecpyException(code, message))
@@ -96,7 +97,7 @@ async def test_async_errors(code: Code, message: str, http_status: int):
 
     recorded_response: Response | None = None
 
-    async def record_response(response):
+    async def record_response(response) -> None:
         nonlocal recorded_response
         recorded_response = response
 
@@ -162,7 +163,7 @@ _http_errors = [
 @pytest.mark.parametrize(
     ("response_status", "response_kwargs", "code", "message"), _http_errors
 )
-def test_sync_http_errors(response_status, response_kwargs, code, message):
+def test_sync_http_errors(response_status, response_kwargs, code, message) -> None:
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
     with (
         HaberdasherClientSync(
@@ -179,7 +180,9 @@ def test_sync_http_errors(response_status, response_kwargs, code, message):
 @pytest.mark.parametrize(
     ("response_status", "response_kwargs", "code", "message"), _http_errors
 )
-async def test_async_http_errors(response_status, response_kwargs, code, message):
+async def test_async_http_errors(
+    response_status, response_kwargs, code, message
+) -> None:
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
     async with HaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)
@@ -272,7 +275,7 @@ _client_errors = [
 )
 def test_sync_client_errors(
     method, path, headers, body, response_status, response_headers
-):
+) -> None:
     class ValidHaberdasherSync(HaberdasherSync):
         def make_hat(self, request, ctx):
             return Hat()
@@ -296,7 +299,7 @@ def test_sync_client_errors(
 )
 async def test_async_client_errors(
     method, path, headers, body, response_status, response_headers
-):
+) -> None:
     class ValidHaberdasher(Haberdasher):
         async def make_hat(self, request, ctx):
             return Hat()
@@ -318,7 +321,7 @@ async def test_async_client_errors(
 @pytest.fixture(scope="module")
 def sync_timeout_server():
     class SleepingHaberdasherSync(HaberdasherSync):
-        def make_hat(self, request, ctx):
+        def make_hat(self, request, ctx) -> NoReturn:
             time.sleep(10)
             raise AssertionError("Should be timedout already")
 
@@ -341,10 +344,10 @@ def sync_timeout_server():
 )
 def test_sync_client_timeout(
     client_timeout_ms, call_timeout_ms, sync_timeout_server: WSGIServer
-):
+) -> None:
     recorded_timeout_header = ""
 
-    def modify_timeout_header(request: Request):
+    def modify_timeout_header(request: Request) -> None:
         nonlocal recorded_timeout_header
         recorded_timeout_header = request.headers.get("connect-timeout-ms")
         # Make sure server doesn't timeout since we are verifying client timeout
@@ -380,10 +383,10 @@ def test_sync_client_timeout(
 )
 async def test_async_client_timeout(
     client_timeout_ms, call_timeout_ms, sync_timeout_server: WSGIServer
-):
+) -> None:
     recorded_timeout_header = ""
 
-    async def modify_timeout_header(request: Request):
+    async def modify_timeout_header(request: Request) -> None:
         nonlocal recorded_timeout_header
         recorded_timeout_header = request.headers.get("connect-timeout-ms")
         # Make sure server doesn't timeout since we are verifying client timeout

@@ -4,7 +4,7 @@ from .haberdasher_connecpy import HaberdasherWSGIApplication
 from .wsgi_service import HaberdasherService
 
 
-def main():
+def main() -> None:
     # Create synchronous service instance
     service = HaberdasherService()
 

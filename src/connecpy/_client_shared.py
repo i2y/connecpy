@@ -3,6 +3,7 @@ import contextlib
 from collections.abc import Iterable, Mapping, Sequence
 from contextvars import ContextVar, Token
 from http import HTTPStatus
+from types import TracebackType
 from typing import TypeVar
 
 from httpx import Headers as HttpxHeaders
@@ -104,7 +105,9 @@ def create_request_context(
     )
 
 
-def prepare_get_params(codec: Codec, request_data, headers):
+def prepare_get_params(
+    codec: Codec, request_data: bytes, headers: HttpxHeaders
+) -> dict[str, str]:
     params = {"connect": f"v{CONNECT_PROTOCOL_VERSION}"}
     if request_data:
         params["message"] = base64.urlsafe_b64encode(request_data).decode("ascii")
@@ -134,7 +137,7 @@ def validate_response_content_encoding(
 
 def validate_response_content_type(
     request_codec_name: str, status_code: int, response_content_type: str
-):
+) -> None:
     if status_code != HTTPStatus.OK:
         # Error responses must be JSON-encoded
         if response_content_type in (
@@ -174,7 +177,7 @@ def validate_response_content_type(
 
 def validate_stream_response_content_type(
     request_codec_name: str, response_content_type: str
-):
+) -> None:
     if not response_content_type.startswith(CONNECT_STREAMING_CONTENT_TYPE_PREFIX):
         raise ConnecpyException(
             Code.UNKNOWN,
@@ -191,7 +194,7 @@ def validate_stream_response_content_type(
         )
 
 
-def handle_response_headers(headers: HttpxHeaders):
+def handle_response_headers(headers: HttpxHeaders) -> None:
     response = _current_response.get(None)
     if not response:
         return
@@ -212,7 +215,7 @@ def handle_response_headers(headers: HttpxHeaders):
         response._trailers = response_trailers  # noqa: SLF001
 
 
-def handle_response_trailers(trailers: Mapping[str, Sequence[str]]):
+def handle_response_trailers(trailers: Mapping[str, Sequence[str]]) -> None:
     response = _current_response.get(None)
     if not response:
         return
@@ -250,7 +253,12 @@ class ResponseMetadata:
         self._token = _current_response.set(self)
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_value: BaseException | None,
+        _traceback: TracebackType | None,
+    ) -> None:
         if self._token:
             # Normal usage with context manager will always work but it is
             # theoretically possible for user to move to another thread

@@ -97,7 +97,7 @@ RES = TypeVar(
 
 def _send_headers(
     ctx: RequestContext, definition: UnaryResponseDefinition | StreamResponseDefinition
-):
+) -> None:
     for header in definition.response_headers:
         for value in header.value:
             ctx.response_headers().add(header.name, value)
@@ -461,7 +461,7 @@ class Args(argparse.Namespace):
     mode: Literal["sync", "async"]
 
 
-async def main():
+async def main() -> None:
     parser = argparse.ArgumentParser(description="Conformance client")
     parser.add_argument("--mode", choices=["sync", "async"])
     args = parser.parse_args(namespace=Args())

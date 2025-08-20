@@ -138,7 +138,7 @@ class ConnecpyWSGIApplication(ABC):
         endpoints: Mapping[str, EndpointSync],
         interceptors: Iterable[InterceptorSync] = (),
         read_max_bytes: int | None = None,
-    ):
+    ) -> None:
         """Initialize the WSGI application."""
         super().__init__()
         if interceptors:
@@ -195,7 +195,7 @@ class ConnecpyWSGIApplication(ABC):
                     )
 
         except Exception as e:
-            return self._handle_error(e, ctx, environ, start_response)
+            return self._handle_error(e, ctx, start_response)
 
     def _handle_unary(
         self,
@@ -205,7 +205,7 @@ class ConnecpyWSGIApplication(ABC):
         endpoint: EndpointUnarySync[_REQ, _RES],
         ctx: RequestContext[_REQ, _RES],
         headers: Headers,
-    ):
+    ) -> Iterable[bytes]:
         # Handle request based on method
         if http_method == "GET":
             request, codec = self._handle_get_request(environ, endpoint)
@@ -305,7 +305,7 @@ class ConnecpyWSGIApplication(ABC):
             raise
 
     def _handle_get_request(
-        self, environ, endpoint: EndpointUnarySync[_REQ, _RES]
+        self, environ: WSGIEnvironment, endpoint: EndpointUnarySync[_REQ, _RES]
     ) -> tuple[_REQ, Codec]:
         """Handle GET request with query parameters."""
         try:
@@ -442,7 +442,9 @@ class ConnecpyWSGIApplication(ABC):
                 writer.end(ctx.response_trailers(), ConnectWireError.from_exception(e))
             ]
 
-    def _handle_error(self, exc, ctx: RequestContext | None, _environ, start_response):
+    def _handle_error(
+        self, exc: Exception, ctx: RequestContext | None, start_response: StartResponse
+    ) -> Iterable[bytes]:
         """Handle and log errors with detailed information."""
         headers: list[tuple[str, str]]
         body: list[bytes]
@@ -477,7 +479,7 @@ def _send_stream_response_headers(
     codec: Codec,
     compression_name: str,
     ctx: RequestContext,
-):
+) -> None:
     response_headers = [
         ("content-type", f"{CONNECT_STREAMING_CONTENT_TYPE_PREFIX}{codec.name()}"),
         (CONNECT_STREAMING_HEADER_COMPRESSION, compression_name),

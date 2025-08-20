@@ -1,3 +1,5 @@
+from typing import NoReturn
+
 import pytest
 from google.protobuf.any import pack
 from google.protobuf.struct_pb2 import Struct, Value
@@ -16,9 +18,9 @@ from example.haberdasher_connecpy import (
 from example.haberdasher_pb2 import Size
 
 
-def test_details_sync():
+def test_details_sync() -> None:
     class DetailsHaberdasherSync(HaberdasherSync):
-        def make_hat(self, request, ctx):
+        def make_hat(self, request, ctx) -> NoReturn:
             raise ConnecpyException(
                 Code.RESOURCE_EXHAUSTED,
                 "Resource exhausted",
@@ -48,9 +50,9 @@ def test_details_sync():
 
 
 @pytest.mark.asyncio
-async def test_details_async():
+async def test_details_async() -> None:
     class DetailsHaberdasher(Haberdasher):
-        async def make_hat(self, request, ctx):
+        async def make_hat(self, request, ctx) -> NoReturn:
             raise ConnecpyException(
                 Code.RESOURCE_EXHAUSTED,
                 "Resource exhausted",

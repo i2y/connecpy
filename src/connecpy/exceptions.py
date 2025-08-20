@@ -10,7 +10,9 @@ from .code import Code
 
 
 class ConnecpyException(Exception):
-    def __init__(self, code: Code, message: str, details: Iterable[Message] = ()):
+    def __init__(
+        self, code: Code, message: str, details: Iterable[Message] = ()
+    ) -> None:
         """
         Initializes a new Connecpy exception. If raised in a server, the same exception
         will be raised in the client.
@@ -29,11 +31,11 @@ class ConnecpyException(Exception):
         )
 
     @property
-    def code(self):
+    def code(self) -> Code:
         return self._code
 
     @property
-    def message(self):
+    def message(self) -> str:
         return self._message
 
     @property

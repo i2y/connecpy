@@ -12,6 +12,7 @@ from .exceptions import ConnecpyException
 from .request import Headers
 
 _RES = TypeVar("_RES")
+_T = TypeVar("_T")
 
 
 class EnvelopeReader(Generic[_RES]):
@@ -23,7 +24,7 @@ class EnvelopeReader(Generic[_RES]):
         codec: Codec,
         compression: Compression,
         read_max_bytes: int | None,
-    ):
+    ) -> None:
         self._buffer = bytearray()
         self._message_class = message_class
         self._codec = codec
@@ -89,13 +90,13 @@ class EnvelopeReader(Generic[_RES]):
             self._next_message_length = int.from_bytes(self._buffer[1:5], "big")
 
 
-class EnvelopeWriter:
-    def __init__(self, codec: Codec, compression: Compression | None):
+class EnvelopeWriter(Generic[_T]):
+    def __init__(self, codec: Codec[_T, Any], compression: Compression | None) -> None:
         self._codec = codec
         self._compression = compression
         self._prefix = 0 if not compression or compression.is_identity() else 1
 
-    def write(self, message: Any) -> bytes:
+    def write(self, message: _T) -> bytes:
         data = self._codec.encode(message)
         if self._compression:
             data = self._compression.compress(data)

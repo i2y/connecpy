@@ -1,6 +1,7 @@
 import functools
 from collections.abc import Iterable, Iterator, Mapping
-from typing import Any, Protocol, TypeVar
+from types import TracebackType
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 import httpx
 from httpx import USE_CLIENT_DEFAULT, Timeout
@@ -22,6 +23,16 @@ from .code import Code
 from .exceptions import ConnecpyException
 from .method import MethodInfo
 from .request import Headers, RequestContext
+
+if TYPE_CHECKING:
+    import sys
+
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
+else:
+    Self = "Self"
 
 REQ = TypeVar("REQ")
 RES = TypeVar("RES")
@@ -68,7 +79,7 @@ class ConnecpyClientSync:
         read_max_bytes: int | None = None,
         interceptors: Iterable[InterceptorSync] = (),
         session: httpx.Client | None = None,
-    ):
+    ) -> None:
         """Creates a new synchronous Connecpy client.
 
         Args:
@@ -140,17 +151,22 @@ class ConnecpyClientSync:
             )
         self._execute_bidi_stream = execute_bidi_stream
 
-    def close(self):
+    def close(self) -> None:
         """Close the HTTP client. After closing, the client cannot be used to make requests."""
         if not self._closed:
             self._closed = True
             if self._close_client:
                 self._session.close()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, _exc_type, _exc_value, _traceback):
+    def __exit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_value: BaseException | None,
+        _traceback: TracebackType | None,
+    ) -> None:
         self.close()
 
     def execute_unary(

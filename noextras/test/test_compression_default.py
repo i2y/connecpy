@@ -12,7 +12,7 @@ from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 
 @pytest.mark.parametrize("compression", ["gzip", "identity", None])
-def test_roundtrip_sync(compression: str):
+def test_roundtrip_sync(compression: str) -> None:
     class RoundtripHaberdasherSync(HaberdasherSync):
         def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
@@ -31,7 +31,7 @@ def test_roundtrip_sync(compression: str):
 
 @pytest.mark.parametrize("compression", ["gzip", "identity"])
 @pytest.mark.asyncio
-async def test_roundtrip_async(compression: str):
+async def test_roundtrip_async(compression: str) -> None:
     class DetailsHaberdasher(Haberdasher):
         async def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
@@ -50,7 +50,7 @@ async def test_roundtrip_async(compression: str):
 
 
 @pytest.mark.parametrize("compression", ["br", "zstd"])
-def test_invalid_compression_sync(compression: str):
+def test_invalid_compression_sync(compression: str) -> None:
     class RoundtripHaberdasherSync(HaberdasherSync):
         def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
@@ -74,7 +74,7 @@ def test_invalid_compression_sync(compression: str):
 
 @pytest.mark.parametrize("compression", ["br", "zstd"])
 @pytest.mark.asyncio
-async def test_invalid_compression_async(compression: str):
+async def test_invalid_compression_async(compression: str) -> None:
     class DetailsHaberdasher(Haberdasher):
         async def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")

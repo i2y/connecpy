@@ -11,7 +11,7 @@ U = TypeVar("U")
 
 
 class MyInterceptor:
-    def __init__(self, msg):
+    def __init__(self, msg) -> None:
         self._msg = msg
 
     async def intercept_unary(

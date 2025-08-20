@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 
 @app.route("/healthz")
-def health():
+def health() -> str:
     return "OK"
 
 

@@ -171,7 +171,7 @@ async def _run_test(
                                 def send_bidi_stream_request_sync(
                                     client: ConformanceServiceClientSync,
                                     request: Iterator[BidiStreamRequest],
-                                ):
+                                ) -> None:
                                     for message in client.bidi_stream(
                                         request,
                                         headers=request_headers,
@@ -207,7 +207,7 @@ async def _run_test(
                                 def send_client_stream_request_sync(
                                     client: ConformanceServiceClientSync,
                                     request: Iterator[ClientStreamRequest],
-                                ):
+                                ) -> None:
                                     res = client.client_stream(
                                         request,
                                         headers=request_headers,
@@ -237,7 +237,7 @@ async def _run_test(
                                 def send_idempotent_unary_request_sync(
                                     client: ConformanceServiceClientSync,
                                     request: IdempotentUnaryRequest,
-                                ):
+                                ) -> None:
                                     res = client.idempotent_unary(
                                         request,
                                         headers=request_headers,
@@ -261,7 +261,7 @@ async def _run_test(
                                 def send_server_stream_request_sync(
                                     client: ConformanceServiceClientSync,
                                     request: ServerStreamRequest,
-                                ):
+                                ) -> None:
                                     for message in client.server_stream(
                                         request,
                                         headers=request_headers,
@@ -289,7 +289,7 @@ async def _run_test(
                                 def send_unary_request_sync(
                                     client: ConformanceServiceClientSync,
                                     request: UnaryRequest,
-                                ):
+                                ) -> None:
                                     res = client.unary(
                                         request,
                                         headers=request_headers,
@@ -347,7 +347,7 @@ async def _run_test(
                                 async def send_bidi_stream_request(
                                     client: ConformanceServiceClient,
                                     request: AsyncIterator[BidiStreamRequest],
-                                ):
+                                ) -> None:
                                     responses = client.bidi_stream(
                                         request,
                                         headers=request_headers,
@@ -390,7 +390,7 @@ async def _run_test(
                                 async def send_client_stream_request(
                                     client: ConformanceServiceClient,
                                     request: AsyncIterator[ClientStreamRequest],
-                                ):
+                                ) -> None:
                                     res = await client.client_stream(
                                         request,
                                         headers=request_headers,
@@ -426,7 +426,7 @@ async def _run_test(
                                 async def send_idempotent_unary_request(
                                     client: ConformanceServiceClient,
                                     request: IdempotentUnaryRequest,
-                                ):
+                                ) -> None:
                                     res = await client.idempotent_unary(
                                         request,
                                         headers=request_headers,
@@ -449,7 +449,7 @@ async def _run_test(
                                 async def send_server_stream_request(
                                     client: ConformanceServiceClient,
                                     request: ServerStreamRequest,
-                                ):
+                                ) -> None:
                                     async for message in client.server_stream(
                                         request,
                                         headers=request_headers,
@@ -476,7 +476,7 @@ async def _run_test(
                                 async def send_unary_request(
                                     client: ConformanceServiceClient,
                                     request: UnaryRequest,
-                                ):
+                                ) -> None:
                                     res = await client.unary(
                                         request,
                                         headers=request_headers,
@@ -539,7 +539,7 @@ class Args(argparse.Namespace):
     mode: Literal["sync", "async"]
 
 
-async def main():
+async def main() -> None:
     parser = argparse.ArgumentParser(description="Conformance client")
     parser.add_argument("--mode", choices=["sync", "async"])
     args = parser.parse_args(namespace=Args())

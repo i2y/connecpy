@@ -24,6 +24,7 @@ dev-dependencies = [
     "pytest-asyncio>=0.25.2",
     "pytest-cov",
     "ruff>=0.9.4",
+    "typing_extensions",
     "zstandard",
 ]
 
@@ -42,8 +43,7 @@ docstring-code-format = true
 extend-select = [
     # Same order as listed on https://docs.astral.sh/ruff/rules/
     "YTT",
-    # TODO: Enable after adding more type annotations
-    # "ANN",
+    "ANN",
     "ASYNC",
     "S",
     "FBT",
@@ -144,13 +144,15 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"conformance/test/**" = ["INP", "SLF", "SIM115", "D"]
+"conformance/test/**" = ["ANN", "INP", "SLF", "SIM115", "D"]
 "example/**" = [
+    "ANN",
     "S",   # Keep examples simpler, e.g. allow normal random
     "T20",
     "D",
 ]
 "**/test_*.py" = [
+    "ANN",
     "S101",
     "S603",
     "S607",
