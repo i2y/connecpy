@@ -3,7 +3,7 @@ import pytest
 from connecpy.request import Headers
 
 
-def test_headers_no_duplicates():
+def test_headers_no_duplicates() -> None:
     h = Headers()
     assert len(h) == 0
     assert list(h.items()) == []
@@ -46,7 +46,7 @@ def test_headers_no_duplicates():
     assert list(h.items()) == []
 
 
-def test_headers_duplicates():
+def test_headers_duplicates() -> None:
     h = Headers()
     h.add("X-Test", "foo")
     h.add("X-Test", "bar")

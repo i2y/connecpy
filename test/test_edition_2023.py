@@ -14,7 +14,7 @@ from example.haberdasher_edition_2023_connecpy import (
 from example.haberdasher_edition_2023_pb2 import Hat, Size
 
 
-def test_edition_2023_service_generation():
+def test_edition_2023_service_generation() -> None:
     """Test that Edition 2023 generated code can be imported and instantiated correctly."""
 
     # Create a simple service implementation
@@ -37,7 +37,7 @@ def test_edition_2023_service_generation():
     assert sync_app is not None
 
 
-def test_edition_2023_client_generation():
+def test_edition_2023_client_generation() -> None:
     """Test that Edition 2023 generated client code can be instantiated correctly."""
     # Verify clients can be instantiated
     client = HaberdasherClient("http://localhost:3000")

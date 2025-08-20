@@ -77,7 +77,7 @@ class ConnecpyASGIApplication(ABC):
         endpoints: Mapping[str, Endpoint],
         interceptors: Iterable[Interceptor] = (),
         read_max_bytes: int | None = None,
-    ):
+    ) -> None:
         """Initialize the ASGI application."""
         super().__init__()
         if interceptors:
@@ -166,7 +166,7 @@ class ConnecpyASGIApplication(ABC):
         receive: ASGIReceiveCallable,
         send: ASGISendCallable,
         ctx: RequestContext,
-    ):
+    ) -> None:
         accept_encoding = headers.get("accept-encoding", "")
         compression = _compression.negotiate_compression(accept_encoding)
 
@@ -247,7 +247,11 @@ class ConnecpyASGIApplication(ABC):
         return codec.decode(message, endpoint.method.input())
 
     async def _read_post_request(
-        self, endpoint: Endpoint[_REQ, _RES], receive, codec: Codec, headers: Headers
+        self,
+        endpoint: Endpoint[_REQ, _RES],
+        receive: ASGIReceiveCallable,
+        codec: Codec,
+        headers: Headers,
     ) -> _REQ:
         """Handle POST request with body."""
 
@@ -285,7 +289,7 @@ class ConnecpyASGIApplication(ABC):
         codec: Codec,
         headers: Headers,
         ctx: _server_shared.RequestContext,
-    ):
+    ) -> None:
         req_compression_name = headers.get(
             CONNECT_STREAMING_HEADER_COMPRESSION, "identity"
         )
@@ -356,7 +360,7 @@ class ConnecpyASGIApplication(ABC):
             )
 
     async def _handle_error(
-        self, exc, ctx: RequestContext | None, send: ASGISendCallable
+        self, exc: Exception, ctx: RequestContext | None, send: ASGISendCallable
     ) -> None:
         """Handle errors that occur during request processing."""
         headers: list[tuple[bytes, bytes]]
@@ -388,7 +392,7 @@ class ConnecpyASGIApplication(ABC):
 
 async def _send_stream_response_headers(
     send: ASGISendCallable, codec: Codec, compression_name: str, ctx: RequestContext
-):
+) -> None:
     response_headers = [
         (
             b"content-type",

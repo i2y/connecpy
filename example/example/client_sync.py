@@ -14,7 +14,7 @@ def create_large_request():
     )
 
 
-def main():
+def main() -> None:
     # Example 1: POST request with gzip compression (large request)
     with haberdasher_connecpy.HaberdasherClientSync(
         server_url,

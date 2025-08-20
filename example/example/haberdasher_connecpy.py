@@ -64,7 +64,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         *,
         interceptors: Iterable[Interceptor] = (),
         read_max_bytes: int | None = None,
-    ):
+    ) -> None:
         super().__init__(
             endpoints={
                 "/i2y.connecpy.example.Haberdasher/MakeHat": Endpoint.unary(
@@ -133,7 +133,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
         )
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Returns the URL path to mount the application to when serving multiple applications."""
         return "/i2y.connecpy.example.Haberdasher"
 
@@ -300,7 +300,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
         service: HaberdasherSync,
         interceptors: Iterable[InterceptorSync] = (),
         read_max_bytes: int | None = None,
-    ):
+    ) -> None:
         super().__init__(
             endpoints={
                 "/i2y.connecpy.example.Haberdasher/MakeHat": EndpointSync.unary(
@@ -369,7 +369,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
         )
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Returns the URL path to mount the application to when serving multiple applications."""
         return "/i2y.connecpy.example.Haberdasher"
 

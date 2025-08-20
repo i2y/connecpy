@@ -78,7 +78,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
         *,
         interceptors: Iterable[Interceptor] = (),
         read_max_bytes: int | None = None,
-    ):
+    ) -> None:
         super().__init__(
             endpoints={
                 "/connectrpc.conformance.v1.ConformanceService/Unary": Endpoint.unary(
@@ -147,7 +147,7 @@ class ConformanceServiceASGIApplication(ConnecpyASGIApplication):
         )
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Returns the URL path to mount the application to when serving multiple applications."""
         return "/connectrpc.conformance.v1.ConformanceService"
 
@@ -342,7 +342,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
         service: ConformanceServiceSync,
         interceptors: Iterable[InterceptorSync] = (),
         read_max_bytes: int | None = None,
-    ):
+    ) -> None:
         super().__init__(
             endpoints={
                 "/connectrpc.conformance.v1.ConformanceService/Unary": EndpointSync.unary(
@@ -411,7 +411,7 @@ class ConformanceServiceWSGIApplication(ConnecpyWSGIApplication):
         )
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Returns the URL path to mount the application to when serving multiple applications."""
         return "/connectrpc.conformance.v1.ConformanceService"
 

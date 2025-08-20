@@ -27,7 +27,7 @@ class RequestContext(Generic[REQ, RES]):
         http_method: str,
         request_headers: Headers,
         timeout_ms: int | None = None,
-    ):
+    ) -> None:
         """
         Initialize a Context object.
         """

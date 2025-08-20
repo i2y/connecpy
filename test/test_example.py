@@ -27,17 +27,17 @@ def sync_server():
             httpd.shutdown()
 
 
-def test_sync_client_basic(sync_server: WSGIServer):
+def test_sync_client_basic(sync_server: WSGIServer) -> None:
     with HaberdasherClientSync(f"http://localhost:{sync_server.server_port}") as client:
         response = client.make_hat(request=Size(inches=10))
         assert response.size == 10
     assert client._session.is_closed
 
 
-def test_sync_client_custom_session_and_header(sync_server: WSGIServer):
+def test_sync_client_custom_session_and_header(sync_server: WSGIServer) -> None:
     recorded_request = None
 
-    def record_request(request):
+    def record_request(request) -> None:
         nonlocal recorded_request
         recorded_request = request
 
@@ -55,7 +55,7 @@ def test_sync_client_custom_session_and_header(sync_server: WSGIServer):
 
 
 @pytest.mark.asyncio
-async def test_async_client_basic(sync_server: WSGIServer):
+async def test_async_client_basic(sync_server: WSGIServer) -> None:
     async with HaberdasherClient(
         f"http://localhost:{sync_server.server_port}"
     ) as client:
@@ -65,10 +65,10 @@ async def test_async_client_basic(sync_server: WSGIServer):
 
 
 @pytest.mark.asyncio
-async def test_async_client_custom_session_and_header(sync_server: WSGIServer):
+async def test_async_client_custom_session_and_header(sync_server: WSGIServer) -> None:
     recorded_request = None
 
-    async def record_request(request):
+    async def record_request(request) -> None:
         nonlocal recorded_request
         recorded_request = request
 

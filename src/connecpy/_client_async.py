@@ -2,7 +2,8 @@ import asyncio
 import functools
 from asyncio import CancelledError, sleep, wait_for
 from collections.abc import AsyncIterator, Iterable, Mapping
-from typing import Any, Protocol, TypeVar
+from types import TracebackType
+from typing import Any, Protocol, Self, TypeVar
 
 import httpx
 from httpx import USE_CLIENT_DEFAULT, Timeout
@@ -136,17 +137,22 @@ class ConnecpyClient:
             )
         self._execute_bidi_stream = execute_bidi_stream
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the HTTP client. After closing, the client cannot be used to make requests."""
         if not self._closed:
             self._closed = True
             if self._close_client:
                 await self._session.aclose()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self, _exc_type, _exc_value, _traceback):
+    async def __aexit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_value: BaseException | None,
+        _traceback: TracebackType | None,
+    ) -> None:
         await self.close()
 
     async def execute_unary(

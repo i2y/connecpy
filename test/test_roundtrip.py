@@ -18,7 +18,7 @@ from example.haberdasher_pb2 import Hat, Size
 
 @pytest.mark.parametrize("proto_json", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity", None])
-def test_roundtrip_sync(proto_json: bool, compression: str):
+def test_roundtrip_sync(proto_json: bool, compression: str) -> None:
     class RoundtripHaberdasherSync(HaberdasherSync):
         def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
@@ -39,7 +39,7 @@ def test_roundtrip_sync(proto_json: bool, compression: str):
 @pytest.mark.parametrize("proto_json", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
 @pytest.mark.asyncio
-async def test_roundtrip_async(proto_json: bool, compression: str):
+async def test_roundtrip_async(proto_json: bool, compression: str) -> None:
     class DetailsHaberdasher(Haberdasher):
         async def make_hat(self, request, ctx):
             return Hat(size=request.inches, color="green")
@@ -61,7 +61,7 @@ async def test_roundtrip_async(proto_json: bool, compression: str):
 @pytest.mark.parametrize("proto_json", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
 @pytest.mark.asyncio
-async def test_roundtrip_response_stream_async(proto_json: bool, compression: str):
+async def test_roundtrip_response_stream_async(proto_json: bool, compression: str) -> None:
     class StreamingHaberdasher(Haberdasher):
         async def make_similar_hats(self, request, ctx):
             yield Hat(size=request.inches, color="green")
@@ -96,7 +96,7 @@ async def test_roundtrip_response_stream_async(proto_json: bool, compression: st
 
 @pytest.mark.parametrize("client_bad", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
-def test_message_limit_sync(client_bad: bool, compression: str):
+def test_message_limit_sync(client_bad: bool, compression: str) -> None:
     requests: list[Size] = []
     responses: list[Hat] = []
 
@@ -159,7 +159,7 @@ def test_message_limit_sync(client_bad: bool, compression: str):
 @pytest.mark.parametrize("client_bad", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
 @pytest.mark.asyncio
-async def test_message_limit_async(client_bad: bool, compression: str):
+async def test_message_limit_async(client_bad: bool, compression: str) -> None:
     requests: list[Size] = []
     responses: list[Hat] = []
 
