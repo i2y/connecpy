@@ -1,7 +1,7 @@
 import functools
 from collections.abc import Iterable, Iterator, Mapping
 from types import TracebackType
-from typing import Any, Protocol, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 import httpx
 from httpx import USE_CLIENT_DEFAULT, Timeout
@@ -23,6 +23,16 @@ from .code import Code
 from .exceptions import ConnecpyException
 from .method import MethodInfo
 from .request import Headers, RequestContext
+
+if TYPE_CHECKING:
+    import sys
+
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
+else:
+    Self = "Self"
 
 REQ = TypeVar("REQ")
 RES = TypeVar("RES")
