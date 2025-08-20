@@ -118,7 +118,9 @@ class _AllItemsView(ItemsView[str, str]):
     _store: dict[str, str]
     _extra: dict[str, list[str]] | None
 
-    def __init__(self, store: dict[str, str], extra: dict[str, list[str]] | None) -> None:
+    def __init__(
+        self, store: dict[str, str], extra: dict[str, list[str]] | None
+    ) -> None:
         self._store = store
         self._extra = extra
 

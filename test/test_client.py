@@ -79,7 +79,9 @@ def test_headers_sync(headers, trailers, response_headers, response_trailers) ->
 @pytest.mark.parametrize(
     ("headers", "trailers", "response_headers", "response_trailers"), _headers_cases
 )
-async def test_headers_async(headers, trailers, response_headers, response_trailers) -> None:
+async def test_headers_async(
+    headers, trailers, response_headers, response_trailers
+) -> None:
     class HeadersHaberdasher(Haberdasher):
         def __init__(
             self, headers: list[tuple[str, str]], trailers: list[tuple[str, str]]

@@ -180,7 +180,9 @@ def test_sync_http_errors(response_status, response_kwargs, code, message) -> No
 @pytest.mark.parametrize(
     ("response_status", "response_kwargs", "code", "message"), _http_errors
 )
-async def test_async_http_errors(response_status, response_kwargs, code, message) -> None:
+async def test_async_http_errors(
+    response_status, response_kwargs, code, message
+) -> None:
     transport = MockTransport(lambda _: Response(response_status, **response_kwargs))
     async with HaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)

@@ -61,7 +61,9 @@ async def test_roundtrip_async(proto_json: bool, compression: str) -> None:
 @pytest.mark.parametrize("proto_json", [False, True])
 @pytest.mark.parametrize("compression", ["gzip", "br", "zstd", "identity"])
 @pytest.mark.asyncio
-async def test_roundtrip_response_stream_async(proto_json: bool, compression: str) -> None:
+async def test_roundtrip_response_stream_async(
+    proto_json: bool, compression: str
+) -> None:
     class StreamingHaberdasher(Haberdasher):
         async def make_similar_hats(self, request, ctx):
             yield Hat(size=request.inches, color="green")
