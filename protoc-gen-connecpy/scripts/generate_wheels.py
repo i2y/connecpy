@@ -48,6 +48,7 @@ def main() -> None:
         subprocess.run(["uv", "build", "--wheel"], check=True)  # noqa: S607
         dist_dir = Path(__file__).parent / ".." / "dist"
         built_wheel = next(dist_dir.glob("*-py3-none-any.whl"))
+        # TODO(anuraaga): Simplify after https://github.com/astral-sh/uv/pull/15400
         base_name = built_wheel.name[: -len("-py3-none-any.whl")]
         wheel_name = f"{base_name}-py3-none-{platform}.whl"
         built_wheel.rename(dist_dir / wheel_name)
