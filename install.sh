@@ -39,9 +39,6 @@ detect_os() {
         darwin)
             echo "darwin"
             ;;
-        mingw*|msys*|cygwin*)
-            echo "windows"
-            ;;
         *)
             print_error "Unsupported operating system: $OS"
             exit 1
@@ -98,13 +95,8 @@ main() {
     # Remove 'v' prefix from version for filename
     VERSION_NUM="${VERSION#v}"
     
-    if [ "$OS" = "windows" ]; then
-        ARCHIVE_NAME="${BINARY_NAME}_${VERSION_NUM}_${OS}_${ARCH}.zip"
-        ARCHIVE_TYPE="zip"
-    else
-        ARCHIVE_NAME="${BINARY_NAME}_${VERSION_NUM}_${OS}_${ARCH}.tar.gz"
-        ARCHIVE_TYPE="tar.gz"
-    fi
+    ARCHIVE_NAME="${BINARY_NAME}_${VERSION_NUM}_${OS}_${ARCH}.tar.gz"
+    ARCHIVE_TYPE="tar.gz"
     
     DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/${ARCHIVE_NAME}"
     
@@ -122,16 +114,9 @@ main() {
     
     # Extract archive
     print_info "Extracting archive..."
-    if [ "$ARCHIVE_TYPE" = "zip" ]; then
-        if ! unzip -q "$TMP_DIR/$ARCHIVE_NAME" -d "$TMP_DIR"; then
-            print_error "Failed to extract zip archive"
-            exit 1
-        fi
-    else
-        if ! tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR"; then
-            print_error "Failed to extract tar.gz archive"
-            exit 1
-        fi
+    if ! tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR"; then
+        print_error "Failed to extract tar.gz archive"
+        exit 1
     fi
     
     # Find the binary (it should be named protoc-gen-connecpy)
