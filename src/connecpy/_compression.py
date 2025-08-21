@@ -16,10 +16,6 @@ class Compression(Protocol):
         """Decompress the given data."""
         ...
 
-    def is_identity(self) -> bool:
-        """Check if this compression is identity (no compression). Needed for stream validation."""
-        return False
-
 
 _compressions: dict[str, Compression] = {}
 
@@ -33,9 +29,6 @@ class GZipCompression(Compression):
 
     def decompress(self, data: bytes | bytearray) -> bytes:
         return gzip.decompress(data)
-
-    def is_identity(self) -> bool:
-        return False
 
 
 _compressions["gzip"] = GZipCompression()
@@ -52,9 +45,6 @@ try:
 
         def decompress(self, data: bytes | bytearray) -> bytes:
             return brotli.decompress(data)
-
-        def is_identity(self) -> bool:
-            return False
 
     _compressions["br"] = BrotliCompression()
 except ImportError:
@@ -76,9 +66,6 @@ try:
             with zstandard.ZstdDecompressor().stream_reader(data) as reader:
                 return reader.read()
 
-        def is_identity(self) -> bool:
-            return False
-
     _compressions["zstd"] = ZstdCompression()
 except ImportError:
     pass
@@ -95,9 +82,6 @@ class IdentityCompression(Compression):
     def decompress(self, data: bytes | bytearray) -> bytes:
         """Return data as-is without decompression."""
         return bytes(data)
-
-    def is_identity(self) -> bool:
-        return True
 
 
 _identity = IdentityCompression()
