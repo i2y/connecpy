@@ -189,9 +189,9 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
 Install protoc-gen-connecpy
 
 Usage:
-    curl -sSL https://i2y.github.io/connecpy/install.sh | bash
-    curl -sSL https://i2y.github.io/connecpy/install.sh | PROTOC_GEN_CONNECPY_INSTALL=\$HOME/.local/bin bash
-    curl -sSL https://i2y.github.io/connecpy/install.sh | VERSION=v2.1.0 bash
+    curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | bash
+    curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTOC_GEN_CONNECPY_INSTALL=\$HOME/.local/bin bash
+    curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | VERSION=v2.1.0 bash
 
 Environment Variables:
     PROTOC_GEN_CONNECPY_INSTALL  Installation directory (default: /usr/local/bin)
@@ -202,13 +202,13 @@ Options:
 
 Examples:
     # Install latest version to default location
-    curl -sSL https://i2y.github.io/connecpy/install.sh | bash
+    curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | bash
     
     # Install to user directory
-    curl -sSL https://i2y.github.io/connecpy/install.sh | PROTOC_GEN_CONNECPY_INSTALL=\$HOME/bin bash
+    curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTOC_GEN_CONNECPY_INSTALL=\$HOME/bin bash
     
     # Install specific version
-    curl -sSL https://i2y.github.io/connecpy/install.sh | VERSION=v2.0.0 bash
+    curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | VERSION=v2.0.0 bash
 
 EOF
     exit 0
