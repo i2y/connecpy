@@ -1,7 +1,7 @@
 [project]
 name = "connecpy"
 version = "2.2.0"
-description = "Code generator, server library and client library for the Connect Protocol"
+description = "Server library and client library for the Connect Protocol"
 authors = [{ name = "Connecpy authors" }]
 requires-python = ">= 3.10"
 dependencies = ["httpx", "protobuf"]
