@@ -26,13 +26,7 @@ class Endpoint(Generic[REQ, RES]):
     Represents an endpoint in a service.
 
     Attributes:
-        service_name (str): The name of the service.
-        name (str): The name of the endpoint.
-        function (Callable[[T, context.RequestContext[T, U]], Awaitable[U]]): The function that implements the endpoint.
-        input (type): The type of the input parameter.
-        output (type): The type of the output parameter.
-        allowed_methods (list[str]): The allowed HTTP methods for the endpoint.
-        _async_proc (Callable[[T, context.RequestContext[T, U]], U] | None): The asynchronous function that implements the endpoint.
+        method: The method to map the the RPC function.
     """
 
     method: MethodInfo[REQ, RES]
@@ -94,13 +88,7 @@ class EndpointSync(Generic[REQ, RES]):
     Represents a sync endpoint in a service.
 
     Attributes:
-        service_name (str): The name of the service.
-        name (str): The name of the endpoint.
-        function (Callable[[T, context.RequestContext[T, U]], U]): The function that implements the endpoint.
-        input (type): The type of the input parameter.
-        output (type): The type of the output parameter.
-        allowed_methods (list[str]): The allowed HTTP methods for the endpoint.
-        _async_proc (Callable[[T, context.RequestContext[T, U]], U] | None): The asynchronous function that implements the endpoint.
+        method: The method to map the the RPC function.
     """
 
     method: MethodInfo[REQ, RES]

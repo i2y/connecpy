@@ -10,49 +10,109 @@ T = TypeVar("T")
 
 @runtime_checkable
 class UnaryInterceptor(Protocol):
+    """An interceptor of an asynchronous unary RPC method."""
+
     async def intercept_unary(
         self,
         call_next: Callable[[REQ, RequestContext], Awaitable[RES]],
         request: REQ,
         ctx: RequestContext,
     ) -> RES:
-        """Intercepts a unary RPC."""
+        """Intercepts a unary RPC.
+
+        Args:
+            call_next: A callable to invoke to continue processing, either to another
+                interceptor or the actual RPC. Generally will be called with the same
+                request the interceptor received but the request can be replaced as
+                needed. Can be skipped if returning a response from the interceptor
+                directly.
+            request: The request message.
+            ctx: The request context.
+
+        Returns:
+            The response message.
+        """
         ...
 
 
 @runtime_checkable
 class ClientStreamInterceptor(Protocol):
+    """An interceptor of an asynchronous client-streaming RPC method."""
+
     async def intercept_client_stream(
         self,
         call_next: Callable[[AsyncIterator[REQ], RequestContext], Awaitable[RES]],
         request: AsyncIterator[REQ],
         ctx: RequestContext,
     ) -> RES:
-        """Intercepts a client-streaming RPC."""
+        """Intercepts a client-streaming RPC.
+
+        Args:
+            call_next: A callable to invoke to continue processing, either to another
+                interceptor or the actual RPC. Generally will be called with the same
+                request the interceptor received but the request can be replaced as
+                needed. Can be skipped if returning a response from the interceptor
+                directly.
+            request: The request message iterator.
+            ctx: The request context.
+
+        Returns:
+            The response message.
+        """
         ...
 
 
 @runtime_checkable
 class ServerStreamInterceptor(Protocol):
+    """An interceptor of an asynchronous server-streaming RPC method."""
+
     def intercept_server_stream(
         self,
         call_next: Callable[[REQ, RequestContext], AsyncIterator[RES]],
         request: REQ,
         ctx: RequestContext,
     ) -> AsyncIterator[RES]:
-        """Intercepts a server-streaming RPC."""
+        """Intercepts a server-streaming RPC.
+
+        Args:
+            call_next: A callable to invoke to continue processing, either to another
+                interceptor or the actual RPC. Generally will be called with the same
+                request the interceptor received but the request can be replaced as
+                needed. Can be skipped if returning a response from the interceptor
+                directly.
+            request: The request message.
+            ctx: The request context.
+
+        Returns:
+            The response message iterator.
+        """
         ...
 
 
 @runtime_checkable
 class BidiStreamInterceptor(Protocol):
+    """An interceptor of an asynchronous bidirectional-streaming RPC method."""
+
     def intercept_bidi_stream(
         self,
         call_next: Callable[[AsyncIterator[REQ], RequestContext], AsyncIterator[RES]],
         request: AsyncIterator[REQ],
         ctx: RequestContext,
     ) -> AsyncIterator[RES]:
-        """Intercepts a bidirectional-streaming RPC."""
+        """Intercepts a bidirectional-streaming RPC.
+
+        Args:
+            call_next: A callable to invoke to continue processing, either to another
+                interceptor or the actual RPC. Generally will be called with the same
+                request the interceptor received but the request can be replaced as
+                needed. Can be skipped if returning a response from the interceptor
+                directly.
+            request: The request message iterator.
+            ctx: The request context.
+
+        Returns:
+            The response message iterator.
+        """
         ...
 
 
@@ -68,7 +128,7 @@ class MetadataInterceptor(Protocol[T]):
     async def on_start(self, ctx: RequestContext) -> T:
         """Called when the RPC starts. The return value will be passed to on_end as-is.
         For example, if measuring RPC invocation time, on_start may return the current
-        time.
+        time. If a return value isn't needed or on_end won't be used, return None.
         """
         ...
 

@@ -56,7 +56,16 @@ class MethodInfo(Generic[REQ, RES]):
     """Information about a RPC method within a service."""
 
     name: str
+    """The name of the method within the service."""
+
     service_name: str
+    """The fully qualified service name containing the method."""
+
     input: type[REQ]
+    """The input message type of the method."""
+
     output: type[RES]
+    """The output message type of the method."""
+
     idempotency_level: IdempotencyLevel
+    """The idempotency level of the method."""
