@@ -5,7 +5,7 @@ from typing import Any, Generic, TypeVar
 
 from ._client_shared import handle_response_trailers
 from ._codec import Codec
-from ._compression import Compression
+from ._compression import Compression, IdentityCompression
 from ._protocol import ConnectWireError
 from .code import Code
 from .exceptions import ConnecpyException
@@ -50,7 +50,7 @@ class EnvelopeReader(Generic[_RES]):
                 self._buffer = self._buffer[5 + self._next_message_length :]
                 self._next_message_length = None
                 if compressed:
-                    if self._compression.is_identity():
+                    if isinstance(self._compression, IdentityCompression):
                         raise ConnecpyException(
                             Code.INTERNAL,
                             "protocol error: sent compressed message without compression support",
@@ -94,7 +94,9 @@ class EnvelopeWriter(Generic[_T]):
     def __init__(self, codec: Codec[_T, Any], compression: Compression | None) -> None:
         self._codec = codec
         self._compression = compression
-        self._prefix = 0 if not compression or compression.is_identity() else 1
+        self._prefix = (
+            0 if not compression or isinstance(compression, IdentityCompression) else 1
+        )
 
     def write(self, message: _T) -> bytes:
         data = self._codec.encode(message)
