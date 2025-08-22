@@ -19,21 +19,84 @@ This repo contains a protoc plugin that generates sever and client code and a py
 
 You can install the protoc plugin using one of these methods:
 
-#### Option 1: Download pre-built binary (recommended)
+#### Option 1: Quick Install (Linux/macOS) - Recommended
 
-Download the latest release from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest) page. Pre-built binaries are available for:
+Install with a single command:
 
-- Linux (amd64, arm64)
-- macOS (amd64, arm64)
-- Windows (amd64, arm64)
+```bash
+curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | bash
+```
 
-#### Option 2: Install with Go
+You can customize the installation with environment variables:
 
-If you have Go installed, you can install using:
+```bash
+# Install to a custom directory
+curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTOC_GEN_CONNECPY_INSTALL=$HOME/.local/bin bash
+
+# Install a specific version
+curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | VERSION=v2.2.0 bash
+
+# Combine multiple options
+curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTOC_GEN_CONNECPY_INSTALL=$HOME/.local/bin VERSION=v2.2.0 bash
+```
+
+#### Option 2: Manual Download
+
+1. **Download the appropriate archive for your platform** from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest):
+   - **Linux AMD64**: `protoc-gen-connecpy_VERSION_linux_amd64.tar.gz`
+   - **Linux ARM64**: `protoc-gen-connecpy_VERSION_linux_arm64.tar.gz`
+   - **macOS Intel**: `protoc-gen-connecpy_VERSION_darwin_amd64.tar.gz`
+   - **macOS Apple Silicon**: `protoc-gen-connecpy_VERSION_darwin_arm64.tar.gz`
+   - **Windows AMD64**: `protoc-gen-connecpy_VERSION_windows_amd64.zip`
+   - **Windows ARM64**: `protoc-gen-connecpy_VERSION_windows_arm64.zip`
+
+2. **Extract and install the binary:**
+
+   **Linux/macOS:**
+   ```bash
+   # Extract the archive
+   tar -xzf protoc-gen-connecpy_*.tar.gz
+   
+   # Make executable (if needed)
+   chmod +x protoc-gen-connecpy
+   
+   # Move to a directory in PATH
+   sudo mv protoc-gen-connecpy /usr/local/bin/
+   # Or for user-only installation:
+   # mkdir -p ~/.local/bin
+   # mv protoc-gen-connecpy ~/.local/bin/
+   # Make sure ~/.local/bin is in your PATH
+   ```
+
+   **Windows (PowerShell):**
+   ```powershell
+   # Extract the archive
+   Expand-Archive protoc-gen-connecpy_*.zip -DestinationPath .
+   
+   # Move to a directory in PATH, for example:
+   Move-Item protoc-gen-connecpy.exe C:\Tools\
+   # Then add C:\Tools to your PATH environment variable:
+   # [System.Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";C:\Tools", "User")
+   ```
+
+3. **Verify installation:**
+   ```bash
+   # Check if the plugin is accessible
+   which protoc-gen-connecpy  # Linux/macOS
+   where protoc-gen-connecpy  # Windows
+   
+   # Test with protoc (requires a .proto file)
+   protoc --connecpy_out=. --connecpy_opt=paths=source_relative test.proto
+   ```
+
+#### Option 3: Install with Go
+If you have Go installed, you can install the plugin directly:
 
 ```sh
 go install github.com/i2y/connecpy/v2/protoc-gen-connecpy@latest
 ```
+
+This will install the binary to `$GOPATH/bin` (or `$HOME/go/bin` if GOPATH is not set). Make sure this directory is in your PATH.
 
 ### Install the Python package
 
@@ -56,6 +119,29 @@ To run the server, you'll need one of the following: [Uvicorn](https://www.uvico
 ## Generate and run
 
 Use the protoc plugin to generate connecpy server and client code.
+
+### Using Buf (v2) - Recommended
+
+Create a `buf.gen.yaml` file:
+
+```yaml
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/python
+    out: gen
+  - remote: buf.build/protocolbuffers/pyi
+    out: gen
+  - local: protoc-gen-connecpy
+    out: gen
+```
+
+Then run:
+
+```sh
+buf generate
+```
+
+### Using protoc directly
 
 ```sh
 protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
