@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -12,7 +13,7 @@ def main() -> None:
         if artifact["type"] != "Binary":
             continue
         # Check https://go.dev/wiki/MinimumRequirements#operating-systems for
-        # minimum OS versions
+        # minimum OS versions, especially MacOS
         platform = ""
         match artifact["goos"]:
             case "darwin":
@@ -22,15 +23,11 @@ def main() -> None:
                     case "arm64":
                         platform = "macosx_11_0_arm64"
             case "linux":
-                # While manylinux1 is considered legacy versus the more
-                # precise manylinux_x_y, our binaries are statically compiled
-                # so we go with it for maximum compatibility. We also use the
-                # same wheel for musl.
                 match artifact["goarch"]:
                     case "amd64":
-                        platform = "manylinux1_x86_64"
+                        platform = "manylinux2_17_x86_64.manylinux_2014_x86_64.musllinux_1_1_x86_64"
                     case "arm64":
-                        platform = "manylinux1_aarch64"
+                        platform = "manylinux2_17_aarch64.manylinux_2014_aarch64.musllinux_1_1_aarch64"
             case "windows":
                 match artifact["goarch"]:
                     case "amd64":
@@ -48,15 +45,20 @@ def main() -> None:
         subprocess.run(["uv", "build", "--wheel"], check=True)  # noqa: S607
         dist_dir = Path(__file__).parent / ".." / "dist"
         built_wheel = next(dist_dir.glob("*-py3-none-any.whl"))
-        # TODO(anuraaga): Simplify after https://github.com/astral-sh/uv/pull/15400
-        base_name = built_wheel.name[: -len("-py3-none-any.whl")]
-        wheel_name = f"{base_name}-py3-none-{platform}.whl"
-        built_wheel.rename(dist_dir / wheel_name)
-        if platform.startswith("manylinux1"):
-            shutil.copyfile(
-                dist_dir / wheel_name,
-                dist_dir / wheel_name.replace("manylinux1", "musllinux_1_0"),
-            )
+
+        subprocess.run(  # noqa: S603
+            [
+                sys.executable,
+                "-m",
+                "wheel",
+                "tags",
+                "--remove",
+                "--platform-tag",
+                platform,
+                built_wheel,
+            ],
+            check=True,
+        )
 
 
 if __name__ == "__main__":
