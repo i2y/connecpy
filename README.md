@@ -42,22 +42,22 @@ curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTO
 
 #### Option 2: Manual Download
 
-1. **Download the appropriate binary for your platform** from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest):
-   - **Linux AMD64**: `protoc-gen-connecpy-linux-amd64`
-   - **Linux ARM64**: `protoc-gen-connecpy-linux-arm64`
-   - **macOS Intel**: `protoc-gen-connecpy-darwin-amd64`
-   - **macOS Apple Silicon**: `protoc-gen-connecpy-darwin-arm64`
-   - **Windows AMD64**: `protoc-gen-connecpy-windows-amd64.exe`
-   - **Windows ARM64**: `protoc-gen-connecpy-windows-arm64.exe`
+1. **Download the appropriate archive for your platform** from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest):
+   - **Linux AMD64**: `protoc-gen-connecpy_VERSION_linux_amd64.tar.gz`
+   - **Linux ARM64**: `protoc-gen-connecpy_VERSION_linux_arm64.tar.gz`
+   - **macOS Intel**: `protoc-gen-connecpy_VERSION_darwin_amd64.tar.gz`
+   - **macOS Apple Silicon**: `protoc-gen-connecpy_VERSION_darwin_arm64.tar.gz`
+   - **Windows AMD64**: `protoc-gen-connecpy_VERSION_windows_amd64.zip`
+   - **Windows ARM64**: `protoc-gen-connecpy_VERSION_windows_arm64.zip`
 
-2. **Rename and install the binary:**
+2. **Extract and install the binary:**
 
    **Linux/macOS:**
    ```bash
-   # Rename to protoc-gen-connecpy
-   mv protoc-gen-connecpy-* protoc-gen-connecpy
+   # Extract the archive
+   tar -xzf protoc-gen-connecpy_*.tar.gz
    
-   # Make executable
+   # Make executable (if needed)
    chmod +x protoc-gen-connecpy
    
    # Move to a directory in PATH
@@ -70,8 +70,8 @@ curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTO
 
    **Windows (PowerShell):**
    ```powershell
-   # Rename the file
-   Rename-Item protoc-gen-connecpy-windows-*.exe protoc-gen-connecpy.exe
+   # Extract the archive
+   Expand-Archive protoc-gen-connecpy_*.zip -DestinationPath .
    
    # Move to a directory in PATH, for example:
    Move-Item protoc-gen-connecpy.exe C:\Tools\
