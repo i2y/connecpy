@@ -45,7 +45,6 @@ def main() -> None:
         subprocess.run(["uv", "build", "--wheel"], check=True)  # noqa: S607
         dist_dir = Path(__file__).parent / ".." / "dist"
         built_wheel = next(dist_dir.glob("*-py3-none-any.whl"))
-        # TODO(anuraaga): Simplify after https://github.com/astral-sh/uv/pull/15400
 
         subprocess.run(  # noqa: S603
             [
