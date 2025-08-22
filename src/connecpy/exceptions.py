@@ -10,12 +10,19 @@ from .code import Code
 
 
 class ConnecpyException(Exception):
+    """An exception in a Connect RPC.
+
+    If a server raises a ConnecpyException, the same exception content will be
+    raised on the client as well. Errors surfacing on the client side such as
+    timeouts will also be raised as a ConnecpyException with an appropriate
+    code.
+    """
+
     def __init__(
         self, code: Code, message: str, details: Iterable[Message] = ()
     ) -> None:
         """
-        Initializes a new Connecpy exception. If raised in a server, the same exception
-        will be raised in the client.
+        Creates a new Connecpy exception.
 
         Args:
             code: The error code.

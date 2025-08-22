@@ -65,7 +65,7 @@ Endpoint = (
 
 
 class ConnecpyASGIApplication(ABC):
-    """ASGI application for Connecpy."""
+    """An ASGI application for the Connect protocol."""
 
     @property
     @abstractmethod
@@ -92,14 +92,6 @@ class ConnecpyASGIApplication(ABC):
     async def __call__(
         self, scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable
     ) -> None:
-        """
-        Handle incoming ASGI requests.
-
-        Args:
-            scope (dict): The ASGI scope.
-            receive (callable): The ASGI receive function.
-            send (callable): The ASGI send function.
-        """
         assert scope["type"] == "http"  # noqa: S101 - only for type narrowing, in practice always true
 
         ctx: RequestContext | None = None

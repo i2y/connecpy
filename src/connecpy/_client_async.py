@@ -63,6 +63,8 @@ class _ExecuteBidiStream(Protocol[REQ, RES]):
 
 
 class ConnecpyClient:
+    """An asynchronous client for the Connect protocol."""
+
     _execute_unary: _ExecuteUnary
     _execute_client_stream: _ExecuteClientStream
     _execute_server_stream: _ExecuteServerStream

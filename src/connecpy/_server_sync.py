@@ -126,7 +126,7 @@ def _read_body(environ: WSGIEnvironment) -> Iterator[bytes]:
 
 
 class ConnecpyWSGIApplication(ABC):
-    """WSGI application for Connecpy."""
+    """A WSGI application for the Connect protocol."""
 
     @property
     @abstractmethod
@@ -158,7 +158,6 @@ class ConnecpyWSGIApplication(ABC):
     def __call__(
         self, environ: WSGIEnvironment, start_response: StartResponse
     ) -> Iterable[bytes]:
-        """Handle incoming WSGI requests."""
         ctx: RequestContext | None = None
         try:
             path = environ["PATH_INFO"]

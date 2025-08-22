@@ -80,7 +80,7 @@ class RequestContext(Generic[REQ, RES]):
 
     def timeout_ms(self) -> float | None:
         """
-        Calculate the remaining time until the timeout.
+        Returns the remaining time until the timeout.
 
         Returns:
             float | None: The remaining time in milliseconds, or None if no timeout is set.
