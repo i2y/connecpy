@@ -33,7 +33,6 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Code Generators",
     "Topic :: Software Development :: Compilers",
-    "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Networking",
 ]
 
