@@ -7,6 +7,48 @@ requires-python = ">= 3.10"
 dependencies = ["httpx", "protobuf"]
 readme = "README.md"
 license-files = ["LICENSE"]
+keywords = [
+    "connect",
+    "connectrpc",
+    "connect-protocol",
+    "connect-rpc",
+    "rpc",
+    "protobuf",
+    "api",
+    "http",
+    "http2",
+    "asgi",
+    "wsgi",
+    "streaming",
+    "microservices",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Networking",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/i2y/connecpy"
+Documentation = "https://github.com/i2y/connecpy#readme"
+Repository = "https://github.com/i2y/connecpy.git"
+Issues = "https://github.com/i2y/connecpy/issues"
+Changelog = "https://github.com/i2y/connecpy/releases"
 
 [tool.uv]
 dev-dependencies = [

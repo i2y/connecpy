@@ -6,6 +6,44 @@ authors = [{ name = "Connecpy authors" }]
 requires-python = ">= 3.10"
 readme = "README.md"
 license-files = ["LICENSE"]
+keywords = [
+    "protoc",
+    "protobuf",
+    "protocol-buffers",
+    "code-generation",
+    "connect",
+    "connectrpc",
+    "connect-protocol",
+    "connect-rpc",
+    "rpc",
+    "compiler",
+    "plugin",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Networking",
+]
+
+[project.urls]
+Homepage = "https://github.com/i2y/connecpy"
+Documentation = "https://github.com/i2y/connecpy#installation"
+Repository = "https://github.com/i2y/connecpy/tree/main/protoc-gen-connecpy"
+Source = "https://github.com/i2y/connecpy/tree/main/protoc-gen-connecpy"
+Issues = "https://github.com/i2y/connecpy/issues"
+Changelog = "https://github.com/i2y/connecpy/releases"
 
 [tool.uv]
 dev-dependencies = ["wheel"]
