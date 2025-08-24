@@ -129,7 +129,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{- if .NoSideEffects}}
-        _use_get: bool = False,
+        use_get: bool = False,
         {{- end}}
     ) -> {{if .ResponseStream}}AsyncIterator[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:
         return {{if not .ResponseStream }}await {{end}}self.execute_{{.EndpointType}}(
@@ -144,7 +144,7 @@ class {{.Name}}Client(ConnecpyClient):{{range .Methods}}
             headers=headers,
             timeout_ms=timeout_ms,
             {{- if .NoSideEffects}}
-            use_get=_use_get,
+            use_get=use_get,
             {{- end}}
         )
 {{end}}{{- end }}
@@ -203,7 +203,7 @@ class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{- if .NoSideEffects}}
-        _use_get: bool = False,
+        use_get: bool = False,
         {{- end}}
     ) -> {{if .ResponseStream}}Iterator[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:
         return self.execute_{{.EndpointType}}(
@@ -218,7 +218,7 @@ class {{.Name}}ClientSync(ConnecpyClientSync):{{range .Methods}}
             headers=headers,
             timeout_ms=timeout_ms,
             {{- if .NoSideEffects}}
-            use_get=_use_get,
+            use_get=use_get,
             {{- end}}
         )
 {{end}}{{if $.TransportAPI}}
@@ -234,7 +234,7 @@ class {{.Name}}ClientProtocol(Protocol):
         headers: Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{- if .NoSideEffects}}
-        _use_get: bool = False,
+        use_get: bool = False,
         {{- end}}
     ) -> {{if .ResponseStream}}AsyncIterator[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}: ...
 {{- end}}
@@ -250,7 +250,7 @@ class {{.Name}}ClientSyncProtocol(Protocol):
         headers: Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{- if .NoSideEffects}}
-        _use_get: bool = False,
+        use_get: bool = False,
         {{- end}}
     ) -> {{if .ResponseStream}}Iterator[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}: ...
 {{- end}}
@@ -271,7 +271,7 @@ class {{.Name}}GrpcWrapper:
         headers: Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{- if .NoSideEffects}}
-        _use_get: bool = False,
+        use_get: bool = False,
         {{- end}}
     ) -> {{if .ResponseStream}}AsyncIterator[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:
         """Call {{.Name}} via gRPC."""
@@ -311,7 +311,7 @@ class {{.Name}}GrpcWrapperSync:
         headers: Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
         {{- if .NoSideEffects}}
-        _use_get: bool = False,
+        use_get: bool = False,
         {{- end}}
     ) -> {{if .ResponseStream}}Iterator[{{.OutputType}}]{{else}}{{.OutputType}}{{end}}:
         """Call {{.Name}} via gRPC."""

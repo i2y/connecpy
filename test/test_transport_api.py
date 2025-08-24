@@ -133,12 +133,16 @@ class TestGrpcTransport(unittest.TestCase):
 
         transport = GrpcTransport("localhost:50051")
 
-        # Create test method info
+        # Create test method info with type mocks
+        input_type = type("TestInput", (), {"SerializeToString": lambda _: b"test"})
+        output_type = type(
+            "TestOutput", (), {"FromString": classmethod(lambda _, x: {"parsed": x})}
+        )
         method = MethodInfo(
             name="TestMethod",
             service_name="TestService",
-            input=Mock(SerializeToString=lambda: b"test"),
-            output=Mock(FromString=lambda x: {"parsed": x}),
+            input=input_type,
+            output=output_type,
             idempotency_level=IdempotencyLevel.UNKNOWN,
         )
 

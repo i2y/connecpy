@@ -196,7 +196,7 @@ class HaberdasherClient(ConnecpyClient):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        _use_get: bool = False,
+        use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat:
         return await self.execute_unary(
             request=request,
@@ -209,7 +209,7 @@ class HaberdasherClient(ConnecpyClient):
             ),
             headers=headers,
             timeout_ms=timeout_ms,
-            use_get=_use_get,
+            use_get=use_get,
         )
 
     async def make_flexible_hat(
@@ -482,7 +482,7 @@ class HaberdasherClientSync(ConnecpyClientSync):
         *,
         headers: Headers | Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        _use_get: bool = False,
+        use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat:
         return self.execute_unary(
             request=request,
@@ -495,7 +495,7 @@ class HaberdasherClientSync(ConnecpyClientSync):
             ),
             headers=headers,
             timeout_ms=timeout_ms,
-            use_get=_use_get,
+            use_get=use_get,
         )
 
     def make_flexible_hat(
@@ -609,7 +609,7 @@ class HaberdasherClientProtocol(Protocol):
         *,
         headers: Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        _use_get: bool = False,
+        use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat: ...
     async def make_flexible_hat(
         self,
@@ -657,7 +657,7 @@ class HaberdasherClientSyncProtocol(Protocol):
         *,
         headers: Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        _use_get: bool = False,
+        use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat: ...
     def make_flexible_hat(
         self,
@@ -709,7 +709,7 @@ class HaberdasherGrpcWrapper:
         *,
         headers: Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        _use_get: bool = False,
+        use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat:
         """Call MakeHat via gRPC."""
         metadata = [(k.lower(), v) for k, v in (headers or {}).items()]
@@ -800,7 +800,7 @@ class HaberdasherGrpcWrapperSync:
         *,
         headers: Mapping[str, str] | None = None,
         timeout_ms: int | None = None,
-        _use_get: bool = False,
+        use_get: bool = False,
     ) -> example_dot_haberdasher__pb2.Hat:
         """Call MakeHat via gRPC."""
         metadata = [(k.lower(), v) for k, v in (headers or {}).items()]

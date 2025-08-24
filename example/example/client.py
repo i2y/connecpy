@@ -36,7 +36,7 @@ async def main() -> None:
             try:
                 response = await client.make_hat(
                     request=haberdasher_pb2.Size(inches=8),
-                    use_get=True,  # Enable GET request
+                    _use_get=True,  # Enable GET request
                 )
                 print("\nGET with Zstandard compression:", response)
             except ConnecpyException as e:

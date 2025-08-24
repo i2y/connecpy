@@ -69,7 +69,7 @@ class HaberdasherServicer(haberdasher_pb2_grpc.HaberdasherServicer):
         """List available hat parts."""
         parts = ["brim", "crown", "band", "feather", "buckle"]
         for part in parts:
-            yield haberdasher_pb2.Hat.Part(name=part)
+            yield haberdasher_pb2.Hat.Part(id=part)
 
     def DoNothing(self, request, context):  # noqa: N802
         """Do nothing and return empty."""

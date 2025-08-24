@@ -21,6 +21,7 @@ def test_retry_policy_defaults():
     assert policy.initial_backoff_ms == 100
     assert policy.max_backoff_ms == 5000
     assert policy.backoff_multiplier == 2.0
+    assert policy.retryable_codes is not None
     assert Code.UNAVAILABLE in policy.retryable_codes
     assert Code.DEADLINE_EXCEEDED in policy.retryable_codes
 

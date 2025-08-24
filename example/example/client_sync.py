@@ -51,7 +51,7 @@ def main() -> None:
             print("\nTesting GET request without compression...")
             response = client.make_hat(
                 request=haberdasher_pb2.Size(inches=8),  # Small request
-                use_get=True,
+                _use_get=True,
             )
             print("GET without compression successful:", response)
         except ConnecpyException as e:
@@ -66,7 +66,7 @@ def main() -> None:
     ) as client:
         try:
             print("\nTesting GET request with gzip compression...")
-            response = client.make_hat(request=create_large_request(), use_get=True)
+            response = client.make_hat(request=create_large_request(), _use_get=True)
             print("GET with zstd compression successful:", response)
         except ConnecpyException as e:
             print("GET with zstd compression failed:", str(e))
