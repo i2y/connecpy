@@ -77,6 +77,7 @@ class TestConnectTransport(unittest.TestCase):
 class TestGrpcTransport(unittest.TestCase):
     """Test the GrpcTransport class."""
 
+    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
     @patch("connecpy.transport.grpc.grpc")
     def test_grpc_transport_init_insecure(self, mock_grpc):
         """Test GrpcTransport initialization with insecure channel."""
@@ -89,6 +90,7 @@ class TestGrpcTransport(unittest.TestCase):
         )
         assert transport._target == "localhost:50051"
 
+    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
     @patch("connecpy.transport.grpc.grpc")
     def test_grpc_transport_init_secure(self, mock_grpc):
         """Test GrpcTransport initialization with secure channel."""
@@ -107,6 +109,7 @@ class TestGrpcTransport(unittest.TestCase):
             options=[("grpc.max_receive_message_length", 10000000)],
         )
 
+    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
     @patch("connecpy.transport.grpc.grpc")
     def test_grpc_transport_with_compression(self, mock_grpc):
         """Test GrpcTransport with compression."""
@@ -120,6 +123,7 @@ class TestGrpcTransport(unittest.TestCase):
         # The transport converts "gzip" to the numeric value 2
         assert ("grpc.default_compression_algorithm", 2) in options
 
+    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
     @patch("connecpy.transport.grpc.grpc")
     def test_grpc_transport_unary_call(self, mock_grpc):
         """Test GrpcTransport unary_unary method."""
@@ -195,6 +199,7 @@ class TestCreateClientSync(unittest.TestCase):
         )
 
     @patch("importlib.import_module")
+    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
     @patch("connecpy.transport.grpc.grpc")
     def test_create_client_with_grpc_transport(self, mock_grpc, mock_import):
         """Test creating a client with GrpcTransport."""
