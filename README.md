@@ -133,6 +133,9 @@ plugins:
     out: gen
   - local: protoc-gen-connecpy
     out: gen
+    # Optional: Enable experimental Transport API
+    # opt:
+    #   - transport_api=true
 ```
 
 Then run:
@@ -147,8 +150,15 @@ buf generate
 protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 ```
 
+### Generator Options
+
 By default, naming follows PEP8 conventions. To use Google conventions, matching the output of grpc-python, add `--connecpy_opt=naming=google`.
 By default, imports are generated absolutely based on the proto package name. To use relative import, add `--connecpy_opt=imports=relative`.
+
+For experimental Transport API support (see Transport API section below), add `--connecpy_opt=transport_api=true`:
+```sh
+protoc --python_out=./ --pyi_out=./ --connecpy_out=./ --connecpy_opt=transport_api=true ./haberdasher.proto
+```
 
 ### Server code (ASGI)
 
@@ -569,6 +579,8 @@ curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"
 ## Transport API (Experimental)
 
 The Transport API provides a protocol-agnostic way to create RPC clients that can work with both Connect and gRPC protocols. This allows you to switch between protocols without changing your client code.
+
+**Note**: This feature must be explicitly enabled during code generation using the `transport_api=true` option (see Generator Options above).
 
 ### Features
 
