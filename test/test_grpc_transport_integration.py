@@ -2,8 +2,12 @@
 
 from concurrent import futures
 
-import grpc
 import pytest
+
+try:
+    import grpc
+except ImportError:
+    pytest.skip("grpc not available", allow_module_level=True)
 
 from connecpy.method import IdempotencyLevel, MethodInfo
 from connecpy.transport import GrpcTransport
