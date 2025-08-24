@@ -566,6 +566,89 @@ On Windows, Content-Type: application/json, HTTP/2
 curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
 
+## Transport API (Experimental)
+
+The Transport API provides a protocol-agnostic way to create RPC clients that can work with both Connect and gRPC protocols. This allows you to switch between protocols without changing your client code.
+
+### Features
+
+- **Protocol Agnostic**: Write client code once, use with both Connect and gRPC
+- **Type Safety**: Generated Protocol types ensure type-safe client interfaces
+- **Seamless Integration**: Factory functions automatically handle protocol differences
+
+### Usage
+
+The protoc-gen-connecpy plugin automatically generates Transport API support alongside regular client code:
+
+```python
+# Using Connect transport
+from connecpy.transport import ConnectTransportAsync
+from example.haberdasher_connecpy import create_client
+from example.haberdasher_pb2 import Size
+
+async def connect_example():
+    transport = ConnectTransportAsync("http://localhost:3000", proto_json=True)
+    client = create_client(transport)
+    
+    hat = await client.make_hat(Size(inches=12))
+    print(f"Got hat: {hat.color}")
+
+# Using gRPC transport (requires grpcio)
+from connecpy.transport import GrpcTransportAsync
+
+async def grpc_example():
+    transport = GrpcTransportAsync("localhost:50051")
+    client = create_client(transport)
+    
+    hat = await client.make_hat(Size(inches=12))
+    print(f"Got hat: {hat.color}")
+```
+
+### Synchronous API
+
+The Transport API also supports synchronous clients:
+
+```python
+from connecpy.transport import ConnectTransport, GrpcTransport
+from example.haberdasher_connecpy import create_client_sync
+
+# Connect transport (sync)
+transport = ConnectTransport("http://localhost:3000")
+client = create_client_sync(transport)
+hat = client.make_hat(Size(inches=12))
+
+# gRPC transport (sync)
+transport = GrpcTransport("localhost:50051")
+client = create_client_sync(transport)
+hat = client.make_hat(Size(inches=12))
+```
+
+### Advanced Configuration
+
+Both transports support advanced configuration options:
+
+```python
+# Connect with compression and custom headers
+transport = ConnectTransportAsync(
+    "http://localhost:3000",
+    proto_json=True,
+    accept_compression=["gzip", "br"],
+    send_compression="gzip",
+    timeout_ms=5000,
+)
+
+# gRPC with TLS
+import grpc
+credentials = grpc.ssl_channel_credentials()
+transport = GrpcTransportAsync(
+    "api.example.com:443",
+    credentials=credentials,
+    options=[("grpc.max_receive_message_length", 10000000)],
+)
+```
+
+**Note**: The Transport API is experimental and the interface may change in future versions. For production use, consider using the standard `HaberdasherClient` and `HaberdasherClientSync` classes directly.
+
 ## WSGI Support
 
 Connecpy provides full WSGI support via the `ConnecpyWSGIApplication`. This synchronous application adapts our service endpoints to the WSGI specification. It reads requests from the WSGI `environ`, processes requests, and returns responses using `start_response`. This enables integration with WSGI servers and middleware.
