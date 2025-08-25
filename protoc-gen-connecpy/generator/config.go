@@ -34,6 +34,10 @@ type Config struct {
 
 	// Imports is how to import dependencies in the generated code.
 	Imports Imports
+
+	// TransportAPI enables generation of experimental Transport API support.
+	// This includes Protocol types, gRPC wrappers, and factory functions.
+	TransportAPI bool
 }
 
 func parseConfig(p string) Config {
@@ -63,6 +67,13 @@ func parseConfig(p string) Config {
 				cfg.Imports = ImportsAbsolute
 			case "relative":
 				cfg.Imports = ImportsRelative
+			}
+		case "transport_api":
+			switch value {
+			case "true", "1", "yes":
+				cfg.TransportAPI = true
+			case "false", "0", "no":
+				cfg.TransportAPI = false
 			}
 		}
 	}

@@ -67,9 +67,10 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 	moduleName := strings.Join(strings.Split(fileNameWithoutSuffix, "/"), ".")
 
 	vars := ConnecpyTemplateVariables{
-		FileName:   filename,
-		ModuleName: moduleName,
-		Imports:    importStatements(fd, conf),
+		FileName:     filename,
+		ModuleName:   moduleName,
+		Imports:      importStatements(fd, conf),
+		TransportAPI: conf.TransportAPI,
 	}
 
 	svcs := fd.Services()
@@ -215,8 +216,9 @@ func lastPart(imp string) string {
 func generateImport(pkg string, conf Config, isLocal bool) (string, ImportStatement) {
 	name := moduleName(pkg)
 	imp := ImportStatement{
-		Name:  name,
-		Alias: moduleAlias(pkg),
+		Name:    name,
+		Alias:   moduleAlias(pkg),
+		IsLocal: isLocal,
 	}
 	if isLocal && conf.Imports == ImportsRelative {
 		name = lastPart(name)
