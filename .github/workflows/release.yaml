@@ -32,9 +32,6 @@ jobs:
 
       - run: uv build
 
-      - run: uv run python scripts/generate_wheels.py
-        working-directory: protoc-gen-connecpy
-
       - name: build Go archives
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
@@ -42,6 +39,9 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: uv run python scripts/generate_wheels.py
+        working-directory: protoc-gen-connecpy
 
       - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
