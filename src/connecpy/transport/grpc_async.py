@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import types
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any
+
+from typing_extensions import Self
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -122,9 +125,15 @@ class GrpcTransportAsync:
         metadata = self._prepare_metadata(call_options)
         timeout = call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
 
-        # Return the async iterator from the stub
-        async for response in stub(request, metadata=metadata, timeout=timeout):
-            yield response
+        # Return the async iterator from the stub with error handling
+        try:
+            async for response in stub(request, metadata=metadata, timeout=timeout):
+                yield response
+        except grpc.aio.AioRpcError as e:  # type: ignore[attr-defined]
+            # Convert gRPC error to ConnecpyException for consistency
+            code = self._grpc_status_to_code(e.code())
+            msg = f"gRPC stream error: {e.details() or 'Unknown error'}"
+            raise ConnecpyException(code, msg) from e
 
     async def stream_unary(
         self,
@@ -160,12 +169,31 @@ class GrpcTransportAsync:
         metadata = self._prepare_metadata(call_options)
         timeout = call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
 
-        async for response in stub(stream, metadata=metadata, timeout=timeout):
-            yield response
+        try:
+            async for response in stub(stream, metadata=metadata, timeout=timeout):
+                yield response
+        except grpc.aio.AioRpcError as e:  # type: ignore[attr-defined]
+            # Convert gRPC error to ConnecpyException for consistency
+            code = self._grpc_status_to_code(e.code())
+            msg = f"gRPC bidirectional stream error: {e.details() or 'Unknown error'}"
+            raise ConnecpyException(code, msg) from e
 
     async def close(self) -> None:
         """Close the gRPC channel."""
         await self._channel.close()
+
+    async def __aenter__(self) -> Self:
+        """Enter the async context manager."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
+        """Exit the async context manager and close resources."""
+        await self.close()
 
     def _get_or_create_stub(self, method: MethodInfo, rpc_type: str) -> Any:
         """Get or create an async gRPC stub for the given method."""

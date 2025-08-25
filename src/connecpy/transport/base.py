@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
+
+from connecpy.code import Code
+
+T = TypeVar("T")  # Generic type variable for responses
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -12,22 +16,42 @@ if TYPE_CHECKING:
     from connecpy.interceptor import Interceptor, InterceptorSync
     from connecpy.method import MethodInfo
 
-from connecpy.code import Code
-
 
 class TransportProtocol(Protocol):
-    """Protocol for transport implementations."""
+    """Protocol for transport implementations.
+
+    Transport implementations provide a protocol-agnostic interface for making
+    RPC calls. Request and response types are protobuf Message instances.
+    """
 
     def unary_unary(
         self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
     ) -> Any:
-        """Execute a unary-unary RPC."""
+        """Execute a unary-unary RPC.
+
+        Args:
+            method: Method information including service and method names
+            request: The protobuf request message
+            call_options: Optional call-specific options
+
+        Returns:
+            The protobuf response message
+        """
         ...
 
     def unary_stream(
         self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
     ) -> Iterator[Any]:
-        """Execute a unary-stream RPC."""
+        """Execute a unary-stream RPC.
+
+        Args:
+            method: Method information including service and method names
+            request: The protobuf request message
+            call_options: Optional call-specific options
+
+        Returns:
+            Iterator of protobuf response messages
+        """
         ...
 
     def stream_unary(
@@ -36,7 +60,16 @@ class TransportProtocol(Protocol):
         stream: Iterator[Any],
         call_options: CallOptions | None = None,
     ) -> Any:
-        """Execute a stream-unary RPC."""
+        """Execute a stream-unary RPC.
+
+        Args:
+            method: Method information including service and method names
+            stream: Iterator of protobuf request messages
+            call_options: Optional call-specific options
+
+        Returns:
+            The protobuf response message
+        """
         ...
 
     def stream_stream(
@@ -45,7 +78,16 @@ class TransportProtocol(Protocol):
         stream: Iterator[Any],
         call_options: CallOptions | None = None,
     ) -> Iterator[Any]:
-        """Execute a stream-stream RPC."""
+        """Execute a stream-stream RPC.
+
+        Args:
+            method: Method information including service and method names
+            stream: Iterator of protobuf request messages
+            call_options: Optional call-specific options
+
+        Returns:
+            Iterator of protobuf response messages
+        """
         ...
 
     def close(self) -> None:
@@ -54,18 +96,40 @@ class TransportProtocol(Protocol):
 
 
 class AsyncTransportProtocol(Protocol):
-    """Protocol for async transport implementations."""
+    """Protocol for async transport implementations.
+
+    Async transport implementations provide a protocol-agnostic interface for making
+    asynchronous RPC calls. Request and response types are protobuf Message instances.
+    """
 
     async def unary_unary(
         self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
     ) -> Any:
-        """Execute a unary-unary RPC."""
+        """Execute a unary-unary RPC asynchronously.
+
+        Args:
+            method: Method information including service and method names
+            request: The protobuf request message
+            call_options: Optional call-specific options
+
+        Returns:
+            The protobuf response message
+        """
         ...
 
     async def unary_stream(
         self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
     ) -> AsyncIterator[Any]:
-        """Execute a unary-stream RPC."""
+        """Execute a unary-stream RPC asynchronously.
+
+        Args:
+            method: Method information including service and method names
+            request: The protobuf request message
+            call_options: Optional call-specific options
+
+        Returns:
+            Async iterator of protobuf response messages
+        """
         ...
 
     async def stream_unary(
@@ -74,7 +138,16 @@ class AsyncTransportProtocol(Protocol):
         stream: AsyncIterator[Any],
         call_options: CallOptions | None = None,
     ) -> Any:
-        """Execute a stream-unary RPC."""
+        """Execute a stream-unary RPC asynchronously.
+
+        Args:
+            method: Method information including service and method names
+            stream: Async iterator of protobuf request messages
+            call_options: Optional call-specific options
+
+        Returns:
+            The protobuf response message
+        """
         ...
 
     async def stream_stream(
@@ -83,7 +156,16 @@ class AsyncTransportProtocol(Protocol):
         stream: AsyncIterator[Any],
         call_options: CallOptions | None = None,
     ) -> AsyncIterator[Any]:
-        """Execute a stream-stream RPC."""
+        """Execute a stream-stream RPC asynchronously.
+
+        Args:
+            method: Method information including service and method names
+            stream: Async iterator of protobuf request messages
+            call_options: Optional call-specific options
+
+        Returns:
+            Async iterator of protobuf response messages
+        """
         ...
 
     async def close(self) -> None:

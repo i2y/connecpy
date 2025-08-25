@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import types
 from collections.abc import AsyncIterator, Iterable
 from typing import TYPE_CHECKING, Any
 
 import httpx
+from typing_extensions import Self
 
 from connecpy.client import ConnecpyClient
 from connecpy.exceptions import ConnecpyException
@@ -124,6 +126,19 @@ class ConnectTransportAsync:
     async def close(self) -> None:
         """Close the underlying client."""
         await self._client.close()
+
+    async def __aenter__(self) -> Self:
+        """Enter the async context manager."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
+        """Exit the async context manager and close resources."""
+        await self.close()
 
     async def _execute_with_retry(self, func: Any, retry_policy: RetryPolicy) -> Any:
         """Execute an async function with retry logic."""

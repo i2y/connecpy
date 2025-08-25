@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import time
+import types
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
+
+from typing_extensions import Self
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -121,7 +124,13 @@ class GrpcTransport:
         metadata = self._prepare_metadata(call_options)
         timeout = call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
 
-        return stub(request, metadata=metadata, timeout=timeout)
+        try:
+            yield from stub(request, metadata=metadata, timeout=timeout)
+        except grpc.RpcError as e:  # type: ignore[attr-defined]
+            # Convert gRPC error to ConnecpyException for consistency
+            code = self._grpc_status_to_code(e.code())
+            msg = f"gRPC stream error: {e.details() or 'Unknown error'}"
+            raise ConnecpyException(code, msg) from e
 
     def stream_unary(
         self,
@@ -157,11 +166,30 @@ class GrpcTransport:
         metadata = self._prepare_metadata(call_options)
         timeout = call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
 
-        return stub(stream, metadata=metadata, timeout=timeout)
+        try:
+            yield from stub(stream, metadata=metadata, timeout=timeout)
+        except grpc.RpcError as e:  # type: ignore[attr-defined]
+            # Convert gRPC error to ConnecpyException for consistency
+            code = self._grpc_status_to_code(e.code())
+            msg = f"gRPC bidirectional stream error: {e.details() or 'Unknown error'}"
+            raise ConnecpyException(code, msg) from e
 
     def close(self) -> None:
         """Close the gRPC channel."""
         self._channel.close()
+
+    def __enter__(self) -> Self:
+        """Enter the context manager."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
+        """Exit the context manager and close resources."""
+        self.close()
 
     def _get_or_create_stub(self, method: MethodInfo, rpc_type: str) -> Any:
         """Get or create a gRPC stub for the given method."""

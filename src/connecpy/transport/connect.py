@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import time
+import types
 from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any
 
 import httpx
+from typing_extensions import Self
 
 from connecpy._client_sync import ConnecpyClientSync
 from connecpy.exceptions import ConnecpyException
@@ -124,6 +126,19 @@ class ConnectTransport:
     def close(self) -> None:
         """Close the underlying client."""
         self._client.close()
+
+    def __enter__(self) -> Self:
+        """Enter the context manager."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
+        """Exit the context manager and close resources."""
+        self.close()
 
     def _merge_options(self, call_options: CallOptions | None) -> CallOptions:
         """Merge call options with transport defaults."""
