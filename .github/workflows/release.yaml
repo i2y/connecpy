@@ -51,8 +51,11 @@ jobs:
 
       - name: publish connecpy
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
+        with:
+          skip-existing: true
 
       - name: publish protoc-gen-connecpy
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
         with:
           packages-dir: protoc-gen-connecpy/dist
+          skip-existing: true
