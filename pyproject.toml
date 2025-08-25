@@ -1,6 +1,6 @@
 [project]
 name = "connecpy"
-version = "2.2.0"
+version = "2.3.0"
 description = "Server library and client library for the Connect Protocol"
 authors = [{ name = "Connecpy authors" }]
 requires-python = ">= 3.10"
