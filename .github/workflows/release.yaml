@@ -40,7 +40,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: uv run python scripts/generate_wheels.py
+      - run: |
+          uv sync --frozen
+          uv run python scripts/generate_wheels.py
         working-directory: protoc-gen-connecpy
 
       - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
@@ -53,4 +55,4 @@ jobs:
       - name: publish protoc-gen-connecpy
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
         with:
-          packages-dir: protoc-gen-connecpy
+          packages-dir: protoc-gen-connecpy/dist
