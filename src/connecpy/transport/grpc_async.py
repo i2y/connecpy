@@ -116,7 +116,7 @@ class GrpcTransportAsync:
             return await self._execute_with_retry(execute, call_options.retry_policy)
         return await execute()
 
-    async def unary_stream(
+    def unary_stream(
         self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
     ) -> AsyncIterator[Any]:
         """Execute a unary-stream RPC."""
@@ -124,16 +124,7 @@ class GrpcTransportAsync:
         stub = self._get_or_create_stub(method, "unary_stream")
         metadata = self._prepare_metadata(call_options)
         timeout = call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
-
-        # Return the async iterator from the stub with error handling
-        try:
-            async for response in stub(request, metadata=metadata, timeout=timeout):
-                yield response
-        except grpc.aio.AioRpcError as e:  # type: ignore[attr-defined]
-            # Convert gRPC error to ConnecpyException for consistency
-            code = self._grpc_status_to_code(e.code())
-            msg = f"gRPC stream error: {e.details() or 'Unknown error'}"
-            raise ConnecpyException(code, msg) from e
+        return stub(request, metadata=metadata, timeout=timeout)
 
     async def stream_unary(
         self,
@@ -157,7 +148,7 @@ class GrpcTransportAsync:
             return await self._execute_with_retry(execute, call_options.retry_policy)
         return await execute()
 
-    async def stream_stream(
+    def stream_stream(
         self,
         method: MethodInfo,
         stream: AsyncIterator[Any],
@@ -168,15 +159,7 @@ class GrpcTransportAsync:
         stub = self._get_or_create_stub(method, "stream_stream")
         metadata = self._prepare_metadata(call_options)
         timeout = call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
-
-        try:
-            async for response in stub(stream, metadata=metadata, timeout=timeout):
-                yield response
-        except grpc.aio.AioRpcError as e:  # type: ignore[attr-defined]
-            # Convert gRPC error to ConnecpyException for consistency
-            code = self._grpc_status_to_code(e.code())
-            msg = f"gRPC bidirectional stream error: {e.details() or 'Unknown error'}"
-            raise ConnecpyException(code, msg) from e
+        return stub(stream, metadata=metadata, timeout=timeout)
 
     async def close(self) -> None:
         """Close the gRPC channel."""

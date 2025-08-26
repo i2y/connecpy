@@ -904,8 +904,25 @@ def create_client(
         else:
             grpc_module_name = f"{__name__}_pb2_grpc"
 
-        grpc_mod = importlib.import_module(grpc_module_name)
-        stub_class = getattr(grpc_mod, "HaberdasherStub")  # noqa: B009
+        try:
+            grpc_mod = importlib.import_module(grpc_module_name)
+        except ImportError as e:
+            error_msg = (
+                f"Failed to import gRPC stub module '{grpc_module_name}'. "
+                f"Make sure you generated the gRPC stubs using: "
+                f"python -m grpc_tools.protoc --grpc_python_out=. yourfile.proto"
+            )
+            raise ImportError(error_msg) from e
+
+        try:
+            stub_class = getattr(grpc_mod, "HaberdasherStub")  # noqa: B009
+        except AttributeError as e:
+            error_msg = (
+                f"Could not find HaberdasherStub in '{grpc_module_name}'. "
+                f"This usually means the proto file was not compiled with gRPC support."
+            )
+            raise AttributeError(error_msg) from e
+
         stub = stub_class(transport._channel)  # noqa: SLF001
         return HaberdasherGrpcWrapper(stub)
 
@@ -949,8 +966,25 @@ def create_client_sync(
         else:
             grpc_module_name = f"{__name__}_pb2_grpc"
 
-        grpc_mod = importlib.import_module(grpc_module_name)
-        stub_class = getattr(grpc_mod, "HaberdasherStub")  # noqa: B009
+        try:
+            grpc_mod = importlib.import_module(grpc_module_name)
+        except ImportError as e:
+            error_msg = (
+                f"Failed to import gRPC stub module '{grpc_module_name}'. "
+                f"Make sure you generated the gRPC stubs using: "
+                f"python -m grpc_tools.protoc --grpc_python_out=. yourfile.proto"
+            )
+            raise ImportError(error_msg) from e
+
+        try:
+            stub_class = getattr(grpc_mod, "HaberdasherStub")  # noqa: B009
+        except AttributeError as e:
+            error_msg = (
+                f"Could not find HaberdasherStub in '{grpc_module_name}'. "
+                f"This usually means the proto file was not compiled with gRPC support."
+            )
+            raise AttributeError(error_msg) from e
+
         stub = stub_class(transport._channel)  # noqa: SLF001
         return HaberdasherGrpcWrapperSync(stub)
 

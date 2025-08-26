@@ -90,7 +90,7 @@ class ConnectTransportAsync:
             return await self._execute_with_retry(execute, call_options.retry_policy)
         return await execute()
 
-    async def unary_stream(
+    def unary_stream(
         self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
     ) -> AsyncIterator[Any]:
         """Execute a unary-stream RPC."""
@@ -113,7 +113,7 @@ class ConnectTransportAsync:
             return await self._execute_with_retry(execute, call_options.retry_policy)
         return await execute()
 
-    async def stream_stream(
+    def stream_stream(
         self,
         method: MethodInfo,
         stream: AsyncIterator[Any],
