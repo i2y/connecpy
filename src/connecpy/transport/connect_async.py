@@ -11,6 +11,7 @@ import httpx
 from typing_extensions import Self
 
 from connecpy.client import ConnecpyClient
+from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.interceptor import Interceptor
 
@@ -178,45 +179,66 @@ class ConnectTransportAsync:
         """Internal method to call unary RPC through the client."""
         # Use the client's public execute_unary method
         timeout_ms = options.timeout_ms or self.timeout_ms
-        return await self._client.execute_unary(
-            request=request,
-            method=method,
-            headers=options.headers,
-            timeout_ms=timeout_ms,
-        )
+        try:
+            return await self._client.execute_unary(
+                request=request,
+                method=method,
+                headers=options.headers,
+                timeout_ms=timeout_ms,
+            )
+        except httpx.TimeoutException as e:
+            # Convert HTTP timeout to ConnecpyException with DEADLINE_EXCEEDED code
+            raise ConnecpyException(
+                Code.DEADLINE_EXCEEDED, f"Request timeout: {e}"
+            ) from e
 
     def _call_server_stream(
         self, method: MethodInfo, request: Any, options: CallOptions
     ) -> AsyncIterator[Any]:
         """Internal method to call server streaming RPC."""
         timeout_ms = options.timeout_ms or self.timeout_ms
-        return self._client.execute_server_stream(
-            request=request,
-            method=method,
-            headers=options.headers,
-            timeout_ms=timeout_ms,
-        )
+        try:
+            return self._client.execute_server_stream(
+                request=request,
+                method=method,
+                headers=options.headers,
+                timeout_ms=timeout_ms,
+            )
+        except httpx.TimeoutException as e:
+            raise ConnecpyException(
+                Code.DEADLINE_EXCEEDED, f"Request timeout: {e}"
+            ) from e
 
     async def _call_client_stream(
         self, method: MethodInfo, stream: AsyncIterator[Any], options: CallOptions
     ) -> Any:
         """Internal method to call client streaming RPC."""
         timeout_ms = options.timeout_ms or self.timeout_ms
-        return await self._client.execute_client_stream(
-            request=stream,
-            method=method,
-            headers=options.headers,
-            timeout_ms=timeout_ms,
-        )
+        try:
+            return await self._client.execute_client_stream(
+                request=stream,
+                method=method,
+                headers=options.headers,
+                timeout_ms=timeout_ms,
+            )
+        except httpx.TimeoutException as e:
+            raise ConnecpyException(
+                Code.DEADLINE_EXCEEDED, f"Request timeout: {e}"
+            ) from e
 
     def _call_bidi_stream(
         self, method: MethodInfo, stream: AsyncIterator[Any], options: CallOptions
     ) -> AsyncIterator[Any]:
         """Internal method to call bidirectional streaming RPC."""
         timeout_ms = options.timeout_ms or self.timeout_ms
-        return self._client.execute_bidi_stream(
-            request=stream,
-            method=method,
-            headers=options.headers,
-            timeout_ms=timeout_ms,
-        )
+        try:
+            return self._client.execute_bidi_stream(
+                request=stream,
+                method=method,
+                headers=options.headers,
+                timeout_ms=timeout_ms,
+            )
+        except httpx.TimeoutException as e:
+            raise ConnecpyException(
+                Code.DEADLINE_EXCEEDED, f"Request timeout: {e}"
+            ) from e

@@ -114,7 +114,13 @@ class GrpcTransport:
                 call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
             )
 
-            return stub(request, metadata=metadata, timeout=timeout)
+            try:
+                return stub(request, metadata=metadata, timeout=timeout)
+            except grpc.RpcError as e:  # type: ignore[attr-defined]
+                # Convert gRPC error to ConnecpyException for consistency
+                code = self._grpc_status_to_code(e.code())
+                msg = f"gRPC error: {e.details() or 'Unknown error'}"
+                raise ConnecpyException(code, msg) from e
 
         if call_options.retry_policy:
             return self._execute_with_retry(execute, call_options.retry_policy)
@@ -153,7 +159,13 @@ class GrpcTransport:
                 call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
             )
 
-            return stub(stream, metadata=metadata, timeout=timeout)
+            try:
+                return stub(stream, metadata=metadata, timeout=timeout)
+            except grpc.RpcError as e:  # type: ignore[attr-defined]
+                # Convert gRPC error to ConnecpyException for consistency
+                code = self._grpc_status_to_code(e.code())
+                msg = f"gRPC stream error: {e.details() or 'Unknown error'}"
+                raise ConnecpyException(code, msg) from e
 
         if call_options.retry_policy:
             return self._execute_with_retry(execute, call_options.retry_policy)
