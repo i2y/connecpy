@@ -3,7 +3,7 @@ __all__ = ["ConnecpyException"]
 
 from collections.abc import Iterable, Sequence
 
-from google.protobuf.any import Any, pack
+from google.protobuf.any_pb2 import Any
 from google.protobuf.message import Message
 
 from .code import Code
@@ -34,7 +34,9 @@ class ConnecpyException(Exception):
         self._message = message
 
         self._details = (
-            [m if isinstance(m, Any) else pack(m) for m in details] if details else ()
+            [m if isinstance(m, Any) else pack_any(m) for m in details]
+            if details
+            else ()
         )
 
     @property
@@ -48,3 +50,9 @@ class ConnecpyException(Exception):
     @property
     def details(self) -> Sequence[Any]:
         return self._details
+
+
+def pack_any(msg: Message) -> Any:
+    any_msg = Any()
+    any_msg.Pack(msg=msg, type_url_prefix="type.googleapis.com/")
+    return any_msg

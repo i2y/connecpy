@@ -274,7 +274,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "httpx" },
-    { name = "protobuf" },
+    { name = "protobuf", specifier = ">=5.28" },
 ]
 
 [package.metadata.requires-dev]
