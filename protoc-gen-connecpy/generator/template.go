@@ -97,7 +97,7 @@ class {{.Name}}(Protocol):
 {{ end }}
 
 class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: {{.Name}}, *, interceptors: Iterable[Interceptor]=(), read_max_bytes: int | None = None):
+    def __init__(self, service: {{.Name}}, *, interceptors: Iterable[Interceptor]=(), read_max_bytes: int | None = None) -> None:
         super().__init__(
             endpoints={ {{- range .Methods }}
                 "/{{.ServiceName}}/{{.Name}}": Endpoint.{{.EndpointType}}(
@@ -116,7 +116,7 @@ class {{.Name}}ASGIApplication(ConnecpyASGIApplication):
         )
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Returns the URL path to mount the application to when serving multiple applications."""
         return "/{{.FullName}}"
 
@@ -171,7 +171,7 @@ class {{.Name}}Sync(Protocol):
 
 
 class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: {{.Name}}Sync, interceptors: Iterable[InterceptorSync]=(), read_max_bytes: int | None = None):
+    def __init__(self, service: {{.Name}}Sync, interceptors: Iterable[InterceptorSync]=(), read_max_bytes: int | None = None) -> None:
         super().__init__(
             endpoints={ {{- range .Methods }}
                 "/{{.ServiceName}}/{{.Name}}": EndpointSync.{{.EndpointType}}(
@@ -190,7 +190,7 @@ class {{.Name}}WSGIApplication(ConnecpyWSGIApplication):
         )
 
     @property
-    def path(self):
+    def path(self) -> str:
         """Returns the URL path to mount the application to when serving multiple applications."""
         return "/{{.FullName}}"
 
