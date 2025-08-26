@@ -4,7 +4,7 @@ version = "2.3.0"
 description = "Server library and client library for the Connect Protocol"
 authors = [{ name = "Connecpy authors" }]
 requires-python = ">= 3.10"
-dependencies = ["httpx", "protobuf"]
+dependencies = ["httpx", "protobuf>=5.28"]
 readme = "README.md"
 license-files = ["LICENSE"]
 keywords = [
