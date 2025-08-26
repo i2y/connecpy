@@ -13,6 +13,12 @@ from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 
 from .base import CallOptions, RetryPolicy
+from .types import (
+    GrpcChannelCredentials,
+    GrpcChannelOptions,
+    GrpcCompression,
+    GrpcInterceptor,
+)
 
 if TYPE_CHECKING:
     from connecpy.method import MethodInfo
@@ -37,11 +43,10 @@ class GrpcTransport:
         self,
         target: str,
         *,
-        credentials: Any = None,  # grpc.ChannelCredentials
-        options: list[tuple[str, Any]] | None = None,
-        compression: Any = None,  # grpc.Compression
-        interceptors: list[Any]
-        | None = None,  # list[grpc.UnaryUnaryClientInterceptor, ...]
+        credentials: GrpcChannelCredentials | None = None,
+        options: GrpcChannelOptions | None = None,
+        compression: GrpcCompression | str | None = None,
+        interceptors: list[GrpcInterceptor] | None = None,
     ) -> None:
         """Initialize the gRPC transport with all grpc channel parameters.
 

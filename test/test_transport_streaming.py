@@ -1,12 +1,10 @@
 """Tests for streaming RPCs with the Transport API."""
 
-import asyncio
 import unittest
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from connecpy.method import IdempotencyLevel, MethodInfo
 from connecpy.transport import ConnectTransport, ConnectTransportAsync
-from connecpy.transport.base import CallOptions
 
 
 class TestConnectTransportStreaming(unittest.TestCase):

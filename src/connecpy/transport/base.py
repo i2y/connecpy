@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from connecpy.code import Code
-
-from .types import RequestT, ResponseT
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -25,11 +23,8 @@ class TransportProtocol(Protocol):
     """
 
     def unary_unary(
-        self,
-        method: MethodInfo,
-        request: RequestT,
-        call_options: CallOptions | None = None,
-    ) -> ResponseT:
+        self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
+    ) -> Any:
         """Execute a unary-unary RPC.
 
         Args:
@@ -43,11 +38,8 @@ class TransportProtocol(Protocol):
         ...
 
     def unary_stream(
-        self,
-        method: MethodInfo,
-        request: RequestT,
-        call_options: CallOptions | None = None,
-    ) -> Iterator[ResponseT]:
+        self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
+    ) -> Iterator[Any]:
         """Execute a unary-stream RPC.
 
         Args:
@@ -63,9 +55,9 @@ class TransportProtocol(Protocol):
     def stream_unary(
         self,
         method: MethodInfo,
-        stream: Iterator[RequestT],
+        stream: Iterator[Any],
         call_options: CallOptions | None = None,
-    ) -> ResponseT:
+    ) -> Any:
         """Execute a stream-unary RPC.
 
         Args:
@@ -81,9 +73,9 @@ class TransportProtocol(Protocol):
     def stream_stream(
         self,
         method: MethodInfo,
-        stream: Iterator[RequestT],
+        stream: Iterator[Any],
         call_options: CallOptions | None = None,
-    ) -> Iterator[ResponseT]:
+    ) -> Iterator[Any]:
         """Execute a stream-stream RPC.
 
         Args:
@@ -109,11 +101,8 @@ class AsyncTransportProtocol(Protocol):
     """
 
     async def unary_unary(
-        self,
-        method: MethodInfo,
-        request: RequestT,
-        call_options: CallOptions | None = None,
-    ) -> ResponseT:
+        self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
+    ) -> Any:
         """Execute a unary-unary RPC asynchronously.
 
         Args:
@@ -127,11 +116,8 @@ class AsyncTransportProtocol(Protocol):
         ...
 
     def unary_stream(
-        self,
-        method: MethodInfo,
-        request: RequestT,
-        call_options: CallOptions | None = None,
-    ) -> AsyncIterator[ResponseT]:
+        self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
+    ) -> AsyncIterator[Any]:
         """Execute a unary-stream RPC asynchronously.
 
         Args:
@@ -147,9 +133,9 @@ class AsyncTransportProtocol(Protocol):
     async def stream_unary(
         self,
         method: MethodInfo,
-        stream: AsyncIterator[RequestT],
+        stream: AsyncIterator[Any],
         call_options: CallOptions | None = None,
-    ) -> ResponseT:
+    ) -> Any:
         """Execute a stream-unary RPC asynchronously.
 
         Args:
@@ -165,9 +151,9 @@ class AsyncTransportProtocol(Protocol):
     def stream_stream(
         self,
         method: MethodInfo,
-        stream: AsyncIterator[RequestT],
+        stream: AsyncIterator[Any],
         call_options: CallOptions | None = None,
-    ) -> AsyncIterator[ResponseT]:
+    ) -> AsyncIterator[Any]:
         """Execute a stream-stream RPC asynchronously.
 
         Args:
