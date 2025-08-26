@@ -173,12 +173,46 @@ class ConnectTransportAsync:
         msg = "Retry loop exited unexpectedly"
         raise RuntimeError(msg)
 
+    def _validate_and_get_timeout(self, options: CallOptions) -> int | None:
+        """Validate timeout value and return the effective timeout.
+
+        Args:
+            options: Call options containing timeout settings
+
+        Returns:
+            The effective timeout in milliseconds, or None for infinite timeout
+
+        Raises:
+            ValueError: If timeout is invalid (negative or too large)
+        """
+        timeout_ms = (
+            options.timeout_ms if options.timeout_ms is not None else self.timeout_ms
+        )
+        if timeout_ms is not None:
+            if timeout_ms <= 0:
+                msg = f"Timeout must be positive, got {timeout_ms}ms"
+                raise ValueError(msg)
+            if timeout_ms > 8640000000:  # 100 days max (protocol supports 100+ days)
+                msg = f"Timeout too large ({timeout_ms}ms), max is 100 days (8640000000ms)"
+                raise ValueError(msg)
+        return timeout_ms
+
+    def _handle_timeout_error(self, e: httpx.TimeoutException) -> None:
+        """Convert HTTP timeout exception to ConnecpyException.
+
+        Args:
+            e: The HTTP timeout exception
+
+        Raises:
+            ConnecpyException: Always raises with DEADLINE_EXCEEDED code
+        """
+        raise ConnecpyException(Code.DEADLINE_EXCEEDED, f"Request timeout: {e}") from e
+
     async def _call_unary(
         self, method: MethodInfo, request: Any, options: CallOptions
     ) -> Any:
         """Internal method to call unary RPC through the client."""
-        # Use the client's public execute_unary method
-        timeout_ms = options.timeout_ms or self.timeout_ms
+        timeout_ms = self._validate_and_get_timeout(options)
         try:
             return await self._client.execute_unary(
                 request=request,
@@ -187,16 +221,13 @@ class ConnectTransportAsync:
                 timeout_ms=timeout_ms,
             )
         except httpx.TimeoutException as e:
-            # Convert HTTP timeout to ConnecpyException with DEADLINE_EXCEEDED code
-            raise ConnecpyException(
-                Code.DEADLINE_EXCEEDED, f"Request timeout: {e}"
-            ) from e
+            self._handle_timeout_error(e)
 
     def _call_server_stream(
         self, method: MethodInfo, request: Any, options: CallOptions
     ) -> AsyncIterator[Any]:
         """Internal method to call server streaming RPC."""
-        timeout_ms = options.timeout_ms or self.timeout_ms
+        timeout_ms = self._validate_and_get_timeout(options)
         try:
             return self._client.execute_server_stream(
                 request=request,
@@ -205,15 +236,13 @@ class ConnectTransportAsync:
                 timeout_ms=timeout_ms,
             )
         except httpx.TimeoutException as e:
-            raise ConnecpyException(
-                Code.DEADLINE_EXCEEDED, f"Request timeout: {e}"
-            ) from e
+            self._handle_timeout_error(e)
 
     async def _call_client_stream(
         self, method: MethodInfo, stream: AsyncIterator[Any], options: CallOptions
     ) -> Any:
         """Internal method to call client streaming RPC."""
-        timeout_ms = options.timeout_ms or self.timeout_ms
+        timeout_ms = self._validate_and_get_timeout(options)
         try:
             return await self._client.execute_client_stream(
                 request=stream,
@@ -222,15 +251,13 @@ class ConnectTransportAsync:
                 timeout_ms=timeout_ms,
             )
         except httpx.TimeoutException as e:
-            raise ConnecpyException(
-                Code.DEADLINE_EXCEEDED, f"Request timeout: {e}"
-            ) from e
+            self._handle_timeout_error(e)
 
     def _call_bidi_stream(
         self, method: MethodInfo, stream: AsyncIterator[Any], options: CallOptions
     ) -> AsyncIterator[Any]:
         """Internal method to call bidirectional streaming RPC."""
-        timeout_ms = options.timeout_ms or self.timeout_ms
+        timeout_ms = self._validate_and_get_timeout(options)
         try:
             return self._client.execute_bidi_stream(
                 request=stream,
@@ -239,6 +266,4 @@ class ConnectTransportAsync:
                 timeout_ms=timeout_ms,
             )
         except httpx.TimeoutException as e:
-            raise ConnecpyException(
-                Code.DEADLINE_EXCEEDED, f"Request timeout: {e}"
-            ) from e
+            self._handle_timeout_error(e)

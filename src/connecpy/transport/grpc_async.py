@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import types
+from collections import OrderedDict
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import Self
 
@@ -39,6 +40,16 @@ class GrpcTransportAsync:
     This transport uses grpcio's async/await support to communicate with gRPC servers.
     Requires the 'grpcio' package to be installed.
     """
+
+    # Compression algorithm constants
+    _COMPRESSION_NONE = 0  # grpc.Compression.NoCompression
+    _COMPRESSION_DEFLATE = 1  # grpc.Compression.Deflate
+    _COMPRESSION_GZIP = 2  # grpc.Compression.Gzip
+    _COMPRESSION_MAP: ClassVar[dict[str, int]] = {
+        "none": _COMPRESSION_NONE,
+        "deflate": _COMPRESSION_DEFLATE,
+        "gzip": _COMPRESSION_GZIP,
+    }
 
     def __init__(
         self,
@@ -100,8 +111,9 @@ class GrpcTransportAsync:
                 self._target, options=channel_options, interceptors=self.interceptors
             )
 
-        # Cache for stubs
-        self._stubs = {}
+        # LRU cache for stubs (max 100 entries to prevent memory issues)
+        self._stubs: OrderedDict[str, Any] = OrderedDict()
+        self._max_stub_cache_size = 100
 
     async def unary_unary(
         self, method: MethodInfo, request: Any, call_options: CallOptions | None = None
@@ -112,16 +124,27 @@ class GrpcTransportAsync:
         async def execute() -> Any:
             stub = self._get_or_create_stub(method, "unary_unary")
             metadata = self._prepare_metadata(call_options)
-            timeout = (
-                call_options.timeout_ms / 1000.0 if call_options.timeout_ms else None
-            )
+
+            # Validate and convert timeout
+            timeout = None
+            if call_options.timeout_ms is not None:
+                if call_options.timeout_ms <= 0:
+                    msg = f"Timeout must be positive, got {call_options.timeout_ms}ms"
+                    raise ValueError(msg)
+                if (
+                    call_options.timeout_ms > 8640000000
+                ):  # 100 days max (protocol supports 100+ days)
+                    msg = f"Timeout too large ({call_options.timeout_ms}ms), max is 100 days (8640000000ms)"
+                    raise ValueError(msg)
+                timeout = call_options.timeout_ms / 1000.0
 
             try:
                 return await stub(request, metadata=metadata, timeout=timeout)
             except grpc.aio.AioRpcError as e:  # type: ignore[attr-defined]
                 # Convert gRPC error to ConnecpyException for consistency
                 code = self._grpc_status_to_code(e.code())
-                msg = f"gRPC error: {e.details() or 'Unknown error'}"
+                details = e.details() or "No details provided"
+                msg = f"gRPC unary call failed [{e.code().name}]: {details}"
                 raise ConnecpyException(code, msg) from e
 
         if call_options.retry_policy:
@@ -159,7 +182,8 @@ class GrpcTransportAsync:
             except grpc.aio.AioRpcError as e:  # type: ignore[attr-defined]
                 # Convert gRPC error to ConnecpyException for consistency
                 code = self._grpc_status_to_code(e.code())
-                msg = f"gRPC stream error: {e.details() or 'Unknown error'}"
+                details = e.details() or "No details provided"
+                msg = f"gRPC stream call failed [{e.code().name}]: {details}"
                 raise ConnecpyException(code, msg) from e
 
         if call_options.retry_policy:
@@ -197,11 +221,22 @@ class GrpcTransportAsync:
         await self.close()
 
     def _get_or_create_stub(self, method: MethodInfo, rpc_type: str) -> Any:
-        """Get or create an async gRPC stub for the given method."""
+        """Get or create an async gRPC stub for the given method with LRU cache."""
         # Build the full method name
         full_method_name = f"/{method.service_name}/{method.name}"
 
-        if full_method_name not in self._stubs:
+        # Check if stub exists and move to end (LRU)
+        if full_method_name in self._stubs:
+            self._stubs.move_to_end(full_method_name)
+            return self._stubs[full_method_name]
+
+        # Check cache size limit
+        if len(self._stubs) >= self._max_stub_cache_size:
+            # Remove oldest item (FIFO)
+            self._stubs.popitem(last=False)
+
+        # Create new stub
+        if True:  # Always create since we just checked it doesn't exist
             # Create the appropriate stub based on RPC type
             if rpc_type == "unary_unary":
                 self._stubs[full_method_name] = self._channel.unary_unary(
@@ -254,11 +289,18 @@ class GrpcTransportAsync:
                     retry_policy.retryable_codes is None
                     or code not in retry_policy.retryable_codes
                 ):
-                    raise ConnecpyException(code, e.details() or "gRPC error") from e
+                    status_name = getattr(e.code(), "name", str(e.code()))
+                    raise ConnecpyException(
+                        code,
+                        f"Non-retryable error [{status_name}]: {e.details() or 'No details'}",
+                    ) from e
 
                 # Check if we've exhausted retries
                 if attempt >= retry_policy.max_attempts - 1:
-                    raise ConnecpyException(code, e.details() or "gRPC error") from e
+                    raise ConnecpyException(
+                        code,
+                        f"Max retries ({retry_policy.max_attempts}) exceeded [{e.code().name}]: {e.details() or 'No details'}",
+                    ) from e
 
                 # Wait before retry with exponential backoff
                 await asyncio.sleep(backoff_ms / 1000.0)
@@ -299,8 +341,4 @@ class GrpcTransportAsync:
 
     def _get_grpc_compression(self, compression: str) -> int:
         """Convert compression name to gRPC compression algorithm."""
-        if compression == "gzip":
-            return 2  # grpc.Compression.Gzip
-        if compression == "deflate":
-            return 1  # grpc.Compression.Deflate
-        return 0  # grpc.Compression.NoCompression
+        return self._COMPRESSION_MAP.get(compression.lower(), self._COMPRESSION_NONE)
