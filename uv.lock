@@ -330,6 +330,7 @@ version = "0.1.0"
 source = { editable = "example" }
 dependencies = [
     { name = "connecpy" },
+    { name = "flask" },
     { name = "protobuf" },
     { name = "starlette" },
 ]
@@ -337,6 +338,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "connecpy", editable = "." },
+    { name = "flask" },
     { name = "protobuf" },
     { name = "starlette" },
 ]

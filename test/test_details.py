@@ -6,7 +6,8 @@ from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException, pack_any
-from example.haberdasher_connecpy import (
+
+from .haberdasher_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
@@ -14,7 +15,7 @@ from example.haberdasher_connecpy import (
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
-from example.haberdasher_pb2 import Size
+from .haberdasher_pb2 import Size
 
 
 def test_details_sync() -> None:

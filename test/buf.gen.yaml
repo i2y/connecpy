@@ -9,3 +9,5 @@ plugins:
       - run
       - ../protoc-gen-connecpy
     out: .
+    opt:
+      - imports=relative

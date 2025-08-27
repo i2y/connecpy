@@ -1,66 +1,64 @@
 import pytest
-from example.haberdasher_connecpy import (
-    Haberdasher,
-    HaberdasherASGIApplication,
-    HaberdasherClient,
-    HaberdasherClientSync,
-    HaberdasherSync,
-    HaberdasherWSGIApplication,
+from example.eliza_connecpy import (
+    ElizaService,
+    ElizaServiceASGIApplication,
+    ElizaServiceClient,
+    ElizaServiceClientSync,
+    ElizaServiceSync,
+    ElizaServiceWSGIApplication,
 )
-from example.haberdasher_pb2 import Hat, Size
+from example.eliza_pb2 import SayRequest, SayResponse
 from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 
 @pytest.mark.parametrize("compression", ["gzip", "identity", None])
 def test_roundtrip_sync(compression: str) -> None:
-    class RoundtripHaberdasherSync(HaberdasherSync):
-        def make_hat(self, request, ctx):
-            return Hat(size=request.inches, color="green")
+    class RoundtripElizaServiceSync(ElizaServiceSync):
+        def say(self, request, ctx):
+            return SayResponse(sentence=request.sentence)
 
-    app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
-    with HaberdasherClientSync(
+    app = ElizaServiceWSGIApplication(RoundtripElizaServiceSync())
+    with ElizaServiceClientSync(
         "http://localhost",
         session=Client(transport=WSGITransport(app=app)),
         send_compression=compression,
         accept_compression=[compression] if compression else None,
     ) as client:
-        response = client.make_hat(request=Size(inches=10))
-    assert response.size == 10
-    assert response.color == "green"
+        response = client.say(SayRequest(sentence="Hello"))
+    assert response.sentence == "Hello"
 
 
 @pytest.mark.parametrize("compression", ["gzip", "identity"])
 @pytest.mark.asyncio
 async def test_roundtrip_async(compression: str) -> None:
-    class DetailsHaberdasher(Haberdasher):
-        async def make_hat(self, request, ctx):
-            return Hat(size=request.inches, color="green")
+    class DetailsElizaService(ElizaService):
+        async def say(self, request, ctx):
+            return SayResponse(sentence=request.sentence)
 
-    app = HaberdasherASGIApplication(DetailsHaberdasher())
+    app = ElizaServiceASGIApplication(DetailsElizaService())
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
-    async with HaberdasherClient(
+    async with ElizaServiceClient(
         "http://localhost",
         session=AsyncClient(transport=transport),
         send_compression=compression,
         accept_compression=[compression] if compression else None,
     ) as client:
-        response = await client.make_hat(request=Size(inches=10))
-    assert response.size == 10
-    assert response.color == "green"
+        response = await client.say(SayRequest(sentence="Hello"))
+    assert response.sentence == "Hello"
 
 
 @pytest.mark.parametrize("compression", ["br", "zstd"])
 def test_invalid_compression_sync(compression: str) -> None:
-    class RoundtripHaberdasherSync(HaberdasherSync):
-        def make_hat(self, request, ctx):
-            return Hat(size=request.inches, color="green")
+    class RoundtripElizaServiceSync(ElizaServiceSync):
+        def say(self, request, ctx):
+            return SayResponse(sentence=request.sentence)
 
-    app = HaberdasherWSGIApplication(RoundtripHaberdasherSync())
+    app = ElizaServiceWSGIApplication(RoundtripElizaServiceSync())
 
     with pytest.raises(
         ValueError, match=r"Unsupported compression method: .*"
     ) as exc_info:
-        HaberdasherClientSync(
+        ElizaServiceClientSync(
             "http://localhost",
             session=Client(transport=WSGITransport(app=app)),
             send_compression=compression,
@@ -75,16 +73,16 @@ def test_invalid_compression_sync(compression: str) -> None:
 @pytest.mark.parametrize("compression", ["br", "zstd"])
 @pytest.mark.asyncio
 async def test_invalid_compression_async(compression: str) -> None:
-    class DetailsHaberdasher(Haberdasher):
-        async def make_hat(self, request, ctx):
-            return Hat(size=request.inches, color="green")
+    class DetailsElizaService(ElizaService):
+        async def say(self, request, ctx):
+            return SayResponse(sentence=request.sentence)
 
-    app = HaberdasherASGIApplication(DetailsHaberdasher())
+    app = ElizaServiceASGIApplication(DetailsElizaService())
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
     with pytest.raises(
         ValueError, match=r"Unsupported compression method: .*"
     ) as exc_info:
-        HaberdasherClient(
+        ElizaServiceClient(
             "http://localhost",
             session=AsyncClient(transport=transport),
             send_compression=compression,

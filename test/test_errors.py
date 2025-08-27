@@ -18,7 +18,8 @@ from httpx import (
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from example.haberdasher_connecpy import (
+
+from .haberdasher_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
@@ -26,7 +27,7 @@ from example.haberdasher_connecpy import (
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
-from example.haberdasher_pb2 import Hat, Size
+from .haberdasher_pb2 import Hat, Size
 
 _errors = [
     (Code.CANCELED, "Operation was cancelled", 499),

@@ -3,7 +3,8 @@ Basic test to verify Proto Editions 2023 files don't crash protoc-gen-connecpy.
 """
 
 from connecpy.request import RequestContext
-from example.haberdasher_edition_2023_connecpy import (
+
+from .haberdasher_edition_2023_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
@@ -11,7 +12,7 @@ from example.haberdasher_edition_2023_connecpy import (
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
-from example.haberdasher_edition_2023_pb2 import Hat, Size
+from .haberdasher_edition_2023_pb2 import Hat, Size
 
 
 def test_edition_2023_service_generation() -> None:
