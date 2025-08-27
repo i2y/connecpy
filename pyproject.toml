@@ -57,6 +57,7 @@ dev-dependencies = [
     "connecpy-example",
     "coverage",
     "flask",
+    "just-bin",
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
