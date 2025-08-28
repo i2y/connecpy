@@ -1,10 +1,10 @@
 [project]
-name = "connecpy-conformance"
+name = "connect-python-conformance"
 version = "0.1.0"
 
 dependencies = [
     "brotli",
-    "connecpy",
+    "connect-python",
     "httpx[http2]",
     "hypercorn",
     "pytest",

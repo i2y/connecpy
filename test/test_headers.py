@@ -1,6 +1,6 @@
 import pytest
 
-from connecpy.request import Headers
+from connectrpc.request import Headers
 
 
 def test_headers_no_duplicates() -> None:

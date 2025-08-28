@@ -1,8 +1,8 @@
 version: 2
 dist: out
-project_name: protoc-gen-connecpy
+project_name: protoc-gen-connect-python
 builds:
-  - main: ./protoc-gen-connecpy
+  - main: ./protoc-gen-connect-python
     env:
       - CGO_ENABLED=0
     targets:
