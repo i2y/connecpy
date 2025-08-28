@@ -12,7 +12,7 @@ from pathlib import Path
 
 import grpc
 import httpx
-from connecpy.transport import ConnectTransport, GrpcTransport
+from connecpy.transport.client import ConnectTransport, GrpcTransport
 
 # Import the service-specific create_client_sync function
 from example.haberdasher_connecpy import create_client_sync

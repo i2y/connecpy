@@ -4,13 +4,13 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from connecpy.method import IdempotencyLevel, MethodInfo
-from connecpy.transport import ConnectTransport, ConnectTransportAsync
+from connecpy.transport.client import ConnectTransport, ConnectTransportAsync
 
 
 class TestConnectTransportStreaming(unittest.TestCase):
     """Test Connect transport with streaming RPCs."""
 
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_unary_stream(self, mock_client_class):
         """Test unary-stream RPC."""
         # Setup mock client
@@ -46,7 +46,7 @@ class TestConnectTransportStreaming(unittest.TestCase):
         assert results[1] == {"result": 2}
         assert results[2] == {"result": 3}
 
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_stream_unary(self, mock_client_class):
         """Test stream-unary RPC."""
         # Setup mock client
@@ -73,7 +73,7 @@ class TestConnectTransportStreaming(unittest.TestCase):
         mock_client.execute_client_stream.assert_called_once()
         assert result == {"combined": "result"}
 
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_stream_stream(self, mock_client_class):
         """Test stream-stream RPC."""
         # Setup mock client
@@ -112,7 +112,7 @@ class TestConnectTransportStreaming(unittest.TestCase):
 class TestConnectTransportAsyncStreaming(unittest.IsolatedAsyncioTestCase):
     """Test async Connect transport with streaming RPCs."""
 
-    @patch("connecpy.transport.connect_async.ConnecpyClient")
+    @patch("connecpy.transport.client.connect_async.ConnecpyClient")
     async def test_unary_stream_async(self, mock_client_class):
         """Test async unary-stream RPC."""
         # Setup mock client
@@ -151,7 +151,7 @@ class TestConnectTransportAsyncStreaming(unittest.IsolatedAsyncioTestCase):
         assert len(results) == 3
         assert results[0] == {"result": 1}
 
-    @patch("connecpy.transport.connect_async.ConnecpyClient")
+    @patch("connecpy.transport.client.connect_async.ConnecpyClient")
     async def test_stream_unary_async(self, mock_client_class):
         """Test async stream-unary RPC."""
         # Setup mock client
@@ -183,7 +183,7 @@ class TestConnectTransportAsyncStreaming(unittest.IsolatedAsyncioTestCase):
         mock_client.execute_client_stream.assert_called_once()
         assert result == {"combined": "result"}
 
-    @patch("connecpy.transport.connect_async.ConnecpyClient")
+    @patch("connecpy.transport.client.connect_async.ConnecpyClient")
     async def test_stream_stream_async(self, mock_client_class):
         """Test async stream-stream RPC."""
         # Setup mock client

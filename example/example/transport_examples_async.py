@@ -6,7 +6,7 @@ import sys
 import traceback
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from connecpy.transport import ConnectTransportAsync, GrpcTransportAsync
+from connecpy.transport.client import ConnectTransportAsync, GrpcTransportAsync
 
 # Import the service-specific create_client function
 from example.haberdasher_connecpy import create_client

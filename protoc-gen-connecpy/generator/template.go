@@ -333,8 +333,8 @@ def create_client(
         A client implementing {{.Name}}ClientProtocol
     """
     # Avoid circular imports by importing here
-    from connecpy.transport.connect_async import ConnectTransportAsync  # noqa: PLC0415
-    from connecpy.transport.grpc_async import GrpcTransportAsync  # noqa: PLC0415
+    from connecpy.transport.client.connect_async import ConnectTransportAsync  # noqa: PLC0415, I001
+    from connecpy.transport.client.grpc_async import GrpcTransportAsync  # noqa: PLC0415
 
     if isinstance(transport, ConnectTransportAsync):
         return {{.Name}}Client(
@@ -395,8 +395,8 @@ def create_client_sync(
         A client implementing {{.Name}}ClientSyncProtocol
     """
     # Avoid circular imports by importing here
-    from connecpy.transport.connect import ConnectTransport  # noqa: PLC0415
-    from connecpy.transport.grpc import GrpcTransport  # noqa: PLC0415
+    from connecpy.transport.client.connect import ConnectTransport  # noqa: PLC0415, I001
+    from connecpy.transport.client.grpc import GrpcTransport  # noqa: PLC0415
 
     if isinstance(transport, ConnectTransport):
         return {{.Name}}ClientSync(

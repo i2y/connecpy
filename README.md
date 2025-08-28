@@ -133,7 +133,7 @@ plugins:
     out: gen
   - local: protoc-gen-connecpy
     out: gen
-    # Optional: Enable experimental Transport API
+    # Optional: Enable experimental Client Transport API
     # opt:
     #   - transport_api=true
 ```
@@ -155,7 +155,7 @@ protoc --python_out=./ --pyi_out=./ --connecpy_out=./ ./haberdasher.proto
 By default, naming follows PEP8 conventions. To use Google conventions, matching the output of grpc-python, add `--connecpy_opt=naming=google`.
 By default, imports are generated absolutely based on the proto package name. To use relative import, add `--connecpy_opt=imports=relative`.
 
-For experimental Transport API support (see Transport API section below), add `--connecpy_opt=transport_api=true`:
+For experimental Client Transport API support (see Client Transport API section below), add `--connecpy_opt=transport_api=true`:
 ```sh
 protoc --python_out=./ --pyi_out=./ --connecpy_out=./ --connecpy_opt=transport_api=true ./haberdasher.proto
 ```
@@ -576,9 +576,9 @@ On Windows, Content-Type: application/json, HTTP/2
 curl --http2-prior-knowledge -X POST -H "Content-Type: application/json" -d '{\"inches\": 12}' -v http://localhost:3000/i2y.connecpy.example.Haberdasher/MakeHat
 ```
 
-## Transport API (Experimental)
+## Client Transport API (Experimental)
 
-The Transport API provides a protocol-agnostic way to create RPC clients that can work with both Connect and gRPC protocols. This allows you to switch between protocols without changing your client code.
+The Client Transport API provides a protocol-agnostic way to create RPC clients that can work with both Connect and gRPC protocols. This allows you to switch between protocols without changing your client code.
 
 **Note**: This feature must be explicitly enabled during code generation using the `transport_api=true` option (see Generator Options above).
 
@@ -590,11 +590,11 @@ The Transport API provides a protocol-agnostic way to create RPC clients that ca
 
 ### Usage
 
-The protoc-gen-connecpy plugin automatically generates Transport API support alongside regular client code:
+The protoc-gen-connecpy plugin automatically generates Client Transport API support alongside regular client code:
 
 ```python
 # Using Connect transport
-from connecpy.transport import ConnectTransportAsync
+from connecpy.transport.client import ConnectTransportAsync
 from example.haberdasher_connecpy import create_client
 from example.haberdasher_pb2 import Size
 
@@ -606,7 +606,7 @@ async def connect_example():
     print(f"Got hat: {hat.color}")
 
 # Using gRPC transport (requires grpcio)
-from connecpy.transport import GrpcTransportAsync
+from connecpy.transport.client import GrpcTransportAsync
 
 async def grpc_example():
     transport = GrpcTransportAsync("localhost:50051")
@@ -618,10 +618,10 @@ async def grpc_example():
 
 ### Synchronous API
 
-The Transport API also supports synchronous clients:
+The Client Transport API also supports synchronous clients:
 
 ```python
-from connecpy.transport import ConnectTransport, GrpcTransport
+from connecpy.transport.client import ConnectTransport, GrpcTransport
 from example.haberdasher_connecpy import create_client_sync
 
 # Connect transport (sync)
@@ -659,7 +659,7 @@ transport = GrpcTransportAsync(
 )
 ```
 
-**Note**: The Transport API is experimental and the interface may change in future versions. For production use, consider using the standard `HaberdasherClient` and `HaberdasherClientSync` classes directly.
+**Note**: The Client Transport API is experimental and the interface may change in future versions. For production use, consider using the standard `HaberdasherClient` and `HaberdasherClientSync` classes directly.
 
 ## WSGI Support
 

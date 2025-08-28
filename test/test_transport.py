@@ -4,7 +4,7 @@ import pytest
 
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.transport import CallOptions, ConnectTransport, RetryPolicy
+from connecpy.transport.client import CallOptions, ConnectTransport, RetryPolicy
 
 
 def test_call_options_creation():

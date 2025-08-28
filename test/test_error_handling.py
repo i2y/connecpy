@@ -9,14 +9,14 @@ import pytest
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.method import IdempotencyLevel, MethodInfo
-from connecpy.transport import CallOptions, ConnectTransport, GrpcTransport
+from connecpy.transport.client import CallOptions, ConnectTransport, GrpcTransport
 
 
 class TestGrpcErrorHandling(unittest.TestCase):
     """Test error handling in GrpcTransport."""
 
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
     def test_unary_unary_error_without_retry(self, mock_grpc):
         """Test that unary_unary properly converts gRPC errors without retry."""
         # Setup mock channel and stub
@@ -63,8 +63,8 @@ class TestGrpcErrorHandling(unittest.TestCase):
         assert context.value.code == Code.UNAVAILABLE
         assert "Service unavailable" in str(context.value)
 
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
     def test_stream_unary_error_without_retry(self, mock_grpc):
         """Test that stream_unary properly converts gRPC errors without retry."""
         # Setup mock channel and stub
@@ -110,8 +110,8 @@ class TestGrpcErrorHandling(unittest.TestCase):
         assert context.value.code == Code.DEADLINE_EXCEEDED
         assert "Deadline exceeded" in str(context.value)
 
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
     def test_grpc_status_code_mapping(self, mock_grpc):
         """Test that all gRPC status codes are properly mapped."""
         mock_channel = MagicMock()
@@ -165,7 +165,7 @@ class TestGrpcErrorHandling(unittest.TestCase):
 class TestConnectErrorHandling(unittest.TestCase):
     """Test error handling in ConnectTransport."""
 
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_unary_timeout_error(self, mock_client_class):
         """Test that timeout errors are properly converted to DEADLINE_EXCEEDED."""
         # Setup mock client
@@ -198,7 +198,7 @@ class TestConnectErrorHandling(unittest.TestCase):
         assert context.value.code == Code.DEADLINE_EXCEEDED
         assert "timeout" in str(context.value).lower()
 
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_server_stream_timeout_error(self, mock_client_class):
         """Test that server stream timeout errors are properly converted."""
         # Setup mock client
@@ -233,7 +233,7 @@ class TestConnectErrorHandling(unittest.TestCase):
         assert context.value.code == Code.DEADLINE_EXCEEDED
         assert "timeout" in str(context.value).lower()
 
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_client_stream_timeout_error(self, mock_client_class):
         """Test that client stream timeout errors are properly converted."""
         # Setup mock client
@@ -265,7 +265,7 @@ class TestConnectErrorHandling(unittest.TestCase):
         assert context.value.code == Code.DEADLINE_EXCEEDED
         assert "timeout" in str(context.value).lower()
 
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_bidi_stream_timeout_error(self, mock_client_class):
         """Test that bidirectional stream timeout errors are properly converted."""
         # Setup mock client
@@ -302,9 +302,9 @@ class TestConnectErrorHandling(unittest.TestCase):
 class TestConsistentErrorHandling(unittest.TestCase):
     """Test that errors are handled consistently across transports."""
 
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_timeout_error_consistency(self, mock_connect_client, mock_grpc):
         """Test that both transports handle timeout errors consistently."""
         # Setup gRPC transport to raise DEADLINE_EXCEEDED

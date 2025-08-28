@@ -7,7 +7,7 @@ import pytest
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
 from connecpy.method import IdempotencyLevel, MethodInfo
-from connecpy.transport import CallOptions, ConnectTransportAsync, RetryPolicy
+from connecpy.transport.client import CallOptions, ConnectTransportAsync, RetryPolicy
 
 
 @pytest.mark.asyncio

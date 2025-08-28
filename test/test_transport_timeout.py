@@ -3,7 +3,7 @@
 import pytest
 
 from connecpy.method import IdempotencyLevel, MethodInfo
-from connecpy.transport import (
+from connecpy.transport.client import (
     CallOptions,
     ConnectTransport,
     ConnectTransportAsync,

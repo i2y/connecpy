@@ -4,8 +4,8 @@ import unittest
 from unittest.mock import MagicMock, Mock, patch
 
 from connecpy.method import IdempotencyLevel, MethodInfo
-from connecpy.transport import CallOptions, ConnectTransport, GrpcTransport
-from connecpy.transport.client import create_client_sync
+from connecpy.transport.client import CallOptions, ConnectTransport, GrpcTransport
+from connecpy.transport.client.client import create_client_sync
 
 
 class TestConnectTransport(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestConnectTransport(unittest.TestCase):
         assert transport.timeout_ms == 5000
         assert transport.read_max_bytes == 1000000
 
-    @patch("connecpy.transport.connect.ConnecpyClientSync")
+    @patch("connecpy.transport.client.connect.ConnecpyClientSync")
     def test_connect_transport_unary_call(self, mock_client_class):
         """Test ConnectTransport unary_unary method."""
         # Setup mock client
@@ -63,7 +63,7 @@ class TestConnectTransport(unittest.TestCase):
     def test_connect_transport_close(self):
         """Test ConnectTransport close method."""
         with patch(
-            "connecpy.transport.connect.ConnecpyClientSync"
+            "connecpy.transport.client.connect.ConnecpyClientSync"
         ) as mock_client_class:
             mock_client = MagicMock()
             mock_client_class.return_value = mock_client
@@ -77,8 +77,8 @@ class TestConnectTransport(unittest.TestCase):
 class TestGrpcTransport(unittest.TestCase):
     """Test the GrpcTransport class."""
 
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
     def test_grpc_transport_init_insecure(self, mock_grpc):
         """Test GrpcTransport initialization with insecure channel."""
         mock_grpc.insecure_channel.return_value = MagicMock()
@@ -90,8 +90,8 @@ class TestGrpcTransport(unittest.TestCase):
         )
         assert transport._target == "localhost:50051"
 
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
     def test_grpc_transport_init_secure(self, mock_grpc):
         """Test GrpcTransport initialization with secure channel."""
         mock_grpc.secure_channel.return_value = MagicMock()
@@ -109,8 +109,8 @@ class TestGrpcTransport(unittest.TestCase):
             options=[("grpc.max_receive_message_length", 10000000)],
         )
 
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
     def test_grpc_transport_with_compression(self, mock_grpc):
         """Test GrpcTransport with compression."""
         mock_grpc.insecure_channel.return_value = MagicMock()
@@ -123,8 +123,8 @@ class TestGrpcTransport(unittest.TestCase):
         # The transport converts "gzip" to the numeric value 2
         assert ("grpc.default_compression_algorithm", 2) in options
 
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
     def test_grpc_transport_unary_call(self, mock_grpc):
         """Test GrpcTransport unary_unary method."""
         mock_channel = MagicMock()
@@ -199,8 +199,8 @@ class TestCreateClientSync(unittest.TestCase):
         )
 
     @patch("importlib.import_module")
-    @patch("connecpy.transport.grpc.GRPC_AVAILABLE", True)
-    @patch("connecpy.transport.grpc.grpc")
+    @patch("connecpy.transport.client.grpc.GRPC_AVAILABLE", True)
+    @patch("connecpy.transport.client.grpc.grpc")
     def test_create_client_with_grpc_transport(self, mock_grpc, mock_import):
         """Test creating a client with GrpcTransport."""
         # Setup mock channel
