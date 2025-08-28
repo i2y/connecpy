@@ -57,7 +57,7 @@ dev-dependencies = [
     "connecpy-example",
     "coverage",
     "flask",
-    "just-bin; sys.platform != 'win32'",
+    "just-bin; sys_platform != 'win32'",
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
