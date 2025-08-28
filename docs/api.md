@@ -1,3 +1,5 @@
+# API Reference
+
 ::: connecpy.client
 ::: connecpy.code
 ::: connecpy.exceptions

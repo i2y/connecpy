@@ -2,7 +2,7 @@
 name = "connecpy-example"
 version = "0.1.0"
 
-dependencies = ["connecpy", "protobuf", "starlette"]
+dependencies = ["connecpy", "flask", "protobuf", "starlette"]
 
 [tool.ruff]
 extend = "../pyproject.toml"

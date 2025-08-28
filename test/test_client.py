@@ -2,7 +2,8 @@ import pytest
 from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 from connecpy.client import ResponseMetadata
-from example.haberdasher_connecpy import (
+
+from .haberdasher_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
@@ -10,7 +11,7 @@ from example.haberdasher_connecpy import (
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
-from example.haberdasher_pb2 import Hat, Size
+from .haberdasher_pb2 import Hat, Size
 
 _default_headers = (
     ("content-type", "application/proto"),

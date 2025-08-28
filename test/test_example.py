@@ -1,23 +1,16 @@
 import threading
 from wsgiref.simple_server import WSGIServer, make_server
 
-import httpx
 import pytest
 
-from example.haberdasher_connecpy import (
-    HaberdasherClient,
-    HaberdasherClientSync,
-    HaberdasherWSGIApplication,
-)
-from example.haberdasher_pb2 import Size
-from example.wsgi_service import HaberdasherService
+from example.eliza_connecpy import ElizaServiceClient, ElizaServiceClientSync
+from example.eliza_pb2 import SayRequest
+from example.eliza_service_sync import app as wsgi_app
 
 
 @pytest.fixture(scope="module")
 def sync_server():
-    app = HaberdasherWSGIApplication(HaberdasherService())
-
-    with make_server("", 0, app) as httpd:
+    with make_server("", 0, wsgi_app) as httpd:
         thread = threading.Thread(target=httpd.serve_forever)
         thread.daemon = True
         thread.start()
@@ -27,59 +20,20 @@ def sync_server():
             httpd.shutdown()
 
 
-def test_sync_client_basic(sync_server: WSGIServer) -> None:
-    with HaberdasherClientSync(f"http://localhost:{sync_server.server_port}") as client:
-        response = client.make_hat(request=Size(inches=10))
-        assert response.size == 10
-    assert client._session.is_closed
-
-
-def test_sync_client_custom_session_and_header(sync_server: WSGIServer) -> None:
-    recorded_request = None
-
-    def record_request(request) -> None:
-        nonlocal recorded_request
-        recorded_request = request
-
-    session = httpx.Client(event_hooks={"request": [record_request]})
-    with HaberdasherClientSync(
-        f"http://localhost:{sync_server.server_port}", session=session
+def test_sync(sync_server: WSGIServer) -> None:
+    with ElizaServiceClientSync(
+        f"http://localhost:{sync_server.server_port}"
     ) as client:
-        response = client.make_hat(
-            request=Size(inches=10), headers={"x-animal": "bear"}
-        )
-        assert response.size == 10
-    assert not session.is_closed
-    assert recorded_request is not None
-    assert recorded_request.headers.get("x-animal") == "bear"
+        response = client.say(SayRequest(sentence="Hello"))
+        assert len(response.sentence) > 0
+    assert client._session.is_closed
 
 
 @pytest.mark.asyncio
 async def test_async_client_basic(sync_server: WSGIServer) -> None:
-    async with HaberdasherClient(
+    async with ElizaServiceClient(
         f"http://localhost:{sync_server.server_port}"
     ) as client:
-        response = await client.make_hat(request=Size(inches=10))
-        assert response.size == 10
+        response = await client.say(SayRequest(sentence="Hello"))
+        assert len(response.sentence) > 0
     assert client._session.is_closed
-
-
-@pytest.mark.asyncio
-async def test_async_client_custom_session_and_header(sync_server: WSGIServer) -> None:
-    recorded_request = None
-
-    async def record_request(request) -> None:
-        nonlocal recorded_request
-        recorded_request = request
-
-    session = httpx.AsyncClient(event_hooks={"request": [record_request]})
-    async with HaberdasherClient(
-        f"http://localhost:{sync_server.server_port}", session=session
-    ) as client:
-        response = await client.make_hat(
-            request=Size(inches=10), headers={"x-animal": "bear"}
-        )
-        assert response.size == 10
-    assert not session.is_closed
-    assert recorded_request is not None
-    assert recorded_request.headers.get("x-animal") == "bear"

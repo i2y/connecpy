@@ -1,13 +1,13 @@
 from typing import NoReturn
 
 import pytest
-from google.protobuf.any import pack
 from google.protobuf.struct_pb2 import Struct, Value
 from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
 from connecpy.code import Code
-from connecpy.exceptions import ConnecpyException
-from example.haberdasher_connecpy import (
+from connecpy.exceptions import ConnecpyException, pack_any
+
+from .haberdasher_connecpy import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
@@ -15,7 +15,7 @@ from example.haberdasher_connecpy import (
     HaberdasherSync,
     HaberdasherWSGIApplication,
 )
-from example.haberdasher_pb2 import Size
+from .haberdasher_pb2 import Size
 
 
 def test_details_sync() -> None:
@@ -26,7 +26,7 @@ def test_details_sync() -> None:
                 "Resource exhausted",
                 details=[
                     Struct(fields={"animal": Value(string_value="bear")}),
-                    pack(Struct(fields={"color": Value(string_value="red")})),
+                    pack_any(Struct(fields={"color": Value(string_value="red")})),
                 ],
             )
 
@@ -58,7 +58,7 @@ async def test_details_async() -> None:
                 "Resource exhausted",
                 details=[
                     Struct(fields={"animal": Value(string_value="bear")}),
-                    pack(Struct(fields={"color": Value(string_value="red")})),
+                    pack_any(Struct(fields={"color": Value(string_value="red")})),
                 ],
             )
 

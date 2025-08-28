@@ -25,9 +25,9 @@ def main() -> None:
             case "linux":
                 match artifact["goarch"]:
                     case "amd64":
-                        platform = "manylinux2_17_x86_64.manylinux_2014_x86_64.musllinux_1_1_x86_64"
+                        platform = "manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64"
                     case "arm64":
-                        platform = "manylinux2_17_aarch64.manylinux_2014_aarch64.musllinux_1_1_aarch64"
+                        platform = "manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64"
             case "windows":
                 match artifact["goarch"]:
                     case "amd64":
