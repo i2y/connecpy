@@ -2,8 +2,9 @@
 # source: haberdasher_edition_2023.proto
 
 import importlib
-from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
-from typing import Any, ClassVar, Protocol
+from collections.abc import Iterable, Mapping
+from typing import TYPE_CHECKING, ClassVar, Protocol, Union
+
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -19,6 +20,12 @@ from connecpy.server import (
 
 from . import haberdasher_edition_2023_pb2 as haberdasher__edition__2023__pb2
 
+if TYPE_CHECKING:
+    from connecpy.transport.client.connect import ConnectTransport
+    from connecpy.transport.client.connect_async import ConnectTransportAsync
+    from connecpy.transport.client.grpc import GrpcTransport
+    from connecpy.transport.client.grpc_async import GrpcTransportAsync
+
 
 class Haberdasher(Protocol):
     """Service protocol for Haberdasher."""
@@ -32,15 +39,24 @@ class Haberdasher(Protocol):
                 input=haberdasher__edition__2023__pb2.Size,
                 output=haberdasher__edition__2023__pb2.Hat,
                 idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
-            ),
-        }
+            )
+        },
     }
-    async def make_hat(self, request: haberdasher__edition__2023__pb2.Size, ctx: RequestContext) -> haberdasher__edition__2023__pb2.Hat:
+
+    async def make_hat(
+        self, request: haberdasher__edition__2023__pb2.Size, ctx: RequestContext
+    ) -> haberdasher__edition__2023__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class HaberdasherASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: Haberdasher, *, interceptors: Iterable[Interceptor]=(), read_max_bytes: int | None = None) -> None:
+    def __init__(
+        self,
+        service: Haberdasher,
+        *,
+        interceptors: Iterable[Interceptor] = (),
+        read_max_bytes: int | None = None,
+    ) -> None:
         super().__init__(
             endpoints={
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": Endpoint.unary(
@@ -52,7 +68,7 @@ class HaberdasherASGIApplication(ConnecpyASGIApplication):
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
                     ),
                     function=service.make_hat,
-                ),
+                )
             },
             interceptors=interceptors,
             read_max_bytes=read_max_bytes,
@@ -100,15 +116,23 @@ class HaberdasherSync(Protocol):
                 input=haberdasher__edition__2023__pb2.Size,
                 output=haberdasher__edition__2023__pb2.Hat,
                 idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
-            ),
-        }
+            )
+        },
     }
-    def make_hat(self, request: haberdasher__edition__2023__pb2.Size, ctx: RequestContext) -> haberdasher__edition__2023__pb2.Hat:
+
+    def make_hat(
+        self, request: haberdasher__edition__2023__pb2.Size, ctx: RequestContext
+    ) -> haberdasher__edition__2023__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: HaberdasherSync, interceptors: Iterable[InterceptorSync]=(), read_max_bytes: int | None = None) -> None:
+    def __init__(
+        self,
+        service: HaberdasherSync,
+        interceptors: Iterable[InterceptorSync] = (),
+        read_max_bytes: int | None = None,
+    ) -> None:
         super().__init__(
             endpoints={
                 "/i2y.connecpy.example2023.Haberdasher/MakeHat": EndpointSync.unary(
@@ -120,7 +144,7 @@ class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
                         idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
                     ),
                     function=service.make_hat,
-                ),
+                )
             },
             interceptors=interceptors,
             read_max_bytes=read_max_bytes,
@@ -159,6 +183,7 @@ class HaberdasherClientSync(ConnecpyClientSync):
 # Client Protocol types for type-safe transport API
 class HaberdasherClientProtocol(Protocol):
     """Protocol defining the client interface for Haberdasher."""
+
     async def make_hat(
         self,
         request: haberdasher__edition__2023__pb2.Size,
@@ -171,6 +196,7 @@ class HaberdasherClientProtocol(Protocol):
 
 class HaberdasherClientSyncProtocol(Protocol):
     """Protocol defining the synchronous client interface for Haberdasher."""
+
     def make_hat(
         self,
         request: haberdasher__edition__2023__pb2.Size,
@@ -184,7 +210,7 @@ class HaberdasherClientSyncProtocol(Protocol):
 class HaberdasherGrpcWrapper:
     """Async gRPC stub wrapper implementing HaberdasherClientProtocol."""
 
-    def __init__(self, stub: Any) -> None:
+    def __init__(self, stub: object) -> None:
         """Initialize with a gRPC async stub."""
         self._stub = stub
 
@@ -206,7 +232,7 @@ class HaberdasherGrpcWrapper:
 class HaberdasherGrpcWrapperSync:
     """Sync gRPC stub wrapper implementing HaberdasherClientSyncProtocol."""
 
-    def __init__(self, stub: Any) -> None:
+    def __init__(self, stub: object) -> None:
         """Initialize with a gRPC sync stub."""
         self._stub = stub
 
@@ -225,7 +251,7 @@ class HaberdasherGrpcWrapperSync:
 
 
 def create_client(
-    transport: Any,  # Union[ConnectTransportAsync, GrpcTransportAsync]
+    transport: Union["ConnectTransportAsync", "GrpcTransportAsync"],
 ) -> HaberdasherClientProtocol:
     """Create an async Haberdasher client with the specified transport.
 
@@ -287,7 +313,7 @@ def create_client(
 
 
 def create_client_sync(
-    transport: Any,  # Union[ConnectTransport, GrpcTransport]
+    transport: Union["ConnectTransport", "GrpcTransport"],
 ) -> HaberdasherClientSyncProtocol:
     """Create a sync Haberdasher client with the specified transport.
 

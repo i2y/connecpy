@@ -47,7 +47,7 @@ var ConnecpyTemplate = template.Must(template.New("ConnecpyTemplate").Parse(`# G
 {{if .Services}}{{if .TransportAPI}}
 import importlib
 {{end}}from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
-from typing import Any, ClassVar, Protocol
+from typing import TYPE_CHECKING, ClassVar, Protocol, Union
 {{- range .Imports }}
 {{- if not .IsLocal }}
 
@@ -72,6 +72,14 @@ from connecpy.server import (
 {{if .Relative}}from . import {{.Name}}{{else}}import {{.Name}}{{end}} as {{.Alias}}
 {{- end}}
 {{- end}}
+{{- end}}
+{{- if .TransportAPI}}
+
+if TYPE_CHECKING:
+    from connecpy.transport.client.connect import ConnectTransport
+    from connecpy.transport.client.connect_async import ConnectTransportAsync
+    from connecpy.transport.client.grpc import GrpcTransport
+    from connecpy.transport.client.grpc_async import GrpcTransportAsync
 {{- end}}
 {{- range .Services}}
 
@@ -259,7 +267,7 @@ class {{.Name}}ClientSyncProtocol(Protocol):
 class {{.Name}}GrpcWrapper:
     """Async gRPC stub wrapper implementing {{.Name}}ClientProtocol."""
 
-    def __init__(self, stub: Any) -> None:
+    def __init__(self, stub: object) -> None:
         """Initialize with a gRPC async stub."""
         self._stub = stub
     {{- range .Methods}}
@@ -299,7 +307,7 @@ class {{.Name}}GrpcWrapper:
 class {{.Name}}GrpcWrapperSync:
     """Sync gRPC stub wrapper implementing {{.Name}}ClientSyncProtocol."""
 
-    def __init__(self, stub: Any) -> None:
+    def __init__(self, stub: object) -> None:
         """Initialize with a gRPC sync stub."""
         self._stub = stub
     {{- range .Methods}}
@@ -322,7 +330,7 @@ class {{.Name}}GrpcWrapperSync:
 
 
 def create_client(
-    transport: Any,  # Union[ConnectTransportAsync, GrpcTransportAsync]
+    transport: Union["ConnectTransportAsync", "GrpcTransportAsync"],
 ) -> {{.Name}}ClientProtocol:
     """Create an async {{.Name}} client with the specified transport.
 
@@ -384,7 +392,7 @@ def create_client(
 
 
 def create_client_sync(
-    transport: Any,  # Union[ConnectTransport, GrpcTransport]
+    transport: Union["ConnectTransport", "GrpcTransport"],
 ) -> {{.Name}}ClientSyncProtocol:
     """Create a sync {{.Name}} client with the specified transport.
 

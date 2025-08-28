@@ -3,9 +3,10 @@
 
 import importlib
 from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
-from typing import Any, ClassVar, Protocol
+from typing import TYPE_CHECKING, ClassVar, Protocol, Union
 
 import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
+
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -20,6 +21,12 @@ from connecpy.server import (
 )
 
 from . import haberdasher_pb2 as haberdasher__pb2
+
+if TYPE_CHECKING:
+    from connecpy.transport.client.connect import ConnectTransport
+    from connecpy.transport.client.connect_async import ConnectTransportAsync
+    from connecpy.transport.client.grpc import GrpcTransport
+    from connecpy.transport.client.grpc_async import GrpcTransportAsync
 
 
 class Haberdasher(Protocol):
@@ -70,29 +77,48 @@ class Haberdasher(Protocol):
                 output=google_dot_protobuf_dot_empty__pb2.Empty,
                 idempotency_level=IdempotencyLevel.UNKNOWN,
             ),
-        }
+        },
     }
-    async def make_hat(self, request: haberdasher__pb2.Size, ctx: RequestContext) -> haberdasher__pb2.Hat:
+
+    async def make_hat(
+        self, request: haberdasher__pb2.Size, ctx: RequestContext
+    ) -> haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
-    async def make_flexible_hat(self, request: AsyncIterator[haberdasher__pb2.Size], ctx: RequestContext) -> haberdasher__pb2.Hat:
+    async def make_flexible_hat(
+        self, request: AsyncIterator[haberdasher__pb2.Size], ctx: RequestContext
+    ) -> haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
-    def make_similar_hats(self, request: haberdasher__pb2.Size, ctx: RequestContext) -> AsyncIterator[haberdasher__pb2.Hat]:
+    def make_similar_hats(
+        self, request: haberdasher__pb2.Size, ctx: RequestContext
+    ) -> AsyncIterator[haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
-    def make_various_hats(self, request: AsyncIterator[haberdasher__pb2.Size], ctx: RequestContext) -> AsyncIterator[haberdasher__pb2.Hat]:
+    def make_various_hats(
+        self, request: AsyncIterator[haberdasher__pb2.Size], ctx: RequestContext
+    ) -> AsyncIterator[haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
-    def list_parts(self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext) -> AsyncIterator[haberdasher__pb2.Hat.Part]:
+    def list_parts(
+        self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
+    ) -> AsyncIterator[haberdasher__pb2.Hat.Part]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
-    async def do_nothing(self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext) -> google_dot_protobuf_dot_empty__pb2.Empty:
+    async def do_nothing(
+        self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
+    ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class HaberdasherASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: Haberdasher, *, interceptors: Iterable[Interceptor]=(), read_max_bytes: int | None = None) -> None:
+    def __init__(
+        self,
+        service: Haberdasher,
+        *,
+        interceptors: Iterable[Interceptor] = (),
+        read_max_bytes: int | None = None,
+    ) -> None:
         super().__init__(
             endpoints={
                 "/i2y.connecpy.example.Haberdasher/MakeHat": Endpoint.unary(
@@ -338,24 +364,47 @@ class HaberdasherSync(Protocol):
                 output=google_dot_protobuf_dot_empty__pb2.Empty,
                 idempotency_level=IdempotencyLevel.UNKNOWN,
             ),
-        }
+        },
     }
-    def make_hat(self, request: haberdasher__pb2.Size, ctx: RequestContext) -> haberdasher__pb2.Hat:
+
+    def make_hat(
+        self, request: haberdasher__pb2.Size, ctx: RequestContext
+    ) -> haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
-    def make_flexible_hat(self, request: Iterator[haberdasher__pb2.Size], ctx: RequestContext) -> haberdasher__pb2.Hat:
+
+    def make_flexible_hat(
+        self, request: Iterator[haberdasher__pb2.Size], ctx: RequestContext
+    ) -> haberdasher__pb2.Hat:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
-    def make_similar_hats(self, request: haberdasher__pb2.Size, ctx: RequestContext) -> Iterator[haberdasher__pb2.Hat]:
+
+    def make_similar_hats(
+        self, request: haberdasher__pb2.Size, ctx: RequestContext
+    ) -> Iterator[haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
-    def make_various_hats(self, request: Iterator[haberdasher__pb2.Size], ctx: RequestContext) -> Iterator[haberdasher__pb2.Hat]:
+
+    def make_various_hats(
+        self, request: Iterator[haberdasher__pb2.Size], ctx: RequestContext
+    ) -> Iterator[haberdasher__pb2.Hat]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
-    def list_parts(self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext) -> Iterator[haberdasher__pb2.Hat.Part]:
+
+    def list_parts(
+        self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
+    ) -> Iterator[haberdasher__pb2.Hat.Part]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
-    def do_nothing(self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext) -> google_dot_protobuf_dot_empty__pb2.Empty:
+
+    def do_nothing(
+        self, request: google_dot_protobuf_dot_empty__pb2.Empty, ctx: RequestContext
+    ) -> google_dot_protobuf_dot_empty__pb2.Empty:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class HaberdasherWSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: HaberdasherSync, interceptors: Iterable[InterceptorSync]=(), read_max_bytes: int | None = None) -> None:
+    def __init__(
+        self,
+        service: HaberdasherSync,
+        interceptors: Iterable[InterceptorSync] = (),
+        read_max_bytes: int | None = None,
+    ) -> None:
         super().__init__(
             endpoints={
                 "/i2y.connecpy.example.Haberdasher/MakeHat": EndpointSync.unary(
@@ -556,6 +605,7 @@ class HaberdasherClientSync(ConnecpyClientSync):
 # Client Protocol types for type-safe transport API
 class HaberdasherClientProtocol(Protocol):
     """Protocol defining the client interface for Haberdasher."""
+
     async def make_hat(
         self,
         request: haberdasher__pb2.Size,
@@ -603,6 +653,7 @@ class HaberdasherClientProtocol(Protocol):
 
 class HaberdasherClientSyncProtocol(Protocol):
     """Protocol defining the synchronous client interface for Haberdasher."""
+
     def make_hat(
         self,
         request: haberdasher__pb2.Size,
@@ -651,7 +702,7 @@ class HaberdasherClientSyncProtocol(Protocol):
 class HaberdasherGrpcWrapper:
     """Async gRPC stub wrapper implementing HaberdasherClientProtocol."""
 
-    def __init__(self, stub: Any) -> None:
+    def __init__(self, stub: object) -> None:
         """Initialize with a gRPC async stub."""
         self._stub = stub
 
@@ -681,7 +732,9 @@ class HaberdasherGrpcWrapper:
         timeout = timeout_ms / 1000.0 if timeout_ms else None
         # Client streaming or bidi streaming
         # Client streaming - await the result
-        return await self._stub.MakeFlexibleHat(request, metadata=metadata, timeout=timeout)
+        return await self._stub.MakeFlexibleHat(
+            request, metadata=metadata, timeout=timeout
+        )
 
     def make_similar_hats(
         self,
@@ -740,7 +793,7 @@ class HaberdasherGrpcWrapper:
 class HaberdasherGrpcWrapperSync:
     """Sync gRPC stub wrapper implementing HaberdasherClientSyncProtocol."""
 
-    def __init__(self, stub: Any) -> None:
+    def __init__(self, stub: object) -> None:
         """Initialize with a gRPC sync stub."""
         self._stub = stub
 
@@ -819,7 +872,7 @@ class HaberdasherGrpcWrapperSync:
 
 
 def create_client(
-    transport: Any,  # Union[ConnectTransportAsync, GrpcTransportAsync]
+    transport: Union["ConnectTransportAsync", "GrpcTransportAsync"],
 ) -> HaberdasherClientProtocol:
     """Create an async Haberdasher client with the specified transport.
 
@@ -881,7 +934,7 @@ def create_client(
 
 
 def create_client_sync(
-    transport: Any,  # Union[ConnectTransport, GrpcTransport]
+    transport: Union["ConnectTransport", "GrpcTransport"],
 ) -> HaberdasherClientSyncProtocol:
     """Create a sync Haberdasher client with the specified transport.
 

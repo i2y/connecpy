@@ -46,20 +46,35 @@ class ElizaService(Protocol):
                 output=example_dot_eliza__pb2.IntroduceResponse,
                 idempotency_level=IdempotencyLevel.UNKNOWN,
             ),
-        }
+        },
     }
-    async def say(self, request: example_dot_eliza__pb2.SayRequest, ctx: RequestContext) -> example_dot_eliza__pb2.SayResponse:
+
+    async def say(
+        self, request: example_dot_eliza__pb2.SayRequest, ctx: RequestContext
+    ) -> example_dot_eliza__pb2.SayResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
-    def converse(self, request: AsyncIterator[example_dot_eliza__pb2.ConverseRequest], ctx: RequestContext) -> AsyncIterator[example_dot_eliza__pb2.ConverseResponse]:
+    def converse(
+        self,
+        request: AsyncIterator[example_dot_eliza__pb2.ConverseRequest],
+        ctx: RequestContext,
+    ) -> AsyncIterator[example_dot_eliza__pb2.ConverseResponse]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
-    def introduce(self, request: example_dot_eliza__pb2.IntroduceRequest, ctx: RequestContext) -> AsyncIterator[example_dot_eliza__pb2.IntroduceResponse]:
+    def introduce(
+        self, request: example_dot_eliza__pb2.IntroduceRequest, ctx: RequestContext
+    ) -> AsyncIterator[example_dot_eliza__pb2.IntroduceResponse]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class ElizaServiceASGIApplication(ConnecpyASGIApplication):
-    def __init__(self, service: ElizaService, *, interceptors: Iterable[Interceptor]=(), read_max_bytes: int | None = None) -> None:
+    def __init__(
+        self,
+        service: ElizaService,
+        *,
+        interceptors: Iterable[Interceptor] = (),
+        read_max_bytes: int | None = None,
+    ) -> None:
         super().__init__(
             endpoints={
                 "/connectrpc.eliza.v1.ElizaService/Say": Endpoint.unary(
@@ -194,18 +209,34 @@ class ElizaServiceSync(Protocol):
                 output=example_dot_eliza__pb2.IntroduceResponse,
                 idempotency_level=IdempotencyLevel.UNKNOWN,
             ),
-        }
+        },
     }
-    def say(self, request: example_dot_eliza__pb2.SayRequest, ctx: RequestContext) -> example_dot_eliza__pb2.SayResponse:
+
+    def say(
+        self, request: example_dot_eliza__pb2.SayRequest, ctx: RequestContext
+    ) -> example_dot_eliza__pb2.SayResponse:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
-    def converse(self, request: Iterator[example_dot_eliza__pb2.ConverseRequest], ctx: RequestContext) -> Iterator[example_dot_eliza__pb2.ConverseResponse]:
+
+    def converse(
+        self,
+        request: Iterator[example_dot_eliza__pb2.ConverseRequest],
+        ctx: RequestContext,
+    ) -> Iterator[example_dot_eliza__pb2.ConverseResponse]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
-    def introduce(self, request: example_dot_eliza__pb2.IntroduceRequest, ctx: RequestContext) -> Iterator[example_dot_eliza__pb2.IntroduceResponse]:
+
+    def introduce(
+        self, request: example_dot_eliza__pb2.IntroduceRequest, ctx: RequestContext
+    ) -> Iterator[example_dot_eliza__pb2.IntroduceResponse]:
         raise ConnecpyException(Code.UNIMPLEMENTED, "Not implemented")
 
 
 class ElizaServiceWSGIApplication(ConnecpyWSGIApplication):
-    def __init__(self, service: ElizaServiceSync, interceptors: Iterable[InterceptorSync]=(), read_max_bytes: int | None = None) -> None:
+    def __init__(
+        self,
+        service: ElizaServiceSync,
+        interceptors: Iterable[InterceptorSync] = (),
+        read_max_bytes: int | None = None,
+    ) -> None:
         super().__init__(
             endpoints={
                 "/connectrpc.eliza.v1.ElizaService/Say": EndpointSync.unary(
@@ -311,4 +342,3 @@ class ElizaServiceClientSync(ConnecpyClientSync):
             headers=headers,
             timeout_ms=timeout_ms,
         )
-
