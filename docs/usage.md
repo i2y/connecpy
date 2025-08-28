@@ -102,7 +102,7 @@ For access to response headers or trailers, wrap invocations with the `ResponseM
 
 ```python
 with ResponseMetadata() as meta:
-    response = eliza_client.call_say(req)
+    response = eliza_client.say(req)
     print(response.sentence)
     print(meta.headers())
     print(meta.trailers())
@@ -122,16 +122,16 @@ class ElizaServiceASGIApplication(service: ElizaService):
 Your implementation needs to follow the `ElizaService` protocol:
 
 ```python
-from tying import AsyncIterator
+from typing import AsyncIterator
 from connecpy.request import RequestContext
 from your_generated_code import eliza_pb2
 
 class ElizaServiceImpl:
     async def say(self, request: eliza_pb2.SayRequest, ctx: RequestContext) -> eliza_pb2.SayResponse:
-        return eliza_pb2.SayResponse(sentence=f"You said: {req.msg.sentence}")
+        return eliza_pb2.SayResponse(sentence=f"You said: {req.sentence}")
 
     async def converse(self, req: AsyncIterator[eliza_pb2.ConverseRequest]) -> AsyncIterator[eliza_pb2.ConverseResponse]:
-        for msg in req:
+        async for msg in req:
             yield eliza_pb2.ConverseResponse(sentence=f"You said: {msg.sentence}")
 ```
 
@@ -147,7 +147,7 @@ class ElizaServiceWSGIApplication(service: ElizaServiceSync):
 Your implementation needs to follow the `ElizaServiceSync` protocol:
 
 ```python
-from tying import Iterator
+from typing import Iterator
 from connecpy.request import RequestContext
 from your_generated_code import eliza_pb2
 
