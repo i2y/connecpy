@@ -12,9 +12,9 @@ from .code import Code
 class ConnectError(Exception):
     """An exception in a Connect RPC.
 
-    If a server raises a ConnecpyException, the same exception content will be
+    If a server raises a ConnectError, the same exception content will be
     raised on the client as well. Errors surfacing on the client side such as
-    timeouts will also be raised as a ConnecpyException with an appropriate
+    timeouts will also be raised as a ConnectError with an appropriate
     code.
     """
 
@@ -22,7 +22,7 @@ class ConnectError(Exception):
         self, code: Code, message: str, details: Iterable[Message] = ()
     ) -> None:
         """
-        Creates a new Connecpy exception.
+        Creates a new Connect error.
 
         Args:
             code: The error code.
