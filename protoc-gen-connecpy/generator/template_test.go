@@ -36,7 +36,7 @@ func TestConnecpyTemplate(t *testing.T) {
 				},
 			},
 			contains: []string{
-				"from collections.abc import AsyncIterator, Iterable, Iterator, Mapping",
+				"from collections.abc import Iterable, Mapping",
 				"class TestService(Protocol):",
 				"class TestServiceASGIApplication(ConnecpyASGIApplication):",
 				"def TestMethod",

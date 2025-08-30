@@ -2,7 +2,7 @@
 # source: example/eliza.proto
 
 from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
@@ -21,6 +21,35 @@ import example.eliza_pb2 as example_dot_eliza__pb2
 
 
 class ElizaService(Protocol):
+    """Service protocol for ElizaService."""
+
+    _service_info: ClassVar[dict] = {
+        "name": "connectrpc.eliza.v1.ElizaService",
+        "methods": {
+            "say": MethodInfo(
+                name="Say",
+                service_name="connectrpc.eliza.v1.ElizaService",
+                input=example_dot_eliza__pb2.SayRequest,
+                output=example_dot_eliza__pb2.SayResponse,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
+            "converse": MethodInfo(
+                name="Converse",
+                service_name="connectrpc.eliza.v1.ElizaService",
+                input=example_dot_eliza__pb2.ConverseRequest,
+                output=example_dot_eliza__pb2.ConverseResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            "introduce": MethodInfo(
+                name="Introduce",
+                service_name="connectrpc.eliza.v1.ElizaService",
+                input=example_dot_eliza__pb2.IntroduceRequest,
+                output=example_dot_eliza__pb2.IntroduceResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+        },
+    }
+
     async def say(
         self, request: example_dot_eliza__pb2.SayRequest, ctx: RequestContext
     ) -> example_dot_eliza__pb2.SayResponse:
@@ -155,6 +184,35 @@ class ElizaServiceClient(ConnecpyClient):
 
 
 class ElizaServiceSync(Protocol):
+    """Synchronous service protocol for ElizaService."""
+
+    _service_info: ClassVar[dict] = {
+        "name": "connectrpc.eliza.v1.ElizaService",
+        "methods": {
+            "say": MethodInfo(
+                name="Say",
+                service_name="connectrpc.eliza.v1.ElizaService",
+                input=example_dot_eliza__pb2.SayRequest,
+                output=example_dot_eliza__pb2.SayResponse,
+                idempotency_level=IdempotencyLevel.NO_SIDE_EFFECTS,
+            ),
+            "converse": MethodInfo(
+                name="Converse",
+                service_name="connectrpc.eliza.v1.ElizaService",
+                input=example_dot_eliza__pb2.ConverseRequest,
+                output=example_dot_eliza__pb2.ConverseResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            "introduce": MethodInfo(
+                name="Introduce",
+                service_name="connectrpc.eliza.v1.ElizaService",
+                input=example_dot_eliza__pb2.IntroduceRequest,
+                output=example_dot_eliza__pb2.IntroduceResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+        },
+    }
+
     def say(
         self, request: example_dot_eliza__pb2.SayRequest, ctx: RequestContext
     ) -> example_dot_eliza__pb2.SayResponse:

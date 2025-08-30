@@ -50,6 +50,10 @@ Repository = "https://github.com/i2y/connecpy.git"
 Issues = "https://github.com/i2y/connecpy/issues"
 Changelog = "https://github.com/i2y/connecpy/releases"
 
+[project.optional-dependencies]
+grpc = ["grpcio>=1.50.0"]
+types = ["types-grpcio"]
+
 [tool.uv]
 dev-dependencies = [
     "asgiref",
@@ -67,6 +71,7 @@ dev-dependencies = [
     "pytest-asyncio>=0.25.2",
     "pytest-cov",
     "ruff>=0.9.4",
+    "types-grpcio",
     "typing_extensions",
     "zstandard",
 ]
@@ -206,13 +211,16 @@ extend-ignore = [
     "PERF",
     "D",
 ]
+# Transport API needs to use Any for protocol definitions and has necessary runtime imports
+"src/connecpy/transport/*.py" = ["ANN401", "TC001", "TC002", "TC003", "PERF203"]
+"test/test_transport*.py" = ["ANN401"]
 
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
 
 [tool.ruff]
 # Don't run ruff on generated code from external plugins.
-extend-exclude = ["*_pb2.py", "*_pb2.pyi"]
+extend-exclude = ["*_pb2.py", "*_pb2.pyi", "*_pb2_grpc.py"]
 
 [tool.pyright]
 exclude = [
