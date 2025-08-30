@@ -1,4 +1,4 @@
-package connecpy
+package connectrpc
 
 // Work around Go resolution issue
 // https://github.com/googleapis/go-genproto/issues/1015#issuecomment-2698916360

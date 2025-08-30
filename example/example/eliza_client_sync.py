@@ -1,4 +1,4 @@
-from example.eliza_connecpy import ElizaServiceClientSync
+from example.eliza_connect import ElizaServiceClientSync
 from example.eliza_pb2 import IntroduceRequest, SayRequest
 
 

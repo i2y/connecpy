@@ -1,7 +1,7 @@
 // Copied from https://github.com/twitchtv/connecpy/blob/v5.10.2/example/service.proto
 syntax = "proto3";
 
-package i2y.connecpy.example;
+package connectrpc.example;
 
 import "google/protobuf/empty.proto";
 

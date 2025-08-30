@@ -1,8 +1,8 @@
 [project]
-name = "connecpy-example"
+name = "connect-python-example"
 version = "0.1.0"
 
-dependencies = ["connecpy", "flask", "protobuf", "starlette"]
+dependencies = ["connect-python", "flask", "protobuf", "starlette"]
 
 [tool.ruff]
 extend = "../pyproject.toml"

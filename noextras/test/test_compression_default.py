@@ -1,5 +1,5 @@
 import pytest
-from example.eliza_connecpy import (
+from example.eliza_connect import (
     ElizaService,
     ElizaServiceASGIApplication,
     ElizaServiceClient,

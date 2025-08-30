@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 
 import pytest
-from _util import maybe_patch_args_with_debug
+
+from ._util import maybe_patch_args_with_debug
 
 _current_dir = Path(__file__).parent
 _client_py_path = str(_current_dir / "client.py")

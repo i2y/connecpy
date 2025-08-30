@@ -9,21 +9,25 @@ from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Literal, TypeVar
 
 from _util import create_standard_streams
-from connecpy.code import Code
-from connecpy.exceptions import ConnecpyException
-from connecpy.request import RequestContext
-from connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
-from connectrpc.conformance.v1.server_compat_pb2 import (
+from connectrpc.code import Code
+from connectrpc.errors import ConnectError
+from connectrpc.request import RequestContext
+from google.protobuf.any import Any, pack
+from hypercorn.asyncio import serve as hypercorn_serve
+from hypercorn.config import Config as HypercornConfig
+from hypercorn.logging import Logger
+from pb.connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
+from pb.connectrpc.conformance.v1.server_compat_pb2 import (
     ServerCompatRequest,
     ServerCompatResponse,
 )
-from connectrpc.conformance.v1.service_connecpy import (
+from pb.connectrpc.conformance.v1.service_connect import (
     ConformanceService,
     ConformanceServiceASGIApplication,
     ConformanceServiceSync,
     ConformanceServiceWSGIApplication,
 )
-from connectrpc.conformance.v1.service_pb2 import (
+from pb.connectrpc.conformance.v1.service_pb2 import (
     BidiStreamRequest,
     BidiStreamResponse,
     ClientStreamRequest,
@@ -38,10 +42,6 @@ from connectrpc.conformance.v1.service_pb2 import (
     UnaryResponse,
     UnaryResponseDefinition,
 )
-from google.protobuf.any import Any, pack
-from hypercorn.asyncio import serve as hypercorn_serve
-from hypercorn.config import Config as HypercornConfig
-from hypercorn.logging import Logger
 
 if TYPE_CHECKING:
     from google.protobuf.message import Message
@@ -127,7 +127,7 @@ async def _handle_unary_response(
     request_info = _create_request_info(ctx, reqs)
 
     if definition.WhichOneof("response") == "error":
-        raise ConnecpyException(
+        raise ConnectError(
             code=_convert_code(definition.error.code),
             message=definition.error.message,
             details=[*definition.error.details, request_info],
@@ -191,7 +191,7 @@ class TestService(ConformanceService):
             details: list[Message] = [*definition.error.details]
             if not sent_message:
                 details.append(request_info)
-            raise ConnecpyException(
+            raise ConnectError(
                 code=_convert_code(definition.error.code),
                 message=definition.error.message,
                 details=details,
@@ -242,7 +242,7 @@ class TestService(ConformanceService):
             details: list[Message] = [*definition.error.details]
             if len(definition.response_data) == 0:
                 details.append(request_info)
-            raise ConnecpyException(
+            raise ConnectError(
                 code=_convert_code(definition.error.code),
                 message=definition.error.message,
                 details=details,
@@ -256,7 +256,7 @@ def _handle_unary_response_sync(
     request_info = _create_request_info(ctx, reqs)
 
     if definition.WhichOneof("response") == "error":
-        raise ConnecpyException(
+        raise ConnectError(
             code=_convert_code(definition.error.code),
             message=definition.error.message,
             details=[*definition.error.details, request_info],
@@ -320,7 +320,7 @@ class TestServiceSync(ConformanceServiceSync):
             details: list[Message] = [*definition.error.details]
             if not sent_message:
                 details.append(request_info)
-            raise ConnecpyException(
+            raise ConnectError(
                 code=_convert_code(definition.error.code),
                 message=definition.error.message,
                 details=details,
@@ -371,7 +371,7 @@ class TestServiceSync(ConformanceServiceSync):
             details: list[Message] = [*definition.error.details]
             if len(definition.response_data) == 0:
                 details.append(request_info)
-            raise ConnecpyException(
+            raise ConnectError(
                 code=_convert_code(definition.error.code),
                 message=definition.error.message,
                 details=details,

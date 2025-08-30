@@ -7,5 +7,5 @@ plugins:
   - local:
       - go
       - run
-      - ../protoc-gen-connecpy
+      - ../protoc-gen-connect-python
     out: .

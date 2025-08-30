@@ -1,12 +1,12 @@
 [project]
-name = "connecpy-noextras"
+name = "connect-python-noextras"
 version = "0.1.0"
 
 dependencies = [
-    "connecpy",
-    "connecpy-example",
-    "pytest>=8.3.4",
-    "pytest-asyncio>=0.25.2",
+    "connect-python",
+    "connect-python-example",
+    "pytest",
+    "pytest-asyncio",
     "pytest-cov",
 ]
 

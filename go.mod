@@ -1,4 +1,4 @@
-module github.com/i2y/connecpy/v2
+module github.com/connectrpc/connect-python
 
 go 1.24.3
 
