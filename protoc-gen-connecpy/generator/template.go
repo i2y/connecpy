@@ -52,12 +52,13 @@ import importlib
 {{end}}{{- $hasStreaming := false}}{{- range .Services}}{{- if .HasStreamingMethods}}{{- $hasStreaming = true}}{{- end}}{{- end}}
 from collections.abc import {{if $hasStreaming}}AsyncIterator, {{end}}Iterable{{if $hasStreaming}}, Iterator{{end}}, Mapping{{if .TransportAPI}}  # noqa: TC003{{end}}
 from typing import {{if .TransportAPI}}TYPE_CHECKING, {{end}}ClassVar, Protocol
-
 {{- range .Imports }}
 {{- if not .IsLocal }}
+
 {{if .Relative}}from . import {{.Name}}{{else}}import {{.Name}}{{end}} as {{.Alias}}
 {{- end}}
 {{- end}}
+
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException

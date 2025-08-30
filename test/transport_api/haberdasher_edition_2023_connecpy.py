@@ -4,8 +4,6 @@
 from collections.abc import Iterable, Mapping
 from typing import ClassVar, Protocol
 
-from . import haberdasher_edition_2023_pb2 as haberdasher__edition__2023__pb2
-
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
@@ -18,6 +16,8 @@ from connecpy.server import (
     Endpoint,
     EndpointSync,
 )
+
+from . import haberdasher_edition_2023_pb2 as haberdasher__edition__2023__pb2
 
 
 class Haberdasher(Protocol):

@@ -5,7 +5,6 @@ from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
 from typing import ClassVar, Protocol
 
 import google.protobuf.empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import haberdasher_pb2 as haberdasher__pb2
 
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
@@ -19,6 +18,8 @@ from connecpy.server import (
     Endpoint,
     EndpointSync,
 )
+
+from . import haberdasher_pb2 as haberdasher__pb2
 
 
 class Haberdasher(Protocol):
