@@ -14,6 +14,12 @@ import pytest
 def test_generated_transport_api():
     """Test that generated Transport API code works correctly."""
 
+    # Check if protoc is available
+    try:
+        subprocess.run(["protoc", "--version"], check=True, capture_output=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        pytest.skip("protoc not available")
+
     # Create a minimal proto file for testing
     proto_content = """
 syntax = "proto3";
@@ -96,6 +102,12 @@ service TestService {
 
 def test_transport_api_not_generated_by_default():
     """Test that Transport API is NOT generated without transport_api=true."""
+
+    # Check if protoc is available
+    try:
+        subprocess.run(["protoc", "--version"], check=True, capture_output=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        pytest.skip("protoc not available")
 
     proto_content = """
 syntax = "proto3";
