@@ -6,7 +6,7 @@ maintainers = [
     { name = "Anuraag Agrawal", email = "anuraaga@gmail.com" },
     { name = "Spencer Nelson", email = "spencer@firetiger.com" },
     { name = "Stefan VanBuren", email = "svanburen@buf.build" },
-    { name = "Yasushi Itoh", email = "i2y@todo" },
+    { name = "Yasushi Itoh", email = "i2y.may.roku@gmail.com" },
 ]
 requires-python = ">= 3.10"
 dependencies = ["httpx", "protobuf>=5.28"]
