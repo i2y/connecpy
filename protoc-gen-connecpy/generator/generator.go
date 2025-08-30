@@ -84,6 +84,7 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 		}
 
 		methods := svc.Methods()
+		hasStreamingMethods := false
 		for j := 0; j < methods.Len(); j++ {
 			method := methods.Get(j)
 			idempotencyLevel := "UNKNOWN"
@@ -99,10 +100,13 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 			endpointType := "unary"
 			if method.IsStreamingClient() && method.IsStreamingServer() {
 				endpointType = "bidi_stream"
+				hasStreamingMethods = true
 			} else if method.IsStreamingClient() {
 				endpointType = "client_stream"
+				hasStreamingMethods = true
 			} else if method.IsStreamingServer() {
 				endpointType = "server_stream"
+				hasStreamingMethods = true
 			} else if idempotencyLevel == "NO_SIDE_EFFECTS" {
 				noSideEffects = true
 			}
@@ -123,6 +127,7 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 
 			connecpySvc.Methods = append(connecpySvc.Methods, connecpyMethod)
 		}
+		connecpySvc.HasStreamingMethods = hasStreamingMethods
 		vars.Services = append(vars.Services, connecpySvc)
 	}
 

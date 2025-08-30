@@ -18,11 +18,12 @@ type ConnecpyTemplateVariables struct {
 }
 
 type ConnecpyService struct {
-	Package  string
-	Name     string
-	FullName string
-	Comment  string
-	Methods  []*ConnecpyMethod
+	Package             string
+	Name                string
+	FullName            string
+	Comment             string
+	Methods             []*ConnecpyMethod
+	HasStreamingMethods bool // Whether this service has any streaming methods
 }
 
 type ConnecpyMethod struct {
@@ -48,20 +49,21 @@ var ConnecpyTemplate = template.Must(template.New("ConnecpyTemplate").Parse(`# G
 from __future__ import annotations
 
 import importlib
-{{end}}from collections.abc import AsyncIterator, Iterable, Iterator, Mapping  # noqa: TC003
-from typing import TYPE_CHECKING, ClassVar, Protocol
+{{end}}{{- $hasStreaming := false}}{{- range .Services}}{{- if .HasStreamingMethods}}{{- $hasStreaming = true}}{{- end}}{{- end}}
+from collections.abc import {{if $hasStreaming}}AsyncIterator, {{end}}Iterable{{if $hasStreaming}}, Iterator{{end}}, Mapping{{if .TransportAPI}}  # noqa: TC003{{end}}
+from typing import {{if .TransportAPI}}TYPE_CHECKING, {{end}}ClassVar, Protocol
+
 {{- range .Imports }}
 {{- if not .IsLocal }}
-
 {{if .Relative}}from . import {{.Name}}{{else}}import {{.Name}}{{end}} as {{.Alias}}
 {{- end}}
 {{- end}}
 from connecpy.client import ConnecpyClient, ConnecpyClientSync
 from connecpy.code import Code
 from connecpy.exceptions import ConnecpyException
-from connecpy.interceptor import Interceptor, InterceptorSync  # noqa: TC001
+from connecpy.interceptor import Interceptor, InterceptorSync{{if .TransportAPI}}  # noqa: TC001{{end}}
 from connecpy.method import IdempotencyLevel, MethodInfo
-from connecpy.request import Headers, RequestContext  # noqa: TC001
+from connecpy.request import Headers, RequestContext{{if .TransportAPI}}  # noqa: TC001{{end}}
 from connecpy.server import (
     ConnecpyASGIApplication,
     ConnecpyWSGIApplication,
