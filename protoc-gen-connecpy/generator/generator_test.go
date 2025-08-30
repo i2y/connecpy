@@ -86,6 +86,49 @@ func TestGenerateConnecpyFile(t *testing.T) {
 			wantFile: "multi_connecpy.py",
 			wantErr:  false,
 		},
+		{
+			name: "service with streaming methods",
+			input: &descriptorpb.FileDescriptorProto{
+				Name:    proto.String("stream.proto"),
+				Package: proto.String("test"),
+				Service: []*descriptorpb.ServiceDescriptorProto{
+					{
+						Name: proto.String("StreamService"),
+						Method: []*descriptorpb.MethodDescriptorProto{
+							{
+								Name:            proto.String("ServerStream"),
+								InputType:       proto.String(".test.Request"),
+								OutputType:      proto.String(".test.Response"),
+								ServerStreaming: proto.Bool(true),
+							},
+							{
+								Name:            proto.String("ClientStream"),
+								InputType:       proto.String(".test.Request"),
+								OutputType:      proto.String(".test.Response"),
+								ClientStreaming: proto.Bool(true),
+							},
+							{
+								Name:            proto.String("BidiStream"),
+								InputType:       proto.String(".test.Request"),
+								OutputType:      proto.String(".test.Response"),
+								ClientStreaming: proto.Bool(true),
+								ServerStreaming: proto.Bool(true),
+							},
+						},
+					},
+				},
+				MessageType: []*descriptorpb.DescriptorProto{
+					{
+						Name: proto.String("Request"),
+					},
+					{
+						Name: proto.String("Response"),
+					},
+				},
+			},
+			wantFile: "stream_connecpy.py",
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -106,9 +149,38 @@ func TestGenerateConnecpyFile(t *testing.T) {
 				}
 
 				content := got.GetContent()
-				// Check for base imports (AsyncIterator and Iterator are only included for streaming methods)
+				// Check for base imports
 				if !strings.Contains(content, "from collections.abc import") || !strings.Contains(content, "Iterable") || !strings.Contains(content, "Mapping") {
 					t.Error("Generated code missing required imports")
+				}
+
+				// Check for streaming imports based on whether service has streaming methods
+				hasStreaming := false
+				for _, service := range tt.input.GetService() {
+					for _, method := range service.GetMethod() {
+						if method.GetClientStreaming() || method.GetServerStreaming() {
+							hasStreaming = true
+							break
+						}
+					}
+				}
+
+				if hasStreaming {
+					// Should have AsyncIterator and Iterator for streaming methods
+					if !strings.Contains(content, "AsyncIterator") {
+						t.Error("Generated code with streaming methods missing AsyncIterator import")
+					}
+					if !strings.Contains(content, "Iterator") {
+						t.Error("Generated code with streaming methods missing Iterator import")
+					}
+				} else {
+					// Should NOT have AsyncIterator and Iterator for non-streaming methods
+					if strings.Contains(content, "AsyncIterator") {
+						t.Error("Generated code without streaming methods should not have AsyncIterator import")
+					}
+					if strings.Contains(content, " Iterator,") || strings.Contains(content, "Iterator]") {
+						t.Error("Generated code without streaming methods should not have Iterator import")
+					}
 				}
 				if !strings.Contains(content, "class "+strings.Split(tt.input.GetService()[0].GetName(), ".")[0]) {
 					t.Error("Generated code missing service class")
