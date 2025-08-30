@@ -25,8 +25,8 @@ if TYPE_CHECKING:
     from connecpy.method import MethodInfo
 
 try:
-    import grpc
-    import grpc.aio
+    import grpc  # type: ignore[import-untyped]
+    import grpc.aio  # type: ignore[import-untyped]
 
     GRPC_AVAILABLE = True
 except ImportError:
@@ -314,7 +314,7 @@ class GrpcTransportAsync:
         msg = "Retry loop exited unexpectedly"
         raise RuntimeError(msg)
 
-    def _grpc_status_to_code(self, grpc_status: grpc.StatusCode) -> Code:  # type: ignore[name-defined]
+    def _grpc_status_to_code(self, grpc_status: grpc.StatusCode) -> Code:  # type: ignore[name-defined, type-arg]
         """Convert gRPC status code to Connect Code."""
         # Note: Connect doesn't have an OK code, only error codes
         if not GRPC_AVAILABLE:

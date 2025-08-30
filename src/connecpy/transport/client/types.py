@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from typing import TypeAlias
 
-    import grpc
-    import grpc.aio
+    import grpc  # type: ignore[import-untyped]
+    import grpc.aio  # type: ignore[import-untyped]
 
     GrpcChannelCredentials: TypeAlias = grpc.ChannelCredentials
     GrpcCompression: TypeAlias = grpc.Compression

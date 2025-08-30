@@ -6,17 +6,34 @@ from unittest.mock import patch
 import pytest
 
 try:
-    import grpc
-    import grpc.aio
+    import grpc  # type: ignore[import-untyped]
+    import grpc.aio  # type: ignore[import-untyped]
 except ImportError:
     pytest.skip("grpc not available", allow_module_level=True)
 
 from connecpy.method import IdempotencyLevel, MethodInfo
 from connecpy.transport.client import GrpcTransport, GrpcTransportAsync
-from example import haberdasher_pb2, haberdasher_pb2_grpc
+
+from . import haberdasher_pb2
+
+try:
+    from . import haberdasher_pb2_grpc  # type: ignore[import-not-found]
+except ImportError:
+    # haberdasher_pb2_grpc might not be generated, create a minimal stub
+    class HaberdasherServicer:
+        """Minimal servicer stub."""
+
+    haberdasher_pb2_grpc = type(
+        "Module",
+        (),
+        {
+            "HaberdasherServicer": HaberdasherServicer,
+            "add_HaberdasherServicer_to_server": lambda _service, _server: None,
+        },
+    )
 
 
-class StreamingHaberdasherService(haberdasher_pb2_grpc.HaberdasherServicer):
+class StreamingHaberdasherService(haberdasher_pb2_grpc.HaberdasherServicer):  # type: ignore[name-defined]
     """Test service with streaming methods."""
 
     def MakeHat(self, request, context):  # noqa: N802
@@ -60,7 +77,7 @@ def grpc_server():
     """Start a gRPC server with streaming support for testing."""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     service = StreamingHaberdasherService()
-    haberdasher_pb2_grpc.add_HaberdasherServicer_to_server(service, server)
+    haberdasher_pb2_grpc.add_HaberdasherServicer_to_server(service, server)  # type: ignore[attr-defined]
     port = server.add_insecure_port("[::]:0")
     server.start()
     yield port

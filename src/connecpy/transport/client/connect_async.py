@@ -222,6 +222,7 @@ class ConnectTransportAsync:
             )
         except httpx.TimeoutException as e:
             self._handle_timeout_error(e)
+            raise  # Unreachable, but satisfies type checker
 
     def _call_server_stream(
         self, method: MethodInfo, request: Any, options: CallOptions
@@ -237,6 +238,7 @@ class ConnectTransportAsync:
             )
         except httpx.TimeoutException as e:
             self._handle_timeout_error(e)
+            raise  # Unreachable, but satisfies type checker
 
     async def _call_client_stream(
         self, method: MethodInfo, stream: AsyncIterator[Any], options: CallOptions
@@ -252,6 +254,7 @@ class ConnectTransportAsync:
             )
         except httpx.TimeoutException as e:
             self._handle_timeout_error(e)
+            raise  # Unreachable, but satisfies type checker
 
     def _call_bidi_stream(
         self, method: MethodInfo, stream: AsyncIterator[Any], options: CallOptions
@@ -267,3 +270,4 @@ class ConnectTransportAsync:
             )
         except httpx.TimeoutException as e:
             self._handle_timeout_error(e)
+            raise  # Unreachable, but satisfies type checker

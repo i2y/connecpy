@@ -101,7 +101,7 @@ class TestGrpcErrorHandling(unittest.TestCase):
         )
 
         # Create a mock stream
-        mock_stream = [Mock(SerializeToString=lambda: b"test")]
+        mock_stream = iter([Mock(SerializeToString=lambda: b"test")])
 
         with pytest.raises(ConnecpyException) as context:
             transport.stream_unary(method, mock_stream, CallOptions())

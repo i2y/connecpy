@@ -5,16 +5,36 @@ from concurrent import futures
 import pytest
 
 try:
-    import grpc
+    import grpc  # type: ignore[import-untyped]
 except ImportError:
     pytest.skip("grpc not available", allow_module_level=True)
 
 from connecpy.method import IdempotencyLevel, MethodInfo
 from connecpy.transport.client import GrpcTransport
-from example import haberdasher_pb2, haberdasher_pb2_grpc
+
+from . import haberdasher_pb2
+
+try:
+    from . import haberdasher_pb2_grpc  # type: ignore[import-not-found]
+except ImportError:
+    # haberdasher_pb2_grpc might not be generated, create a minimal stub
+    class HaberdasherServicer:
+        """Minimal servicer stub."""
+
+        def MakeHat(self, request, context):  # noqa: N802
+            pass
+
+    haberdasher_pb2_grpc = type(
+        "Module",
+        (),
+        {
+            "HaberdasherServicer": HaberdasherServicer,
+            "add_HaberdasherServicer_to_server": lambda _service, _server: None,
+        },
+    )
 
 
-class SimpleHaberdasherService(haberdasher_pb2_grpc.HaberdasherServicer):
+class SimpleHaberdasherService(haberdasher_pb2_grpc.HaberdasherServicer):  # type: ignore[name-defined]
     """Simple test service."""
 
     def MakeHat(self, request, context):  # noqa: N802
@@ -28,7 +48,7 @@ def grpc_server():
     """Start a gRPC server for testing."""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     service = SimpleHaberdasherService()
-    haberdasher_pb2_grpc.add_HaberdasherServicer_to_server(service, server)
+    haberdasher_pb2_grpc.add_HaberdasherServicer_to_server(service, server)  # type: ignore[attr-defined]
     port = server.add_insecure_port("[::]:0")
     server.start()
     yield port
