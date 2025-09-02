@@ -139,10 +139,27 @@ func GenerateConnectFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.C
 	return resp, nil
 }
 
+func sanitizePythonName(name string) string {
+	// https://docs.python.org/3/reference/lexical_analysis.html#keywords
+	// with bytes and str
+	switch name {
+	case "False", "await", "else", "import", "pass",
+		"None", "break", "except", "in", "raise",
+		"True", "class", "finally", "is", "return",
+		"and", "continue", "for", "lambda", "try",
+		"as", "def", "from", "nonlocal", "while",
+		"assert", "del", "global", "not", "with",
+		"async", "elif", "if", "or", "yield",
+		"bytes", "str":
+		return name + "_"
+	}
+	return name
+}
+
 func pythonMethodName(name string, conf Config) string {
 	switch conf.Naming {
 	case NamingGoogle:
-		return name
+		return sanitizePythonName(name)
 	case NamingPEP:
 		if len(name) <= 1 {
 			return strings.ToLower(name)
@@ -158,7 +175,7 @@ func pythonMethodName(name string, conf Config) string {
 				buf = append(buf, byte(name[i]))
 			}
 		}
-		return string(buf)
+		return sanitizePythonName(string(buf))
 	default:
 		panic("Unknown naming, this is a bug in protoc-gen-connect")
 	}

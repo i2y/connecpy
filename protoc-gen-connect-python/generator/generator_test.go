@@ -119,9 +119,10 @@ func TestGenerateConnectFile(t *testing.T) {
 
 func TestGenerate(t *testing.T) {
 	tests := []struct {
-		name    string
-		req     *pluginpb.CodeGeneratorRequest
-		wantErr bool
+		name        string
+		req         *pluginpb.CodeGeneratorRequest
+		wantStrings []string
+		wantErr     bool
 	}{
 		{
 			name: "empty request",
@@ -153,6 +154,12 @@ func TestGenerate(t *testing.T) {
 										InputType:  proto.String(".otherpackage.OtherRequest"),
 										OutputType: proto.String(".otherpackage.OtherResponse"),
 									},
+									// Reserved keyword
+									{
+										Name:       proto.String("Try"),
+										InputType:  proto.String(".otherpackage.OtherRequest"),
+										OutputType: proto.String(".otherpackage.OtherResponse"),
+									},
 								},
 							},
 						},
@@ -179,7 +186,8 @@ func TestGenerate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
+			wantErr:     false,
+			wantStrings: []string{"def try_(self"},
 		},
 	}
 
@@ -196,6 +204,11 @@ func TestGenerate(t *testing.T) {
 				}
 				if len(resp.GetFile()) == 0 {
 					t.Error("Generate() returned no files")
+				}
+				for _, s := range tt.wantStrings {
+					if !strings.Contains(resp.GetFile()[0].GetContent(), s) {
+						t.Errorf("Generate() missing expected string: %v", s)
+					}
 				}
 			}
 		})
