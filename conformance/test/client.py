@@ -14,19 +14,17 @@ from connectrpc.client import ResponseMetadata
 from connectrpc.code import Code
 from connectrpc.errors import ConnectError
 from connectrpc.request import Headers
-from google.protobuf.any import Any
-from google.protobuf.message import Message
-from pb.connectrpc.conformance.v1.client_compat_pb2 import (
+from gen.connectrpc.conformance.v1.client_compat_pb2 import (
     ClientCompatRequest,
     ClientCompatResponse,
 )
-from pb.connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
-from pb.connectrpc.conformance.v1.config_pb2 import Codec, Compression, HTTPVersion
-from pb.connectrpc.conformance.v1.service_connect import (
+from gen.connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
+from gen.connectrpc.conformance.v1.config_pb2 import Codec, Compression, HTTPVersion
+from gen.connectrpc.conformance.v1.service_connect import (
     ConformanceServiceClient,
     ConformanceServiceClientSync,
 )
-from pb.connectrpc.conformance.v1.service_pb2 import (
+from gen.connectrpc.conformance.v1.service_pb2 import (
     BidiStreamRequest,
     ClientStreamRequest,
     ConformancePayload,
@@ -35,6 +33,8 @@ from pb.connectrpc.conformance.v1.service_pb2 import (
     UnaryRequest,
     UnimplementedRequest,
 )
+from google.protobuf.any import Any
+from google.protobuf.message import Message
 
 
 def _convert_code(error: Code) -> ConformanceCode:

@@ -22,7 +22,7 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from pb.connectrpc.conformance.v1 import config_pb2 as connectrpc_dot_conformance_dot_v1_dot_config__pb2
+from gen.connectrpc.conformance.v1 import config_pb2 as connectrpc_dot_conformance_dot_v1_dot_config__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n-connectrpc/conformance/v1/server_compat.proto\x12\x19\x63onnectrpc.conformance.v1\x1a&connectrpc/conformance/v1/config.proto\"\xde\x02\n\x13ServerCompatRequest\x12?\n\x08protocol\x18\x01 \x01(\x0e\x32#.connectrpc.conformance.v1.ProtocolR\x08protocol\x12I\n\x0chttp_version\x18\x02 \x01(\x0e\x32&.connectrpc.conformance.v1.HTTPVersionR\x0bhttpVersion\x12\x17\n\x07use_tls\x18\x04 \x01(\x08R\x06useTls\x12&\n\x0f\x63lient_tls_cert\x18\x05 \x01(\x0cR\rclientTlsCert\x12\x32\n\x15message_receive_limit\x18\x06 \x01(\rR\x13messageReceiveLimit\x12\x46\n\x0cserver_creds\x18\x07 \x01(\x0b\x32#.connectrpc.conformance.v1.TLSCredsR\x0bserverCreds\"Y\n\x14ServerCompatResponse\x12\x12\n\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n\x04port\x18\x02 \x01(\rR\x04port\x12\x19\n\x08pem_cert\x18\x03 \x01(\x0cR\x07pemCertb\x06proto3')

@@ -1,4 +1,4 @@
-from pb.connectrpc.conformance.v1 import config_pb2 as _config_pb2
+from gen.connectrpc.conformance.v1 import config_pb2 as _config_pb2
 from google.protobuf import any_pb2 as _any_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor

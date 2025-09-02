@@ -1,8 +1,8 @@
 version: 2
-dist: out
+dist: ../out
 project_name: protoc-gen-connect-python
 builds:
-  - main: ./protoc-gen-connect-python
+  - main: .
     env:
       - CGO_ENABLED=0
     targets:

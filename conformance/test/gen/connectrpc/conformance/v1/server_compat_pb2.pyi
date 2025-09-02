@@ -1,4 +1,4 @@
-from pb.connectrpc.conformance.v1 import config_pb2 as _config_pb2
+from gen.connectrpc.conformance.v1 import config_pb2 as _config_pb2
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from collections.abc import Mapping as _Mapping

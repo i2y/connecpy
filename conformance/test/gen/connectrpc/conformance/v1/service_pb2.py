@@ -22,7 +22,7 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from pb.connectrpc.conformance.v1 import config_pb2 as connectrpc_dot_conformance_dot_v1_dot_config__pb2
+from gen.connectrpc.conformance.v1 import config_pb2 as connectrpc_dot_conformance_dot_v1_dot_config__pb2
 from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
 
 

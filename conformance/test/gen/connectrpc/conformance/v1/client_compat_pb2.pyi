@@ -1,5 +1,5 @@
-from pb.connectrpc.conformance.v1 import config_pb2 as _config_pb2
-from pb.connectrpc.conformance.v1 import service_pb2 as _service_pb2
+from gen.connectrpc.conformance.v1 import config_pb2 as _config_pb2
+from gen.connectrpc.conformance.v1 import service_pb2 as _service_pb2
 from google.protobuf import any_pb2 as _any_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import struct_pb2 as _struct_pb2

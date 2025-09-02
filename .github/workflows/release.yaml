@@ -37,6 +37,7 @@ jobs:
         with:
           version: "~> v2"
           args: release --clean --skip publish
+          workdir: protoc-gen-connect-python
 
       - run: |
           uv sync --frozen

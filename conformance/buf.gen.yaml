@@ -3,13 +3,13 @@ inputs:
   - module: buf.build/connectrpc/conformance:v1.0.4
 plugins:
   - remote: buf.build/protocolbuffers/python:v32.0
-    out: test/pb
+    out: test/gen
   - remote: buf.build/protocolbuffers/pyi:v32.0
-    out: test/pb
+    out: test/gen
   - local:
       - go
       - run
       - ../protoc-gen-connect-python
-    out: test/pb
+    out: test/gen
     opt:
       - imports=relative

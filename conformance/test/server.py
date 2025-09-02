@@ -12,22 +12,18 @@ from _util import create_standard_streams
 from connectrpc.code import Code
 from connectrpc.errors import ConnectError
 from connectrpc.request import RequestContext
-from google.protobuf.any import Any, pack
-from hypercorn.asyncio import serve as hypercorn_serve
-from hypercorn.config import Config as HypercornConfig
-from hypercorn.logging import Logger
-from pb.connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
-from pb.connectrpc.conformance.v1.server_compat_pb2 import (
+from gen.connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
+from gen.connectrpc.conformance.v1.server_compat_pb2 import (
     ServerCompatRequest,
     ServerCompatResponse,
 )
-from pb.connectrpc.conformance.v1.service_connect import (
+from gen.connectrpc.conformance.v1.service_connect import (
     ConformanceService,
     ConformanceServiceASGIApplication,
     ConformanceServiceSync,
     ConformanceServiceWSGIApplication,
 )
-from pb.connectrpc.conformance.v1.service_pb2 import (
+from gen.connectrpc.conformance.v1.service_pb2 import (
     BidiStreamRequest,
     BidiStreamResponse,
     ClientStreamRequest,
@@ -42,6 +38,10 @@ from pb.connectrpc.conformance.v1.service_pb2 import (
     UnaryResponse,
     UnaryResponseDefinition,
 )
+from google.protobuf.any import Any, pack
+from hypercorn.asyncio import serve as hypercorn_serve
+from hypercorn.config import Config as HypercornConfig
+from hypercorn.logging import Logger
 
 if TYPE_CHECKING:
     from google.protobuf.message import Message

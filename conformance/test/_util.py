@@ -1,6 +1,8 @@
 import asyncio
 import sys
 
+VERSION_CONFORMANCE = "v1.0.4"
+
 
 async def create_standard_streams():
     loop = asyncio.get_event_loop()

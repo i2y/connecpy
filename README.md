@@ -30,6 +30,7 @@ pip install connect-python
 ```
 
 Or with your preferred package manager:
+
 ```bash
 # Using uv
 uv add connect-python
@@ -40,52 +41,31 @@ poetry add connect-python
 
 ### Install the code generator
 
-The protoc plugin can be installed in several ways:
+With a protobuf definition in hand, you can generate stub code. This is
+easiest using buf, but you can also use protoc if you're feeling
+masochistic.
 
-#### Option 1: Via pip (simplest)
-```bash
-pip install protoc-gen-connect-python
-```
+Install the compiler (e.g. `pip install protoc-gen-connect-python`), and
+it can be referenced as `protoc-gen-connect-python`.
 
-#### Option 2: Quick install script (Linux/macOS)
-```bash
-curl -sSL https://raw.githubusercontent.com/connectrpc/connect-python/main/install.sh | bash
-```
-
-#### Option 3: Manual download
-Download the appropriate binary for your platform from [GitHub Releases](https://github.com/connectrpc/connect-python/releases) and add it to your PATH.
-
-## Quick Start
-
-### Code Generation
-
-With a protobuf definition in hand, you can generate stub code using either `buf` or `protoc`.
-
-#### Using buf (recommended)
-
-Create a `buf.gen.yaml`:
+A reasonable `buf.gen.yaml`:
 
 ```yaml
 version: v2
 plugins:
   - remote: buf.build/protocolbuffers/python
-    out: gen
+    out: .
   - remote: buf.build/protocolbuffers/pyi
-    out: gen
-  - local: protoc-gen-connect-python
-    out: gen
+    out: .
+  - local: .venv/bin/protoc-gen-connect-python
+    out: .
 ```
 
-Then run:
-```bash
-buf generate
-```
+`protoc-gen-connect-python` is only needed for code generation. Your actual
+application should include `connect-python` as a dependency for the runtime
+component.
 
-#### Using protoc
-
-```bash
-protoc --python_out=gen --pyi_out=gen --connect-python_out=gen your_service.proto
-```
+For more usage details, see the [docs](./docs/usage.md).
 
 ### Basic Client Usage
 
@@ -101,7 +81,7 @@ async def main():
             base_url="https://api.example.com",
             session=session
         )
-        
+
         # Make a unary RPC call
         response = await client.say_hello(HelloRequest(name="World"))
         print(response.message)  # "Hello, World!"
@@ -139,7 +119,7 @@ def main():
             base_url="https://api.example.com",
             session=session
         )
-        
+
         # Make a unary RPC call
         response = client.say_hello(HelloRequest(name="World"))
         print(response.message)  # "Hello, World!"
@@ -160,6 +140,7 @@ connect-python supports all RPC streaming types:
 - **Bidirectional Streaming**: Multiple requests, multiple responses
 
 ### Server Streaming
+
 Single request, multiple responses:
 
 ```python
@@ -174,6 +155,7 @@ async for hat in client.make_hats(Size(inches=12)):
 ```
 
 ### Client Streaming
+
 Multiple requests, single response:
 
 ```python
@@ -195,6 +177,7 @@ summary = await client.collect_sizes(send_sizes())
 ```
 
 ### Bidirectional Streaming
+
 Multiple requests and responses:
 
 ```python
@@ -215,6 +198,7 @@ async for response in client.converse(chat()):
 ```
 
 ### Streaming Notes
+
 - **HTTP/2 ASGI servers** (Hypercorn, Daphne): Support all streaming types including full-duplex bidirectional
 - **HTTP/1.1 servers**: Support half-duplex bidirectional streaming only
 - **WSGI servers**: Support streaming but not full-duplex bidirectional due to protocol limitations
@@ -232,6 +216,7 @@ The `example/` directory contains complete working examples demonstrating all fe
 - **Integration examples**: Starlette, Flask, and other frameworks
 
 Run the Eliza example:
+
 ```bash
 # Start the server
 cd example
@@ -250,11 +235,13 @@ python -m example.eliza_client
 ## Server Runtime Options
 
 For ASGI servers:
+
 - [Uvicorn](https://www.uvicorn.org/) - Lightning-fast ASGI server
 - [Daphne](https://github.com/django/daphne) - Django Channels' ASGI server with HTTP/2 support
 - [Hypercorn](https://gitlab.com/pgjones/hypercorn) - ASGI server with HTTP/2 and HTTP/3 support
 
 For WSGI servers:
+
 - [Gunicorn](https://gunicorn.org/) - Python WSGI HTTP Server
 - [uWSGI](https://uwsgi-docs.readthedocs.io/) - Full-featured application server
 - Any WSGI-compliant server
@@ -275,7 +262,7 @@ class YourServiceImpl(YourService):
     def your_method(self, request: Request, ctx: RequestContext) -> Response:
         # Synchronous implementation
         return Response(message="Hello from WSGI")
-    
+
     # WSGI also supports streaming (except full-duplex bidirectional)
     def stream_data(self, request: Request, ctx: RequestContext) -> Iterator[Response]:
         for i in range(3):
@@ -348,6 +335,7 @@ service YourService {
 ```
 
 Clients can use GET requests automatically:
+
 ```python
 # The client will use GET for idempotent methods
 response = await client.get_data(request)

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from ._util import maybe_patch_args_with_debug
+from ._util import VERSION_CONFORMANCE, maybe_patch_args_with_debug
 
 _current_dir = Path(__file__).parent
 _server_py_path = str(_current_dir / "server.py")
@@ -29,8 +29,8 @@ def test_server_sync() -> None:
     result = subprocess.run(
         [
             "go",
-            "tool",
-            "connectconformance",
+            "run",
+            f"connectrpc.com/conformance/cmd/connectconformance@{VERSION_CONFORMANCE}",
             "--conf",
             _config_path,
             "--mode",
@@ -66,8 +66,8 @@ def test_server_async() -> None:
     result = subprocess.run(
         [
             "go",
-            "tool",
-            "connectconformance",
+            "run",
+            f"connectrpc.com/conformance/cmd/connectconformance@{VERSION_CONFORMANCE}",
             "--conf",
             _config_path,
             "--mode",
