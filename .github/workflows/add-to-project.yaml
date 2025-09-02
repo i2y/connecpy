@@ -14,6 +14,9 @@ on:
     types:
       - created
 
+# GitHub token created from secret so default token not used.
+permissions: {}
+
 jobs:
   call-workflow-add-to-project:
     name: Call workflow to add issue to project
