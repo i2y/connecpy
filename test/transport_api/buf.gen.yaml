@@ -1,0 +1,14 @@
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/python:v32.0
+    out: transport_api
+  - remote: buf.build/protocolbuffers/pyi:v32.0
+    out: transport_api
+  - local:
+      - go
+      - run
+      - /Users/i2y/connecpy/protoc-gen-connecpy
+    out: transport_api
+    opt:
+      - imports=relative
+      - transport_api=true

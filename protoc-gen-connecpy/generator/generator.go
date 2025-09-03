@@ -67,9 +67,10 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 	moduleName := strings.Join(strings.Split(fileNameWithoutSuffix, "/"), ".")
 
 	vars := ConnecpyTemplateVariables{
-		FileName:   filename,
-		ModuleName: moduleName,
-		Imports:    importStatements(fd, conf),
+		FileName:     filename,
+		ModuleName:   moduleName,
+		Imports:      importStatements(fd, conf),
+		TransportAPI: conf.TransportAPI,
 	}
 
 	svcs := fd.Services()
@@ -83,6 +84,7 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 		}
 
 		methods := svc.Methods()
+		hasStreamingMethods := false
 		for j := 0; j < methods.Len(); j++ {
 			method := methods.Get(j)
 			idempotencyLevel := "UNKNOWN"
@@ -98,10 +100,13 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 			endpointType := "unary"
 			if method.IsStreamingClient() && method.IsStreamingServer() {
 				endpointType = "bidi_stream"
+				hasStreamingMethods = true
 			} else if method.IsStreamingClient() {
 				endpointType = "client_stream"
+				hasStreamingMethods = true
 			} else if method.IsStreamingServer() {
 				endpointType = "server_stream"
+				hasStreamingMethods = true
 			} else if idempotencyLevel == "NO_SIDE_EFFECTS" {
 				noSideEffects = true
 			}
@@ -122,6 +127,7 @@ func GenerateConnecpyFile(fd protoreflect.FileDescriptor, conf Config) (*plugin.
 
 			connecpySvc.Methods = append(connecpySvc.Methods, connecpyMethod)
 		}
+		connecpySvc.HasStreamingMethods = hasStreamingMethods
 		vars.Services = append(vars.Services, connecpySvc)
 	}
 
@@ -232,8 +238,9 @@ func lastPart(imp string) string {
 func generateImport(pkg string, conf Config, isLocal bool) (string, ImportStatement) {
 	name := moduleName(pkg)
 	imp := ImportStatement{
-		Name:  name,
-		Alias: moduleAlias(pkg),
+		Name:    name,
+		Alias:   moduleAlias(pkg),
+		IsLocal: isLocal,
 	}
 	if isLocal && conf.Imports == ImportsRelative {
 		name = lastPart(name)
