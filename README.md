@@ -46,7 +46,8 @@ easiest using buf, but you can also use protoc if you're feeling
 masochistic.
 
 Install the compiler (e.g. `pip install protoc-gen-connect-python`), and
-it can be referenced as `protoc-gen-connect-python`.
+it can be referenced as `protoc-gen-connect-python`. Alternatively, download
+a precompiled binary from the [releases](https://github.com/connectrpc/connect-python/releases).
 
 A reasonable `buf.gen.yaml`:
 
