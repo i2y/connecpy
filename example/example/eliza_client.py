@@ -1,6 +1,6 @@
 import asyncio
 
-from example.eliza_connecpy import ElizaServiceClient
+from example.eliza_connect import ElizaServiceClient
 from example.eliza_pb2 import ConverseRequest, IntroduceRequest, SayRequest
 
 

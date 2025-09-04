@@ -16,10 +16,10 @@ from httpx import (
     WSGITransport,
 )
 
-from connecpy.code import Code
-from connecpy.exceptions import ConnecpyException
+from connectrpc.code import Code
+from connectrpc.errors import ConnectError
 
-from .haberdasher_connecpy import (
+from .haberdasher_connect import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
@@ -52,13 +52,13 @@ _errors = [
 @pytest.mark.parametrize(("code", "message", "http_status"), _errors)
 def test_sync_errors(code: Code, message: str, http_status: int) -> None:
     class ErrorHaberdasherSync(HaberdasherSync):
-        def __init__(self, exception: ConnecpyException) -> None:
+        def __init__(self, exception: ConnectError) -> None:
             self._exception = exception
 
         def make_hat(self, request, ctx) -> NoReturn:
             raise self._exception
 
-    haberdasher = ErrorHaberdasherSync(ConnecpyException(code, message))
+    haberdasher = ErrorHaberdasherSync(ConnectError(code, message))
     app = HaberdasherWSGIApplication(haberdasher)
     transport = WSGITransport(app)
 
@@ -72,7 +72,7 @@ def test_sync_errors(code: Code, message: str, http_status: int) -> None:
 
     with (
         HaberdasherClientSync("http://localhost", session=session) as client,
-        pytest.raises(ConnecpyException) as exc_info,
+        pytest.raises(ConnectError) as exc_info,
     ):
         client.make_hat(request=Size(inches=10))
 
@@ -86,13 +86,13 @@ def test_sync_errors(code: Code, message: str, http_status: int) -> None:
 @pytest.mark.parametrize(("code", "message", "http_status"), _errors)
 async def test_async_errors(code: Code, message: str, http_status: int) -> None:
     class ErrorHaberdasher(Haberdasher):
-        def __init__(self, exception: ConnecpyException) -> None:
+        def __init__(self, exception: ConnectError) -> None:
             self._exception = exception
 
         async def make_hat(self, request, ctx) -> NoReturn:
             raise self._exception
 
-    haberdasher = ErrorHaberdasher(ConnecpyException(code, message))
+    haberdasher = ErrorHaberdasher(ConnectError(code, message))
     app = HaberdasherASGIApplication(haberdasher)
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
 
@@ -108,7 +108,7 @@ async def test_async_errors(code: Code, message: str, http_status: int) -> None:
         ) as session,
         HaberdasherClient("http://localhost", session=session) as client,
     ):
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
             await client.make_hat(request=Size(inches=10))
 
     assert exc_info.value.code == code
@@ -170,7 +170,7 @@ def test_sync_http_errors(response_status, response_kwargs, code, message) -> No
         HaberdasherClientSync(
             "http://localhost", session=Client(transport=transport)
         ) as client,
-        pytest.raises(ConnecpyException) as exc_info,
+        pytest.raises(ConnectError) as exc_info,
     ):
         client.make_hat(request=Size(inches=10))
     assert exc_info.value.code == code
@@ -188,7 +188,7 @@ async def test_async_http_errors(
     async with HaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)
     ) as client:
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
             await client.make_hat(request=Size(inches=10))
     assert exc_info.value.code == code
     assert exc_info.value.message == message
@@ -197,7 +197,7 @@ async def test_async_http_errors(
 _client_errors = [
     pytest.param(
         "PUT",
-        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        "/connectrpc.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
         HTTPStatus.METHOD_NOT_ALLOWED,
@@ -224,7 +224,7 @@ _client_errors = [
     ),
     pytest.param(
         "POST",
-        "/i2y.connecpy.example.Haberdasher/notmethod",
+        "/connectrpc.example.Haberdasher/notmethod",
         {"Content-Type": "application/proto"},
         Size(inches=10).SerializeToString(),
         HTTPStatus.NOT_FOUND,
@@ -233,7 +233,7 @@ _client_errors = [
     ),
     pytest.param(
         "POST",
-        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        "/connectrpc.example.Haberdasher/MakeHat",
         {"Content-Type": "text/html"},
         Size(inches=10).SerializeToString(),
         HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
@@ -242,7 +242,7 @@ _client_errors = [
     ),
     pytest.param(
         "POST",
-        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        "/connectrpc.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto", "connect-protocol-version": "2"},
         Size(inches=10).SerializeToString(),
         HTTPStatus.BAD_REQUEST,
@@ -251,7 +251,7 @@ _client_errors = [
     ),
     pytest.param(
         "POST",
-        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        "/connectrpc.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto", "connect-timeout-ms": "10000000000"},
         Size(inches=10).SerializeToString(),
         HTTPStatus.BAD_REQUEST,
@@ -260,7 +260,7 @@ _client_errors = [
     ),
     pytest.param(
         "POST",
-        "/i2y.connecpy.example.Haberdasher/MakeHat",
+        "/connectrpc.example.Haberdasher/MakeHat",
         {"Content-Type": "application/proto", "connect-timeout-ms": "goodbeer"},
         Size(inches=10).SerializeToString(),
         HTTPStatus.BAD_REQUEST,
@@ -369,7 +369,7 @@ def test_sync_client_timeout(
             timeout_ms=client_timeout_ms,
             session=session,
         ) as client,
-        pytest.raises(ConnecpyException) as exc_info,
+        pytest.raises(ConnectError) as exc_info,
     ):
         client.make_hat(request=Size(inches=10), timeout_ms=call_timeout_ms)
 
@@ -403,7 +403,7 @@ async def test_async_client_timeout(
             session=session,
         ) as client,
     ):
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
             await client.make_hat(request=Size(inches=10), timeout_ms=call_timeout_ms)
 
     assert exc_info.value.code == Code.DEADLINE_EXCEEDED

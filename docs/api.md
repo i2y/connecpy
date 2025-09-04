@@ -1,9 +1,9 @@
 # API Reference
 
-::: connecpy.client
-::: connecpy.code
-::: connecpy.exceptions
-::: connecpy.interceptor
-::: connecpy.method
-::: connecpy.request
-::: connecpy.server
+::: connectrpc.client
+::: connectrpc.code
+::: connectrpc.exceptions
+::: connectrpc.interceptor
+::: connectrpc.method
+::: connectrpc.request
+::: connectrpc.server

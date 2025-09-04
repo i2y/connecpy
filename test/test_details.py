@@ -4,10 +4,10 @@ import pytest
 from google.protobuf.struct_pb2 import Struct, Value
 from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
-from connecpy.code import Code
-from connecpy.exceptions import ConnecpyException, pack_any
+from connectrpc.code import Code
+from connectrpc.errors import ConnectError, pack_any
 
-from .haberdasher_connecpy import (
+from .haberdasher_connect import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
@@ -21,7 +21,7 @@ from .haberdasher_pb2 import Size
 def test_details_sync() -> None:
     class DetailsHaberdasherSync(HaberdasherSync):
         def make_hat(self, request, ctx) -> NoReturn:
-            raise ConnecpyException(
+            raise ConnectError(
                 Code.RESOURCE_EXHAUSTED,
                 "Resource exhausted",
                 details=[
@@ -35,7 +35,7 @@ def test_details_sync() -> None:
         HaberdasherClientSync(
             "http://localhost", session=Client(transport=WSGITransport(app=app))
         ) as client,
-        pytest.raises(ConnecpyException) as exc_info,
+        pytest.raises(ConnectError) as exc_info,
     ):
         client.make_hat(request=Size(inches=10))
     assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
@@ -53,7 +53,7 @@ def test_details_sync() -> None:
 async def test_details_async() -> None:
     class DetailsHaberdasher(Haberdasher):
         async def make_hat(self, request, ctx) -> NoReturn:
-            raise ConnecpyException(
+            raise ConnectError(
                 Code.RESOURCE_EXHAUSTED,
                 "Resource exhausted",
                 details=[
@@ -67,7 +67,7 @@ async def test_details_async() -> None:
     async with HaberdasherClient(
         "http://localhost", session=AsyncClient(transport=transport)
     ) as client:
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
             await client.make_hat(request=Size(inches=10))
     assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
     assert exc_info.value.message == "Resource exhausted"

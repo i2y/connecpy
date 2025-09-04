@@ -1,7 +1,7 @@
 import time
 from collections.abc import Iterator
 
-from connecpy.request import RequestContext
+from connectrpc.request import RequestContext
 from flask import Flask
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
@@ -15,7 +15,7 @@ from example.eliza_pb2 import (
 )
 
 from . import _eliza
-from .eliza_connecpy import ElizaServiceSync, ElizaServiceWSGIApplication
+from .eliza_connect import ElizaServiceSync, ElizaServiceWSGIApplication
 
 
 class DemoElizaServiceSync(ElizaServiceSync):
