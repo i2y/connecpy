@@ -41,7 +41,7 @@ def main() -> None:
         bin_dir = Path(__file__).parent / ".." / "out" / "bin"
         shutil.rmtree(bin_dir, ignore_errors=True)
         bin_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(exe_path, bin_dir / exe_path.name)
+        shutil.copy2(exe_path, bin_dir / exe_path.name)
         subprocess.run(["uv", "build", "--wheel"], check=True)  # noqa: S607
         dist_dir = Path(__file__).parent / ".." / "dist"
         built_wheel = next(dist_dir.glob("*-py3-none-any.whl"))
