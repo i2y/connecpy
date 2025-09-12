@@ -9,6 +9,7 @@ import httpx
 from httpx import USE_CLIENT_DEFAULT, Timeout
 
 from . import _client_shared
+from ._asyncio_timeout import timeout as asyncio_timeout
 from ._codec import Codec, get_proto_binary_codec, get_proto_json_codec
 from ._compression import Compression
 from ._envelope import EnvelopeReader, EnvelopeWriter
@@ -349,39 +350,39 @@ class ConnecpyClient:
                 request, self._codec, self._send_compression
             )
 
-            resp = await wait_for(
-                self._session.post(
+            async with (
+                asyncio_timeout(timeout_s),
+                self._session.stream(
+                    method="POST",
                     url=url,
                     headers=request_headers,
                     content=request_data,
                     timeout=timeout,
-                ),
-                timeout_s,
-            )
-
-            compression = _client_shared.validate_response_content_encoding(
-                resp.headers.get(CONNECT_STREAMING_HEADER_COMPRESSION, "")
-            )
-            _client_shared.validate_stream_response_content_type(
-                self._codec.name(), resp.headers.get("content-type", "")
-            )
-            _client_shared.handle_response_headers(resp.headers)
-
-            if resp.status_code == 200:
-                reader = EnvelopeReader(
-                    ctx.method().output, self._codec, compression, self._read_max_bytes
+                ) as resp,
+            ):
+                compression = _client_shared.validate_response_content_encoding(
+                    resp.headers.get(CONNECT_STREAMING_HEADER_COMPRESSION, "")
                 )
-                try:
+                _client_shared.validate_stream_response_content_type(
+                    self._codec.name(), resp.headers.get("content-type", "")
+                )
+                _client_shared.handle_response_headers(resp.headers)
+
+                if resp.status_code == 200:
+                    reader = EnvelopeReader(
+                        ctx.method().output,
+                        self._codec,
+                        compression,
+                        self._read_max_bytes,
+                    )
                     async for chunk in resp.aiter_bytes():
                         for message in reader.feed(chunk):
                             yield message
                             # Check for cancellation each message. While this seems heavyweight,
                             # conformance tests require it.
                             await sleep(0)
-                finally:
-                    await resp.aclose()
-            else:
-                raise ConnectWireError.from_response(resp).to_exception()
+                else:
+                    raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError, asyncio.TimeoutError) as e:
             raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:

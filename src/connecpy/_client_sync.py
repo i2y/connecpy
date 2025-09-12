@@ -335,29 +335,32 @@ class ConnecpyClientSync:
                 request, self._codec, self._send_compression
             )
 
-            resp = self._session.post(
-                url=url, headers=request_headers, content=request_data, timeout=timeout
-            )
-
-            compression = _client_shared.validate_response_content_encoding(
-                resp.headers.get(CONNECT_STREAMING_HEADER_COMPRESSION, "")
-            )
-            _client_shared.validate_stream_response_content_type(
-                self._codec.name(), resp.headers.get("content-type", "")
-            )
-            _client_shared.handle_response_headers(resp.headers)
-
-            if resp.status_code == 200:
-                reader = EnvelopeReader(
-                    ctx.method().output, self._codec, compression, self._read_max_bytes
+            with self._session.stream(
+                method="POST",
+                url=url,
+                headers=request_headers,
+                content=request_data,
+                timeout=timeout,
+            ) as resp:
+                compression = _client_shared.validate_response_content_encoding(
+                    resp.headers.get(CONNECT_STREAMING_HEADER_COMPRESSION, "")
                 )
-                try:
+                _client_shared.validate_stream_response_content_type(
+                    self._codec.name(), resp.headers.get("content-type", "")
+                )
+                _client_shared.handle_response_headers(resp.headers)
+
+                if resp.status_code == 200:
+                    reader = EnvelopeReader(
+                        ctx.method().output,
+                        self._codec,
+                        compression,
+                        self._read_max_bytes,
+                    )
                     for chunk in resp.iter_bytes():
                         yield from reader.feed(chunk)
-                finally:
-                    resp.close()
-            else:
-                raise ConnectWireError.from_response(resp).to_exception()
+                else:
+                    raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError) as e:
             raise ConnecpyException(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnecpyException:

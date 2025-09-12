@@ -43,6 +43,7 @@ curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTO
 #### Option 2: Manual Download
 
 1. **Download the appropriate archive for your platform** from [GitHub Releases](https://github.com/i2y/connecpy/releases/latest):
+
    - **Linux AMD64**: `protoc-gen-connecpy_VERSION_linux_amd64.tar.gz`
    - **Linux ARM64**: `protoc-gen-connecpy_VERSION_linux_arm64.tar.gz`
    - **macOS Intel**: `protoc-gen-connecpy_VERSION_darwin_amd64.tar.gz`
@@ -53,13 +54,14 @@ curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTO
 2. **Extract and install the binary:**
 
    **Linux/macOS:**
+
    ```bash
    # Extract the archive
    tar -xzf protoc-gen-connecpy_*.tar.gz
-   
+
    # Make executable (if needed)
    chmod +x protoc-gen-connecpy
-   
+
    # Move to a directory in PATH
    sudo mv protoc-gen-connecpy /usr/local/bin/
    # Or for user-only installation:
@@ -69,10 +71,11 @@ curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTO
    ```
 
    **Windows (PowerShell):**
+
    ```powershell
    # Extract the archive
    Expand-Archive protoc-gen-connecpy_*.zip -DestinationPath .
-   
+
    # Move to a directory in PATH, for example:
    Move-Item protoc-gen-connecpy.exe C:\Tools\
    # Then add C:\Tools to your PATH environment variable:
@@ -80,16 +83,18 @@ curl -sSL https://raw.githubusercontent.com/i2y/connecpy/main/install.sh | PROTO
    ```
 
 3. **Verify installation:**
+
    ```bash
    # Check if the plugin is accessible
    which protoc-gen-connecpy  # Linux/macOS
    where protoc-gen-connecpy  # Windows
-   
+
    # Test with protoc (requires a .proto file)
    protoc --connecpy_out=. --connecpy_opt=paths=source_relative test.proto
    ```
 
 #### Option 3: Install with Go
+
 If you have Go installed, you can install the plugin directly:
 
 ```sh
@@ -488,6 +493,7 @@ Bidirectional streaming RPCs allow both client and server to send multiple messa
 
    - Both `ConnecpyClient` (async) and `ConnecpyClientSync` support receiving streaming responses
    - Both support sending streaming requests (client streaming)
+   - Full-duplex bidirectional streaming is currently not supported
 
 3. **Resource Management**: When using streaming responses, resource will be cleaned up when the returned iterator completes or is garbage collected.
 
