@@ -330,6 +330,7 @@ class ConnecpyClientSync:
         else:
             timeout = USE_CLIENT_DEFAULT
 
+        stream_error: Exception | None = None
         try:
             request_data = _streaming_request_content(
                 request, self._codec, self._send_compression
@@ -357,8 +358,12 @@ class ConnecpyClientSync:
                         compression,
                         self._read_max_bytes,
                     )
-                    for chunk in resp.iter_bytes():
-                        yield from reader.feed(chunk)
+                    try:
+                        for chunk in resp.iter_bytes():
+                            yield from reader.feed(chunk)
+                    except ConnecpyException as e:
+                        stream_error = e
+                        raise
                 else:
                     raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError) as e:
@@ -366,6 +371,12 @@ class ConnecpyClientSync:
         except ConnecpyException:
             raise
         except Exception as e:
+            # If a context manager's exit raises an exception, it overwrites any raised
+            # by our own stream handling. This seems to happen when we end the response without
+            # fully consuming it due to message limits. It should always be fine to prioritize
+            # the stream error here.
+            if stream_error is not None:
+                raise stream_error from None
             raise ConnecpyException(Code.UNAVAILABLE, str(e)) from e
 
 
