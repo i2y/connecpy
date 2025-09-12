@@ -5,7 +5,7 @@
 ### Asynchronous Client
 
 ```python
-from your_generated_code.eliza_connecpy import ElizaServiceClient
+from your_generated_code.eliza_connect import ElizaServiceClient
 from your_generated_code import eliza_pb2
 
 async def main():
@@ -38,7 +38,7 @@ async def main():
 ### Synchronous Client
 
 ```python
-from your_generated_code.eliza_connecpy import ElizaServiceClientSync
+from your_generated_code.eliza_connect import ElizaServiceClientSync
 from your_generated_code import eliza_pb2
 
 # Create client
@@ -123,7 +123,7 @@ Your implementation needs to follow the `ElizaService` protocol:
 
 ```python
 from typing import AsyncIterator
-from connecpy.request import RequestContext
+from connectrpc.request import RequestContext
 from your_generated_code import eliza_pb2
 
 class ElizaServiceImpl:
@@ -148,7 +148,7 @@ Your implementation needs to follow the `ElizaServiceSync` protocol:
 
 ```python
 from typing import Iterator
-from connecpy.request import RequestContext
+from connectrpc.request import RequestContext
 from your_generated_code import eliza_pb2
 
 class ElizaServiceImpl:

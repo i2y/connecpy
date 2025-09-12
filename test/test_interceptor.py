@@ -4,9 +4,9 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
-from connecpy.request import RequestContext
+from connectrpc.request import RequestContext
 
-from .haberdasher_connecpy import (
+from .haberdasher_connect import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,

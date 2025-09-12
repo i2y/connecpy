@@ -2,13 +2,13 @@ import asyncio
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, cast
 
-from connecpy.request import RequestContext
+from connectrpc.request import RequestContext
 from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.routing import Mount, Route
 
 from example import _eliza
-from example.eliza_connecpy import ElizaService, ElizaServiceASGIApplication
+from example.eliza_connect import ElizaService, ElizaServiceASGIApplication
 from example.eliza_pb2 import (
     ConverseRequest,
     ConverseResponse,

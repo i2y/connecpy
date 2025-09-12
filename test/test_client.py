@@ -1,9 +1,9 @@
 import pytest
 from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
-from connecpy.client import ResponseMetadata
+from connectrpc.client import ResponseMetadata
 
-from .haberdasher_connecpy import (
+from .haberdasher_connect import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,

@@ -10,21 +10,21 @@ from typing import Literal, TypeVar
 
 import httpx
 from _util import create_standard_streams
-from connecpy.client import ResponseMetadata
-from connecpy.code import Code
-from connecpy.exceptions import ConnecpyException
-from connecpy.request import Headers
-from connectrpc.conformance.v1.client_compat_pb2 import (
+from connectrpc.client import ResponseMetadata
+from connectrpc.code import Code
+from connectrpc.errors import ConnectError
+from connectrpc.request import Headers
+from gen.connectrpc.conformance.v1.client_compat_pb2 import (
     ClientCompatRequest,
     ClientCompatResponse,
 )
-from connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
-from connectrpc.conformance.v1.config_pb2 import Codec, Compression, HTTPVersion
-from connectrpc.conformance.v1.service_connecpy import (
+from gen.connectrpc.conformance.v1.config_pb2 import Code as ConformanceCode
+from gen.connectrpc.conformance.v1.config_pb2 import Codec, Compression, HTTPVersion
+from gen.connectrpc.conformance.v1.service_connect import (
     ConformanceServiceClient,
     ConformanceServiceClientSync,
 )
-from connectrpc.conformance.v1.service_pb2 import (
+from gen.connectrpc.conformance.v1.service_pb2 import (
     BidiStreamRequest,
     ClientStreamRequest,
     ConformancePayload,
@@ -513,7 +513,7 @@ async def _run_test(
                             )
                             task.cancel()
                         await task
-        except ConnecpyException as e:
+        except ConnectError as e:
             test_response.response.error.code = _convert_code(e.code)
             test_response.response.error.message = e.message
             test_response.response.error.details.extend(e.details)

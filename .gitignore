@@ -119,7 +119,7 @@ venv.bak/
 .vscode
 
 # generated Go binary
-protoc-gen-connecpy/protoc-gen-connecpy
+protoc-gen-connect-python/protoc-gen-connect-python
 
 # goreleaser archives
 out/

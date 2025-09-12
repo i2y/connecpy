@@ -1,4 +1,4 @@
-# Connectpy
+# connect-python
 
 A Python implementation of the Connect RPC framework.
 
@@ -21,16 +21,16 @@ to let Python programs use the Connect protocol.
 For basic client functionality:
 
 ```bash
-uv add connecpy
-# Or pip install connecpy
+uv add connect-python
+# Or pip install connect-python
 ```
 
 For code generation, you will need the protoc plugin. This should generally
 only be needed as a dev dependency.
 
 ```bash
-uv add --dev protoc-gen-connecpy
-# Or pip install protoc-gen-connecpy
+uv add --dev protoc-gen-connect-python
+# Or pip install protoc-gen-connect-python
 ```
 
 ## Quick Start
@@ -39,8 +39,8 @@ With a protobuf definition in hand, you can generate stub code. This is
 easiest using buf, but you can also use protoc if you're feeling
 masochistic.
 
-Install the compiler (eg `pip install protoc-gen-connecpy`), and
-it can be referenced as `protoc-gen-connecpy`.
+Install the compiler (eg `pip install protoc-gen-connect-python`), and
+it can be referenced as `protoc-gen-connect-python`.
 
 A reasonable `buf.gen.yaml`:
 
@@ -51,6 +51,6 @@ plugins:
     out: .
   - remote: buf.build/protocolbuffers/pyi
     out: .
-  - local: .venv/bin/protoc-gen-connecpy
+  - local: .venv/bin/protoc-gen-connect-python
     out: .
 ```
