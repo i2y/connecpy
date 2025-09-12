@@ -330,39 +330,53 @@ class ConnectClientSync:
         else:
             timeout = USE_CLIENT_DEFAULT
 
+        stream_error: Exception | None = None
         try:
             request_data = _streaming_request_content(
                 request, self._codec, self._send_compression
             )
 
-            resp = self._session.post(
-                url=url, headers=request_headers, content=request_data, timeout=timeout
-            )
-
-            compression = _client_shared.validate_response_content_encoding(
-                resp.headers.get(CONNECT_STREAMING_HEADER_COMPRESSION, "")
-            )
-            _client_shared.validate_stream_response_content_type(
-                self._codec.name(), resp.headers.get("content-type", "")
-            )
-            _client_shared.handle_response_headers(resp.headers)
-
-            if resp.status_code == 200:
-                reader = EnvelopeReader(
-                    ctx.method().output, self._codec, compression, self._read_max_bytes
+            with self._session.stream(
+                method="POST",
+                url=url,
+                headers=request_headers,
+                content=request_data,
+                timeout=timeout,
+            ) as resp:
+                compression = _client_shared.validate_response_content_encoding(
+                    resp.headers.get(CONNECT_STREAMING_HEADER_COMPRESSION, "")
                 )
-                try:
-                    for chunk in resp.iter_bytes():
-                        yield from reader.feed(chunk)
-                finally:
-                    resp.close()
-            else:
-                raise ConnectWireError.from_response(resp).to_exception()
+                _client_shared.validate_stream_response_content_type(
+                    self._codec.name(), resp.headers.get("content-type", "")
+                )
+                _client_shared.handle_response_headers(resp.headers)
+
+                if resp.status_code == 200:
+                    reader = EnvelopeReader(
+                        ctx.method().output,
+                        self._codec,
+                        compression,
+                        self._read_max_bytes,
+                    )
+                    try:
+                        for chunk in resp.iter_bytes():
+                            yield from reader.feed(chunk)
+                    except ConnectError as e:
+                        stream_error = e
+                        raise
+                else:
+                    raise ConnectWireError.from_response(resp).to_exception()
         except (httpx.TimeoutException, TimeoutError) as e:
             raise ConnectError(Code.DEADLINE_EXCEEDED, "Request timed out") from e
         except ConnectError:
             raise
         except Exception as e:
+            # If a context manager's exit raises an exception, it overwrites any raised
+            # by our own stream handling. This seems to happen when we end the response without
+            # fully consuming it due to message limits. It should always be fine to prioritize
+            # the stream error here.
+            if stream_error is not None:
+                raise stream_error from None
             raise ConnectError(Code.UNAVAILABLE, str(e)) from e
 
 

@@ -204,6 +204,8 @@ async for response in client.converse(chat()):
 - **HTTP/1.1 servers**: Support half-duplex bidirectional streaming only
 - **WSGI servers**: Support streaming but not full-duplex bidirectional due to protocol limitations
 
+- **Clients**: Support half-duplex bidirectional streaming only
+
 ## Examples
 
 The `example/` directory contains complete working examples demonstrating all features:

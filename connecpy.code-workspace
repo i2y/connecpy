@@ -41,6 +41,7 @@
       "editor.formatOnSave": true,
       "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
+    "debugpy.debugJustMyCode": false,
     "[python]": {
       "editor.formatOnSave": true,
       "editor.codeActionsOnSave": {
