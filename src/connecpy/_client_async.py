@@ -27,6 +27,13 @@ from .exceptions import ConnecpyException
 from .method import MethodInfo
 from .request import Headers, RequestContext
 
+try:
+    from asyncio import (
+        timeout as asyncio_timeout,  # pyright: ignore[reportAttributeAccessIssue]
+    )
+except ImportError:
+    from ._asyncio_timeout import timeout as asyncio_timeout
+
 if TYPE_CHECKING:
     import sys
 
