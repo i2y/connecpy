@@ -1,3 +1,6 @@
+# Copyright © 2001 Python Software Foundation. All rights reserved.
+# SPDX-License-Identifier: PSF-2.0
+
 # Backport of asyncio.timeout for Python 3.10
 
 import enum
