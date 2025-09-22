@@ -1,4 +1,4 @@
-> [!CAUTION]
+> [!WARNING]
 > **This repository is deprecated and no longer maintained.**
 >
 > The project has moved to the official Connect organization:
