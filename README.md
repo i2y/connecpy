@@ -1,4 +1,21 @@
-# connect-python
+> [!CAUTION]
+> **This repository is deprecated and no longer maintained.**
+>
+> The project has moved to the official Connect organization:
+>
+> **👉 [https://github.com/connectrpc/connect-python](https://github.com/connectrpc/connect-python)**
+>
+> Please use the official repository for:
+> - Latest updates and features
+> - Bug reports and issues
+> - Pull requests and contributions
+> - Documentation and support
+>
+> This repository is kept for historical reference only.
+
+---
+
+# connect-python (Archived)
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/github/connect-python/actions/workflows/ci.yaml/badge.svg)](https://github.com/github/connect-python/actions/workflows/ci.yaml)
