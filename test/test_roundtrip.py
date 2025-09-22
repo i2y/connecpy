@@ -3,10 +3,10 @@ from collections.abc import AsyncIterator, Iterator
 import pytest
 from httpx import ASGITransport, AsyncClient, Client, WSGITransport
 
-from connecpy.code import Code
-from connecpy.exceptions import ConnecpyException
+from connectrpc.code import Code
+from connectrpc.errors import ConnectError
 
-from .haberdasher_connecpy import (
+from .haberdasher_connect import (
     Haberdasher,
     HaberdasherASGIApplication,
     HaberdasherClient,
@@ -70,7 +70,7 @@ async def test_roundtrip_response_stream_async(
             yield Hat(size=request.inches, color="green")
             yield Hat(size=request.inches, color="red")
             yield Hat(size=request.inches, color="blue")
-            raise ConnecpyException(Code.RESOURCE_EXHAUSTED, "No more hats available")
+            raise ConnectError(Code.RESOURCE_EXHAUSTED, "No more hats available")
 
     app = HaberdasherASGIApplication(StreamingHaberdasher())
     transport = ASGITransport(app)  # pyright:ignore[reportArgumentType] - httpx type is not complete
@@ -83,7 +83,7 @@ async def test_roundtrip_response_stream_async(
         send_compression=compression,
         accept_compression=[compression] if compression else None,
     ) as client:
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
             async for h in client.make_similar_hats(request=Size(inches=10)):
                 hats.append(h)
     assert hats[0].size == 10
@@ -128,7 +128,7 @@ def test_message_limit_sync(client_bad: bool, compression: str) -> None:
         accept_compression=[compression] if compression else None,
         read_max_bytes=100,
     ) as client:
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
             client.make_hat(request=bad_size if client_bad else good_size)
         assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
         assert exc_info.value.message == "message is larger than configured max 100"
@@ -141,7 +141,7 @@ def test_message_limit_sync(client_bad: bool, compression: str) -> None:
         requests = []
         responses = []
 
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
 
             def request_stream():
                 yield good_size
@@ -193,7 +193,7 @@ async def test_message_limit_async(client_bad: bool, compression: str) -> None:
         accept_compression=[compression] if compression else None,
         read_max_bytes=100,
     ) as client:
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
             await client.make_hat(request=bad_size if client_bad else good_size)
         assert exc_info.value.code == Code.RESOURCE_EXHAUSTED
         assert exc_info.value.message == "message is larger than configured max 100"
@@ -206,7 +206,7 @@ async def test_message_limit_async(client_bad: bool, compression: str) -> None:
         requests = []
         responses = []
 
-        with pytest.raises(ConnecpyException) as exc_info:
+        with pytest.raises(ConnectError) as exc_info:
 
             async def request_stream():
                 yield good_size

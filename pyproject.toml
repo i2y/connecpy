@@ -1,79 +1,63 @@
 [project]
-name = "connecpy"
-version = "2.3.0"
-description = "Server library and client library for the Connect Protocol"
-authors = [{ name = "Connecpy authors" }]
+name = "connect-python"
+version = "0.5.0"
+description = "Server and client runtime library for Connect RPC"
+maintainers = [
+    { name = "Anuraag Agrawal", email = "anuraaga@gmail.com" },
+    { name = "Spencer Nelson", email = "spencer@firetiger.com" },
+    { name = "Stefan VanBuren", email = "svanburen@buf.build" },
+    { name = "Yasushi Itoh", email = "i2y.may.roku@gmail.com" },
+]
 requires-python = ">= 3.10"
 dependencies = ["httpx", "protobuf>=5.28"]
 readme = "README.md"
 license-files = ["LICENSE"]
-keywords = [
-    "connect",
-    "connectrpc",
-    "connect-protocol",
-    "connect-rpc",
-    "rpc",
-    "protobuf",
-    "api",
-    "http",
-    "http2",
-    "asgi",
-    "wsgi",
-    "streaming",
-    "microservices",
-]
+keywords = ["rpc", "grpc", "connect", "protobuf", "http"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Web Environment",
-    "Framework :: AsyncIO",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
-    "Topic :: Internet :: WWW/HTTP :: WSGI",
-    "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Networking",
     "Typing :: Typed",
 ]
 
 [project.urls]
-Homepage = "https://github.com/i2y/connecpy"
-Documentation = "https://github.com/i2y/connecpy#readme"
-Repository = "https://github.com/i2y/connecpy.git"
-Issues = "https://github.com/i2y/connecpy/issues"
-Changelog = "https://github.com/i2y/connecpy/releases"
+Homepage = "https://github.com/connectrpc/connect-python"
+Repository = "https://github.com/connectrpc/connect-python"
+Issues = "https://github.com/connectrpc/connect-python/issues"
 
 [tool.uv]
 dev-dependencies = [
     "asgiref",
     "brotli",
-    "connecpy-example",
+    "connect-python-example",
     "coverage",
     "flask",
     "just-bin; sys_platform != 'win32'",
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
-    "pip>=24.0",
     "pyright[nodejs]",
-    "pytest>=8.3.4",
-    "pytest-asyncio>=0.25.2",
+    "pytest",
+    "pytest-asyncio",
     "pytest-cov",
-    "ruff>=0.9.4",
+    "ruff",
     "typing_extensions",
     "zstandard",
 ]
 
 [build-system]
-requires = ["uv_build>=0.7.21,<0.9.0"]
+requires = ["uv_build>=0.8.13,<0.9.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "connectrpc"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
@@ -233,5 +217,5 @@ exclude = [
 members = ["conformance", "example", "noextras"]
 
 [tool.uv.sources]
-connecpy = { workspace = true }
-connecpy-example = { workspace = true }
+connect-python = { workspace = true }
+connect-python-example = { workspace = true }
